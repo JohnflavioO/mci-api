@@ -20,6 +20,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as RevendedorRouteImport } from './routes/revendedor'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSecaoRouteImport } from './routes/admin.$secao'
+import { Route as AdminImportarRouteImport } from './routes/admin.importar'
 import { Route as AfiliadoIndexRouteImport } from './routes/afiliado.index'
 import { Route as AfiliadoSecaoRouteImport } from './routes/afiliado.$secao'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
@@ -81,6 +82,11 @@ const AdminSecaoRoute = AdminSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminImportarRoute = AdminImportarRouteImport.update({
+  id: '/importar',
+  path: '/importar',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AfiliadoIndexRoute = AfiliadoIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/revendedor': typeof RevendedorRouteWithChildren
   '/admin/$secao': typeof AdminSecaoRoute
+  '/admin/importar': typeof AdminImportarRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
   '/admin/$secao': typeof AdminSecaoRoute
+  '/admin/importar': typeof AdminImportarRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/revendedor': typeof RevendedorRouteWithChildren
   '/admin/$secao': typeof AdminSecaoRoute
+  '/admin/importar': typeof AdminImportarRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/revendedor'
     | '/admin/$secao'
+    | '/admin/importar'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/entrar'
     | '/admin/$secao'
+    | '/admin/importar'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/revendedor'
     | '/admin/$secao'
+    | '/admin/importar'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
@@ -305,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSecaoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/importar': {
+      id: '/admin/importar'
+      path: '/importar'
+      fullPath: '/admin/importar'
+      preLoaderRoute: typeof AdminImportarRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/afiliado/': {
       id: '/afiliado/'
       path: '/'
@@ -345,11 +364,13 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminSecaoRoute: typeof AdminSecaoRoute
+  AdminImportarRoute: typeof AdminImportarRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSecaoRoute: AdminSecaoRoute,
+  AdminImportarRoute: AdminImportarRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
