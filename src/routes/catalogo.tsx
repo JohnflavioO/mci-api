@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { categories } from "@/lib/demo-data";
 import { catalogService } from "@/services";
 
-type Search = { q?: string; categoria?: string; disponivel?: boolean };
+type Search = { q?: string | undefined; categoria?: string | undefined; disponivel?: boolean | undefined };
 
 export const Route = createFileRoute("/catalogo")({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    q: typeof s.q === "string" ? s.q : undefined,
-    categoria: typeof s.categoria === "string" ? s.categoria : undefined,
-    disponivel: s.disponivel === true || s.disponivel === "true" ? true : undefined,
+    q: typeof s["q"] === "string" ? s["q"] : undefined,
+    categoria: typeof s["categoria"] === "string" ? s["categoria"] : undefined,
+    disponivel: s["disponivel"] === true || s["disponivel"] === "true" ? true : undefined,
   }),
   head: () => ({
     meta: [
