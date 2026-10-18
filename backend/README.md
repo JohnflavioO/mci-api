@@ -23,4 +23,4 @@ Produção: `npm run build && npm start` (use systemd ou pm2 na VPS).
 - Definir `CORS_ORIGINS` com o domínio do frontend.
 
 ## Frontend
-O frontend usa `VITE_API_URL` (ex.: `https://api.seudominio.com`).
+O frontend usa `VITE_API_BASE_URL` (ex.: `https://api.seudominio.com`).

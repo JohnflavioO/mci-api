@@ -10,4 +10,6 @@
 <!-- LOVABLE:END -->
 
 ## Architecture
-- `backend/` is a standalone Node/Fastify API (Oracle DB) destined for its own repo; never import it from `src/` — the frontend only talks to it over HTTP via `VITE_API_URL`.
+- `backend/` is a standalone Node/Fastify API (Oracle DB) destined for its own repo; never import it from `src/` — the frontend only talks to it over HTTP via `VITE_API_BASE_URL`.
+- All HTTP calls go through `src/lib/api.ts` + `src/services/*`; prices, permissions and commissions are decided by the API, never computed in the frontend.
+- Demo content lives only in `src/lib/demo-data.ts` and must render with the `DemoBadge`, so it is never mistaken for real data.

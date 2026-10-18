@@ -1,4 +1,4 @@
-const baseUrl = (import.meta.env["VITE_API_URL"] as string | undefined)?.replace(/\/$/, "") ?? "";
+const baseUrl = (import.meta.env["VITE_API_BASE_URL"] as string | undefined)?.replace(/\/$/, "") ?? "";
 
 export class ApiError extends Error {
   constructor(
