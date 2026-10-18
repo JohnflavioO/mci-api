@@ -26,6 +26,7 @@ export const portals = {
     title: "Central Administrativa",
     sections: [
       { slug: "produtos", label: "Produtos" },
+      { slug: "importar", label: "Importar produto por link" },
       { slug: "usuarios", label: "Usuários" },
       { slug: "pedidos", label: "Pedidos" },
       { slug: "precos", label: "Preços" },
