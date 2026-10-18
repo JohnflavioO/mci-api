@@ -1,4 +1,4 @@
-const baseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const baseUrl = (import.meta.env["VITE_API_URL"] as string | undefined)?.replace(/\/$/, "") ?? "";
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (!baseUrl) throw new Error("VITE_API_URL não configurada");
