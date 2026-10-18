@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture
+- `backend/` is a standalone Node/Fastify API (Oracle DB) destined for its own repo; never import it from `src/` — the frontend only talks to it over HTTP via `VITE_API_URL`.
