@@ -10,33 +10,220 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AfiliadoRouteImport } from './routes/afiliado'
+import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as CarrinhoRouteImport } from './routes/carrinho'
+import { Route as CatalogoRouteImport } from './routes/catalogo'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as RevendedorRouteImport } from './routes/revendedor'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminSecaoRouteImport } from './routes/admin.$secao'
+import { Route as AfiliadoIndexRouteImport } from './routes/afiliado.index'
+import { Route as AfiliadoSecaoRouteImport } from './routes/afiliado.$secao'
+import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
+import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
+import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AfiliadoRoute = AfiliadoRouteImport.update({
+  id: '/afiliado',
+  path: '/afiliado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarrinhoRoute = CarrinhoRouteImport.update({
+  id: '/carrinho',
+  path: '/carrinho',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogoRoute = CatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevendedorRoute = RevendedorRouteImport.update({
+  id: '/revendedor',
+  path: '/revendedor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSecaoRoute = AdminSecaoRouteImport.update({
+  id: '/$secao',
+  path: '/$secao',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AfiliadoIndexRoute = AfiliadoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AfiliadoRoute,
+} as any)
+const AfiliadoSecaoRoute = AfiliadoSecaoRouteImport.update({
+  id: '/$secao',
+  path: '/$secao',
+  getParentRoute: () => AfiliadoRoute,
+} as any)
+const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
+  id: '/produto/$slug',
+  path: '/produto/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevendedorIndexRoute = RevendedorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RevendedorRoute,
+} as any)
+const RevendedorSecaoRoute = RevendedorSecaoRouteImport.update({
+  id: '/$secao',
+  path: '/$secao',
+  getParentRoute: () => RevendedorRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/afiliado': typeof AfiliadoRouteWithChildren
+  '/cadastro': typeof CadastroRoute
+  '/carrinho': typeof CarrinhoRoute
+  '/catalogo': typeof CatalogoRoute
+  '/checkout': typeof CheckoutRoute
+  '/entrar': typeof EntrarRoute
+  '/revendedor': typeof RevendedorRouteWithChildren
+  '/admin/$secao': typeof AdminSecaoRoute
+  '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/produto/$slug': typeof ProdutoSlugRoute
+  '/revendedor/$secao': typeof RevendedorSecaoRoute
+  '/admin/': typeof AdminIndexRoute
+  '/afiliado/': typeof AfiliadoIndexRoute
+  '/revendedor/': typeof RevendedorIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cadastro': typeof CadastroRoute
+  '/carrinho': typeof CarrinhoRoute
+  '/catalogo': typeof CatalogoRoute
+  '/checkout': typeof CheckoutRoute
+  '/entrar': typeof EntrarRoute
+  '/admin/$secao': typeof AdminSecaoRoute
+  '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/produto/$slug': typeof ProdutoSlugRoute
+  '/revendedor/$secao': typeof RevendedorSecaoRoute
+  '/admin': typeof AdminIndexRoute
+  '/afiliado': typeof AfiliadoIndexRoute
+  '/revendedor': typeof RevendedorIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/afiliado': typeof AfiliadoRouteWithChildren
+  '/cadastro': typeof CadastroRoute
+  '/carrinho': typeof CarrinhoRoute
+  '/catalogo': typeof CatalogoRoute
+  '/checkout': typeof CheckoutRoute
+  '/entrar': typeof EntrarRoute
+  '/revendedor': typeof RevendedorRouteWithChildren
+  '/admin/$secao': typeof AdminSecaoRoute
+  '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/produto/$slug': typeof ProdutoSlugRoute
+  '/revendedor/$secao': typeof RevendedorSecaoRoute
+  '/admin/': typeof AdminIndexRoute
+  '/afiliado/': typeof AfiliadoIndexRoute
+  '/revendedor/': typeof RevendedorIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/afiliado'
+    | '/cadastro'
+    | '/carrinho'
+    | '/catalogo'
+    | '/checkout'
+    | '/entrar'
+    | '/revendedor'
+    | '/admin/$secao'
+    | '/afiliado/$secao'
+    | '/produto/$slug'
+    | '/revendedor/$secao'
+    | '/admin/'
+    | '/afiliado/'
+    | '/revendedor/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/cadastro'
+    | '/carrinho'
+    | '/catalogo'
+    | '/checkout'
+    | '/entrar'
+    | '/admin/$secao'
+    | '/afiliado/$secao'
+    | '/produto/$slug'
+    | '/revendedor/$secao'
+    | '/admin'
+    | '/afiliado'
+    | '/revendedor'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/afiliado'
+    | '/cadastro'
+    | '/carrinho'
+    | '/catalogo'
+    | '/checkout'
+    | '/entrar'
+    | '/revendedor'
+    | '/admin/$secao'
+    | '/afiliado/$secao'
+    | '/produto/$slug'
+    | '/revendedor/$secao'
+    | '/admin/'
+    | '/afiliado/'
+    | '/revendedor/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
+  AfiliadoRoute: typeof AfiliadoRouteWithChildren
+  CadastroRoute: typeof CadastroRoute
+  CarrinhoRoute: typeof CarrinhoRoute
+  CatalogoRoute: typeof CatalogoRoute
+  CheckoutRoute: typeof CheckoutRoute
+  EntrarRoute: typeof EntrarRoute
+  RevendedorRoute: typeof RevendedorRouteWithChildren
+  ProdutoSlugRoute: typeof ProdutoSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +235,165 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/afiliado': {
+      id: '/afiliado'
+      path: '/afiliado'
+      fullPath: '/afiliado'
+      preLoaderRoute: typeof AfiliadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carrinho': {
+      id: '/carrinho'
+      path: '/carrinho'
+      fullPath: '/carrinho'
+      preLoaderRoute: typeof CarrinhoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalogo': {
+      id: '/catalogo'
+      path: '/catalogo'
+      fullPath: '/catalogo'
+      preLoaderRoute: typeof CatalogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revendedor': {
+      id: '/revendedor'
+      path: '/revendedor'
+      fullPath: '/revendedor'
+      preLoaderRoute: typeof RevendedorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/$secao': {
+      id: '/admin/$secao'
+      path: '/$secao'
+      fullPath: '/admin/$secao'
+      preLoaderRoute: typeof AdminSecaoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/afiliado/': {
+      id: '/afiliado/'
+      path: '/'
+      fullPath: '/afiliado/'
+      preLoaderRoute: typeof AfiliadoIndexRouteImport
+      parentRoute: typeof AfiliadoRoute
+    }
+    '/afiliado/$secao': {
+      id: '/afiliado/$secao'
+      path: '/$secao'
+      fullPath: '/afiliado/$secao'
+      preLoaderRoute: typeof AfiliadoSecaoRouteImport
+      parentRoute: typeof AfiliadoRoute
+    }
+    '/produto/$slug': {
+      id: '/produto/$slug'
+      path: '/produto/$slug'
+      fullPath: '/produto/$slug'
+      preLoaderRoute: typeof ProdutoSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revendedor/': {
+      id: '/revendedor/'
+      path: '/'
+      fullPath: '/revendedor/'
+      preLoaderRoute: typeof RevendedorIndexRouteImport
+      parentRoute: typeof RevendedorRoute
+    }
+    '/revendedor/$secao': {
+      id: '/revendedor/$secao'
+      path: '/$secao'
+      fullPath: '/revendedor/$secao'
+      preLoaderRoute: typeof RevendedorSecaoRouteImport
+      parentRoute: typeof RevendedorRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminSecaoRoute: typeof AdminSecaoRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminSecaoRoute: AdminSecaoRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface AfiliadoRouteChildren {
+  AfiliadoSecaoRoute: typeof AfiliadoSecaoRoute
+  AfiliadoIndexRoute: typeof AfiliadoIndexRoute
+}
+
+const AfiliadoRouteChildren: AfiliadoRouteChildren = {
+  AfiliadoSecaoRoute: AfiliadoSecaoRoute,
+  AfiliadoIndexRoute: AfiliadoIndexRoute,
+}
+
+const AfiliadoRouteWithChildren = AfiliadoRoute._addFileChildren(
+  AfiliadoRouteChildren,
+)
+
+interface RevendedorRouteChildren {
+  RevendedorSecaoRoute: typeof RevendedorSecaoRoute
+  RevendedorIndexRoute: typeof RevendedorIndexRoute
+}
+
+const RevendedorRouteChildren: RevendedorRouteChildren = {
+  RevendedorSecaoRoute: RevendedorSecaoRoute,
+  RevendedorIndexRoute: RevendedorIndexRoute,
+}
+
+const RevendedorRouteWithChildren = RevendedorRoute._addFileChildren(
+  RevendedorRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
+  AfiliadoRoute: AfiliadoRouteWithChildren,
+  CadastroRoute: CadastroRoute,
+  CarrinhoRoute: CarrinhoRoute,
+  CatalogoRoute: CatalogoRoute,
+  CheckoutRoute: CheckoutRoute,
+  EntrarRoute: EntrarRoute,
+  RevendedorRoute: RevendedorRouteWithChildren,
+  ProdutoSlugRoute: ProdutoSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
