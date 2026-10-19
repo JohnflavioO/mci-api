@@ -57,7 +57,7 @@ export type ImportSavePayload = {
   status: "draft" | "published";
   sourceUrl: string;
   name: string;
-  brand: string | null;
+  brand: string;
   sku: string | null;
   description: string | null;
   category: string | null;
@@ -73,7 +73,8 @@ export function toSavePayload(i: ImportSaveInput): ImportSavePayload {
     status: i.status,
     sourceUrl: i.sourceUrl,
     name: i.name.trim(),
-    brand: opt(i.brand),
+    // The deployed API rejects null for brand (400: Expected string, received null).
+    brand: i.brand.trim(),
     sku: opt(i.sku),
     description: opt(i.description),
     category: opt(i.targetCategory),
