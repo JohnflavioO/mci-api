@@ -107,7 +107,7 @@ function ImportPage() {
           )}
           {(preview.missingFields.length > 0 || preview.warnings.length > 0) && (
             <div className="rounded-md border p-4 text-sm">
-              {preview.missingFields.length > 0 && <p><strong>Não encontrados na página:</strong> {preview.missingFields.join(", ")}</p>}
+              {preview.missingFields.length > 0 && <p><strong>Não fornecidos pelo servidor (preencha manualmente se necessário):</strong> {preview.missingFields.join(", ")}</p>}
               {preview.warnings.map((w) => <p key={w} className="text-muted-foreground">{w}</p>)}
             </div>
           )}
