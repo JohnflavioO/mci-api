@@ -5,6 +5,7 @@
 - [x] Login e prévia autenticados na VPS confirmados pelo usuário.
 
 # Investigação do erro ao salvar
-- [ ] Comparar payload, validações draft/published e tratamento de erros com o contrato disponível, sem gravações no Oracle.
-- [ ] Executar testes e corrigir somente incompatibilidades comprovadas no frontend.
-- [ ] Informar evidências, causa provável e contrato ou logs ainda necessários; não considerar concluída sem evidência.
+- [x] Comparar payload e erros já registrados: brand null provoca 400; brand preenchida, SKU 5542, categoria Iluminação, preços 4210/2500, specs vazias e imagem posicionada provocam 500 em draft e published. O schema implantado não está disponível localmente.
+- [x] Corrigir apenas brand null para string sem inventar valor; executar 18 testes isolados, incluindo propagação do 500. Nenhuma chamada externa ou gravação foi feita nesta investigação.
+- [x] Identificar que apiFetch preserva error, mas descarta fields; os 500 observados só contêm error: Erro interno, portanto não há detalhe do 500 ocultado pelo frontend.
+- [ ] Confirmar a causa do 500: aguarda schema/handler implantado de POST /api/v1/admin/products/import e log sanitizado da falha já ocorrida na VPS. Não alterar backend/banco/autenticação nem considerar o salvamento corrigido sem essa evidência.
