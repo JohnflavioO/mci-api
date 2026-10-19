@@ -37,10 +37,10 @@ export type ImportPreview = {
   duplicates: { productId: string; name: string; matchedBy: "url" | "sku" }[];
 };
 
+/** Dados editados na tela (preços digitados pelo usuário, nunca calculados). */
 export type ImportSaveInput = {
-  sourceUrl: string;
-  importedAt: string;
   status: "draft" | "published";
+  sourceUrl: string;
   name: string;
   brand: string;
   sku: string;
@@ -48,9 +48,46 @@ export type ImportSaveInput = {
   specs: { label: string; value: string }[];
   images: string[];
   targetCategory: string;
-  salePrice: number | null;
-  resellerPricing: { mode: "none" | "percent_off" | "fixed"; value: number | null };
+  customerPrice: number | null;
+  resellerPrice: number | null;
 };
+
+/** Contrato de POST /admin/products/import. importedAt/createdAt/createdBy são do backend. */
+export type ImportSavePayload = {
+  status: "draft" | "published";
+  sourceUrl: string;
+  name: string;
+  brand: string | null;
+  sku: string | null;
+  description: string | null;
+  category: string | null;
+  specs: { label: string; value: string }[];
+  images: { url: string; position: number }[];
+  pricing: { currency: "BRL"; resellerPrice: number | null; customerPrice: number | null };
+};
+
+const opt = (v: string) => (v.trim() ? v.trim() : null);
+
+export function toSavePayload(i: ImportSaveInput): ImportSavePayload {
+  return {
+    status: i.status,
+    sourceUrl: i.sourceUrl,
+    name: i.name.trim(),
+    brand: opt(i.brand),
+    sku: opt(i.sku),
+    description: opt(i.description),
+    category: opt(i.targetCategory),
+    specs: i.specs.filter((s) => s.label.trim() && s.value.trim()).map((s) => ({ label: s.label.trim(), value: s.value.trim() })),
+    images: i.images.map((url, position) => ({ url, position })),
+    pricing: { currency: "BRL", resellerPrice: i.resellerPrice, customerPrice: i.customerPrice },
+  };
+}
+
+const positive = (n: number | null) => n != null && Number.isFinite(n) && n > 0;
+export const canPublishPrices = (i: Pick<ImportSaveInput, "customerPrice" | "resellerPrice">) =>
+  positive(i.customerPrice) && positive(i.resellerPrice);
+
+export const isDuplicateError = (e: unknown) => e instanceof ApiError && e.status === 409;
 
 export const isEndpointPending = (e: unknown) =>
   e instanceof ApiError && (e.status === 404 || e.status === 501 || e.status === null);
@@ -103,6 +140,9 @@ export const productImportService = {
       await apiFetch<BackendPreview>(IMPORT_ENDPOINTS.preview, { method: "POST", body: JSON.stringify({ url }) }, 30000),
       url,
     ),
-  save: (input: ImportSaveInput) =>
-    apiFetch<{ productId: string; status: string }>(IMPORT_ENDPOINTS.save, { method: "POST", body: JSON.stringify(input) }),
+  save: (input: ImportSaveInput) => {
+    if (input.status === "published" && !canPublishPrices(input))
+      return Promise.reject(new ApiError("Para publicar, informe os dois preços maiores que zero.", 400));
+    return apiFetch<{ productId: string; status: string }>(IMPORT_ENDPOINTS.save, { method: "POST", body: JSON.stringify(toSavePayload(input)) });
+  },
 };

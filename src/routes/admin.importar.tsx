@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { categories } from "@/lib/demo-data";
 import {
   IMPORT_ENDPOINTS,
+  canPublishPrices,
+  isDuplicateError,
   isEndpointPending,
   isMciProductUrl,
   productImportService,
@@ -30,7 +32,7 @@ export const Route = createFileRoute("/admin/importar")({
   component: ImportPage,
 });
 
-type Draft = Omit<ImportSaveInput, "status" | "importedAt">;
+type Draft = Omit<ImportSaveInput, "status">;
 
 const toDraft = (p: ImportPreview): Draft => ({
   sourceUrl: p.sourceUrl,
@@ -41,8 +43,8 @@ const toDraft = (p: ImportPreview): Draft => ({
   specs: p.specs,
   images: p.images,
   targetCategory: "",
-  salePrice: null,
-  resellerPricing: { mode: "none", value: null },
+  customerPrice: null,
+  resellerPrice: null,
 });
 
 function PendingNotice({ endpoint }: { endpoint: string }) {
@@ -69,7 +71,7 @@ function ImportPage() {
   });
   const saveM = useMutation({
     mutationFn: (status: ImportSaveInput["status"]) =>
-      productImportService.save({ ...draft!, status, importedAt: new Date().toISOString() }),
+      productImportService.save({ ...draft!, status }),
   });
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));
@@ -78,7 +80,7 @@ function ImportPage() {
     if (!draft.name.trim()) errors.push("Informe o nome do produto.");
     if (!draft.targetCategory) errors.push("Escolha a categoria de destino.");
   }
-  const canPublish = errors.length === 0 && draft?.salePrice != null && draft.salePrice > 0 && confirmed;
+  const canPublish = errors.length === 0 && draft != null && canPublishPrices(draft) && confirmed;
 
   return (
     <div className="max-w-4xl">
@@ -161,19 +163,10 @@ function ImportPage() {
               </select>
             </div>
             <div><Label>Preço público de referência (mci.tv)</Label><Input className="mt-1" disabled value={preview.referencePrice != null ? preview.referencePrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "Não encontrado"} /></div>
-            <div><Label>Preço de venda na nova loja (R$)</Label><Input className="mt-1" type="number" min={0} step="0.01" value={draft.salePrice ?? ""} onChange={(e) => set("salePrice", e.target.value === "" ? null : Number(e.target.value))} /></div>
+            <div><Label>Preço de venda na nova loja (R$)</Label><Input className="mt-1" type="number" min={0} step="0.01" value={draft.customerPrice ?? ""} onChange={(e) => set("customerPrice", e.target.value === "" ? null : Number(e.target.value))} /></div>
             <div>
-              <Label>Regra para revendedores</Label>
-              <div className="mt-1 flex gap-2">
-                <select className="h-9 rounded-md border bg-background px-2 text-sm" value={draft.resellerPricing.mode} onChange={(e) => set("resellerPricing", { mode: e.target.value as Draft["resellerPricing"]["mode"], value: null })}>
-                  <option value="none">Definir depois</option>
-                  <option value="percent_off">% de desconto</option>
-                  <option value="fixed">Preço fixo (R$)</option>
-                </select>
-                {draft.resellerPricing.mode !== "none" && (
-                  <Input type="number" min={0} step="0.01" value={draft.resellerPricing.value ?? ""} onChange={(e) => set("resellerPricing", { ...draft.resellerPricing, value: e.target.value === "" ? null : Number(e.target.value) })} />
-                )}
-              </div>
+              <Label>Preço para revendedores (R$)</Label>
+              <Input className="mt-1" type="number" min={0} step="0.01" value={draft.resellerPrice ?? ""} onChange={(e) => set("resellerPrice", e.target.value === "" ? null : Number(e.target.value))} />
             </div>
           </section>
 
@@ -184,7 +177,7 @@ function ImportPage() {
               <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
               Revisei os dados e confirmo a importação.
             </label>
-            {saveM.isError && (isEndpointPending(saveM.error) ? <PendingNotice endpoint={IMPORT_ENDPOINTS.save} /> : <ErrorState message={saveM.error.message} />)}
+            {saveM.isError && (isEndpointPending(saveM.error) ? <PendingNotice endpoint={IMPORT_ENDPOINTS.save} /> : isDuplicateError(saveM.error) ? <ErrorState message={`Produto duplicado: ${saveM.error.message}`} /> : <ErrorState message={saveM.error.message} />)}
             {saveM.isSuccess && <SuccessState message={`Produto salvo pelo servidor (${saveM.data.status}).`} />}
             <div className="flex flex-wrap gap-3">
               <Button variant="outline" disabled={errors.length > 0 || saveM.isPending} onClick={() => saveM.mutate("draft")}>Salvar como rascunho</Button>
