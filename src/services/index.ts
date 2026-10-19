@@ -1,5 +1,6 @@
 import { apiFetch, ApiError } from "@/lib/api";
 import { demoProducts, type Product } from "@/lib/demo-data";
+import { loginAdmin } from "./adminAuth";
 
 /** Saúde da API — único endpoint já existente. */
 export const healthService = {
@@ -22,7 +23,8 @@ export const catalogService = {
 export type Role = "cliente" | "revendedor" | "afiliado";
 
 export const authService = {
-  login: (_email: string, _password: string) => pending("O login"),
+  login: (email: string, password: string, admin = false) =>
+    admin ? loginAdmin(email, password) : pending("O login"),
   register: (_role: Role, _data: Record<string, string>) => pending("O cadastro"),
 };
 

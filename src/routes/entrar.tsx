@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { authService } from "@/services";
 
 export const Route = createFileRoute("/entrar")({
+  validateSearch: (search: Record<string, unknown>): { admin?: boolean } =>
+    search["admin"] === true || search["admin"] === "true" ? { admin: true } : {},
   head: () => ({
     meta: [
       { title: "Entrar | MCI Comercial" },
@@ -23,20 +25,30 @@ export const Route = createFileRoute("/entrar")({
 });
 
 function Login() {
+  const { admin } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const m = useMutation({ mutationFn: () => authService.login(email, password) });
+  const m = useMutation({
+    mutationFn: () => authService.login(email, password, admin === true),
+    onSuccess: async () => {
+      setPassword("");
+      if (admin) await navigate({ to: "/admin/importar" });
+    },
+    onError: () => setPassword(""),
+    gcTime: 0,
+  });
   return (
     <SiteShell>
       <div className="mx-auto max-w-sm px-4 py-16">
-        <h1 className="text-3xl font-bold">Entrar</h1>
+        <h1 className="text-3xl font-bold">{admin ? "Entrar como administrador" : "Entrar"}</h1>
         <form className="mt-8 space-y-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
-          <div><Label htmlFor="email">E-mail</Label><Input id="email" type="email" required className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div><Label htmlFor="pw">Senha</Label><Input id="pw" type="password" required className="mt-1" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+          <div><Label htmlFor="email">E-mail</Label><Input id="email" type="email" autoComplete="username" required disabled={m.isPending} className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+          <div><Label htmlFor="pw">Senha</Label><Input id="pw" type="password" autoComplete="current-password" required disabled={m.isPending} className="mt-1" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           {m.isError && <ErrorState message={m.error.message} />}
           <Button type="submit" className="w-full" disabled={m.isPending}>{m.isPending ? "Entrando…" : "Entrar"}</Button>
         </form>
-        <p className="mt-6 text-sm text-muted-foreground">Não tem conta? <Link to="/cadastro" className="text-foreground underline">Cadastre-se</Link></p>
+        {!admin && <p className="mt-6 text-sm text-muted-foreground">Não tem conta? <Link to="/cadastro" className="text-foreground underline">Cadastre-se</Link></p>}
       </div>
     </SiteShell>
   );
