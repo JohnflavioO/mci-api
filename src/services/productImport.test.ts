@@ -29,3 +29,20 @@ describe("normalizePreview", () => {
     expect(p.warnings.length).toBe(1);
   });
 });
+
+import { canPublishPrices, toSavePayload } from "./productImport";
+describe("toSavePayload", () => {
+  const base = { status: "draft" as const, sourceUrl: "https://www.mci.tv/p", name: "X", brand: "", sku: "", description: "", specs: [], images: ["https://www.mci.tv/a.jpg"], targetCategory: "", customerPrice: 200, resellerPrice: 150 };
+  it("mapeia preços sem calcular e não envia importedAt", () => {
+    const p = toSavePayload(base);
+    expect(p.pricing).toEqual({ currency: "BRL", resellerPrice: 150, customerPrice: 200 });
+    expect(p.images).toEqual([{ url: "https://www.mci.tv/a.jpg", position: 0 }]);
+    expect(p.brand).toBeNull();
+    expect(p.category).toBeNull();
+    expect("importedAt" in p).toBe(false);
+  });
+  it("publicar exige os dois preços > 0", () => {
+    expect(canPublishPrices({ customerPrice: 200, resellerPrice: 0 })).toBe(false);
+    expect(canPublishPrices({ customerPrice: 200, resellerPrice: 150 })).toBe(true);
+  });
+});
