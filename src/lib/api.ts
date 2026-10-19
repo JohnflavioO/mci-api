@@ -12,8 +12,8 @@ export class ApiError extends Error {
 export const isApiConfigured = () => baseUrl !== "";
 
 /**
- * Token da sessão atual, mantido só em memória. Nenhum login real existe ainda:
- * o futuro fluxo de autenticação deve chamar setAuthToken() após o servidor emitir o token.
+ * Token da sessão atual, mantido só em memória.
+ * O login administrativo chama setAuthToken() após o servidor emitir o token.
  */
 let authToken: string | null = null;
 export const setAuthToken = (token: string | null) => {

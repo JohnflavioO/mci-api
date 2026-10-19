@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { ErrorState, SuccessState } from "@/components/shop/states";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { categories } from "@/lib/demo-data";
+import { ApiError, hasAuthToken } from "@/lib/api";
 import {
   IMPORT_ENDPOINTS,
   canPublishPrices,
@@ -70,8 +71,10 @@ function ImportPage() {
     onSuccess: (p) => { setPreview(p); setDraft(toDraft(p)); setConfirmed(false); },
   });
   const saveM = useMutation({
-    mutationFn: (status: ImportSaveInput["status"]) =>
-      productImportService.save({ ...draft!, status }),
+    mutationFn: (status: ImportSaveInput["status"]) => {
+      if (!draft) throw new ApiError("Busque o produto antes de salvar.", 400);
+      return productImportService.save({ ...draft, status });
+    },
   });
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));
@@ -81,6 +84,18 @@ function ImportPage() {
     if (!draft.targetCategory) errors.push("Escolha a categoria de destino.");
   }
   const canPublish = errors.length === 0 && draft != null && canPublishPrices(draft) && confirmed;
+
+  if (!hasAuthToken()) {
+    return (
+      <div className="max-w-4xl">
+        <h1 className="text-3xl font-bold">Importar produto por link</h1>
+        <p className="mt-4 text-muted-foreground">
+          {fetchM.isError ? "Sua sessão expirou. Entre novamente como administrador." : "Entre como administrador para buscar o produto."}
+        </p>
+        <Button asChild className="mt-6"><Link to="/entrar" search={{ admin: true }}>Entrar como administrador</Link></Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl">

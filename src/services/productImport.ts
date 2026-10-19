@@ -1,9 +1,9 @@
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError, hasAuthToken, setAuthToken } from "@/lib/api";
 
 /**
  * Importação de produto por link da loja mci.tv.
  * A extração acontece SOMENTE no backend (validação de domínio + proteção SSRF).
- * Os endpoints abaixo ainda não existem na API; a interface trata 404/501 como "aguardando endpoint".
+ * A prévia exige um token emitido pelo login administrativo da API.
  */
 export const IMPORT_ENDPOINTS = {
   preview: "/admin/products/import/preview",
@@ -135,11 +135,23 @@ export function normalizePreview(raw: BackendPreview, requestedUrl: string): Imp
 }
 
 export const productImportService = {
-  preview: async (url: string) =>
-    normalizePreview(
-      await apiFetch<BackendPreview>(IMPORT_ENDPOINTS.preview, { method: "POST", body: JSON.stringify({ url }) }, 30000),
-      url,
-    ),
+  preview: async (url: string) => {
+    if (!hasAuthToken()) throw new ApiError("Entre como administrador para buscar o produto.", 401);
+    try {
+      return normalizePreview(
+        await apiFetch<BackendPreview>(IMPORT_ENDPOINTS.preview, { method: "POST", body: JSON.stringify({ url }) }, 30000),
+        url,
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setAuthToken(null);
+        throw new ApiError("Sua sessão expirou. Entre novamente como administrador.", 401);
+      }
+      if (error instanceof ApiError && error.status === 403)
+        throw new ApiError("Sua conta não tem autorização para importar produtos.", 403);
+      throw error;
+    }
+  },
   save: (input: ImportSaveInput) => {
     if (input.status === "published" && !canPublishPrices(input))
       return Promise.reject(new ApiError("Para publicar, informe os dois preços maiores que zero.", 400));

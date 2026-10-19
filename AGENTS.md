@@ -14,3 +14,4 @@
 - All HTTP calls go through `src/lib/api.ts` + `src/services/*`; prices, permissions and commissions are decided by the API, never computed in the frontend.
 - Demo content lives only in `src/lib/demo-data.ts` and must render with the `DemoBadge`, so it is never mistaken for real data.
 - Public frontend configuration goes in the project-root `.env` with the `VITE_` prefix (read only through `src/lib/api.ts`); real secrets never go there — they stay server-side.
+- Administrative import reuses `/entrar?admin=true` and `authService.login` to obtain an API-issued bearer token; keep it in memory only, require a new login after reload or preview 401, and leave authorization to the external API.
