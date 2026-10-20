@@ -3,6 +3,7 @@ import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { DemoBadge } from "@/components/shop/states";
 import { categories, demoProducts } from "@/lib/demo-data";
+import { fromDemo } from "@/services/catalog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -53,7 +54,7 @@ function Index() {
           <DemoBadge />
         </div>
         <div className="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4">
-          {demoProducts.slice(0, 4).map((p) => <ProductCard key={p.slug} product={p} />)}
+          {demoProducts.slice(0, 4).map(fromDemo).map((p) => <ProductCard key={p.slug} product={p} />)}
         </div>
       </section>
     </SiteShell>
