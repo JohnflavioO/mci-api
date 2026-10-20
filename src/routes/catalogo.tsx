@@ -4,8 +4,8 @@ import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { DemoBadge, EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
 import { Input } from "@/components/ui/input";
-import { categories } from "@/lib/demo-data";
 import { catalogService } from "@/services";
+import { categoriesOf, filterCatalog } from "@/services/catalog";
 
 type Search = { q?: string | undefined; categoria?: string | undefined; disponivel?: boolean | undefined };
 
@@ -34,13 +34,9 @@ function Catalog() {
   const q = useQuery({ queryKey: ["catalog"], queryFn: catalogService.list });
   const set = (patch: Partial<Search>) => void navigate({ search: (s) => ({ ...s, ...patch }), replace: true });
 
-  const term = (search.q ?? "").toLowerCase();
-  const list = (q.data?.products ?? []).filter(
-    (p) =>
-      (!term || p.name.toLowerCase().includes(term)) &&
-      (!search.categoria || p.category === search.categoria) &&
-      (!search.disponivel || p.inStock),
-  );
+  const all = q.data?.products ?? [];
+  const categories = categoriesOf(all);
+  const list = filterCatalog(all, search);
 
   return (
     <SiteShell>
