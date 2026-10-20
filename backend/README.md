@@ -29,3 +29,8 @@ O frontend usa `VITE_API_BASE_URL` (ex.: `https://api.seudominio.com`).
 - `POST /api/v1/admin/products/import/preview` `{ url }` → prévia (campos ausentes = `null`, `missingFields`, `warnings`, `duplicates` por URL/SKU).
 - `POST /api/v1/admin/products/import` → salva rascunho/publicado, registrando `sourceUrl` e `importedAt`.
 - Segurança: aceitar só `https://www.mci.tv`/`mci.tv`, resolver DNS e bloquear IPs privados/loopback/link-local, não seguir redirects para fora do domínio, timeout e limite de tamanho; exigir superadministrador.
+
+## Catálogo público (backend/src/products.ts — aplicar no repositório da API)
+- `GET /api/v1/products` → `{ products: PublicProduct[] }` (até 500, `CREATED_AT DESC, PRODUCT_ID`).
+- `GET /api/v1/products/:id` → `{ product }` ou 404 `{ error: "Produto não encontrado" }`.
+- Só `STATUS = 'published'` (confirmar em `MCI_PRODUCTS_STATUS_CK`); nunca retorna `RESELLER_PRICE`, `CREATED_BY`, `SOURCE_URL_HASH`.
