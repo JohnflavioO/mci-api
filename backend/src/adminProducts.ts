@@ -67,7 +67,7 @@ const listQuery = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-function parse<T>(schema: z.ZodType<T>, data: unknown): T {
+function parse<S extends z.ZodTypeAny>(schema: S, data: unknown): z.infer<S> {
   const r = schema.safeParse(data);
   if (r.success) return r.data;
   const fields: Record<string, string> = {};
@@ -140,7 +140,7 @@ async function exists(conn: oracledb.Connection, id: string) {
   return (r.rows?.length ?? 0) > 0;
 }
 
-async function bumpVersion(conn: oracledb.Connection, id: string, rowVersion: number, sets: string[], binds: Record<string, unknown>) {
+async function bumpVersion(conn: oracledb.Connection, id: string, rowVersion: number, sets: string[], binds: Record<string, oracledb.BindParameter>) {
   const sql = `UPDATE MCI_PRODUCTS SET ${[...sets, "UPDATED_AT = SYSTIMESTAMP", "ROW_VERSION = ROW_VERSION + 1"].join(", ")}
                 WHERE PRODUCT_ID = :id AND ROW_VERSION = :rowVersion`;
   const r = await conn.execute(sql, { ...binds, id, rowVersion });
@@ -157,7 +157,7 @@ export async function registerAdminProductRoutes(app: FastifyInstance, opts: Adm
   app.get("/api/v1/admin/products", pre, async (req) => {
     const q = parse(listQuery, req.query);
     const where = ["1=1"];
-    const binds: Record<string, unknown> = {};
+    const binds: Record<string, oracledb.BindParameter> = {};
     if (q.status) { where.push("p.STATUS = :status"); binds["status"] = q.status; }
     if (q.q) { where.push("(UPPER(p.NAME) LIKE :term OR p.SKU_NORMALIZED LIKE :term)"); binds["term"] = `%${q.q.toUpperCase()}%`; }
     return withConnection(async (c) => {
@@ -184,7 +184,7 @@ export async function registerAdminProductRoutes(app: FastifyInstance, opts: Adm
     const body = parse(patchSchema, req.body);
     const product = await withTransaction(async (c) => {
       const sets: string[] = [];
-      const binds: Record<string, unknown> = {};
+      const binds: Record<string, oracledb.BindParameter> = {};
       for (const [key, col] of Object.entries(COLS)) {
         const v = body[key as keyof typeof COLS];
         if (v !== undefined) { sets.push(`${col} = :${key}`); binds[key] = v; }
