@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import { config } from "./config.js";
 import { checkDb } from "./db.js";
+import { registerProductRoutes } from "./products.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -34,6 +35,8 @@ export async function buildApp() {
       time: new Date().toISOString(),
     });
   });
+
+  await registerProductRoutes(app);
 
   return app;
 }
