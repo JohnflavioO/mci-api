@@ -88,7 +88,7 @@ function ImportPage() {
   if (!hasAuthToken()) {
     return (
       <div className="max-w-4xl">
-        <h1 className="text-3xl font-bold">Importar produto por link</h1>
+        <h2 className="sr-only">Importar produto por link</h2>
         <p className="mt-4 text-muted-foreground">
           {fetchM.isError ? "Sua sessão expirou. Entre novamente como administrador." : "Entre como administrador para buscar o produto."}
         </p>
@@ -99,7 +99,7 @@ function ImportPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-3xl font-bold">Importar produto por link</h1>
+      <h2 className="sr-only">Importar produto por link</h2>
       <p className="mt-2 text-muted-foreground">Cole o link de um produto da loja www.mci.tv. A busca é feita pelo servidor da MCI.</p>
 
       <form className="mt-6 flex flex-col gap-3 sm:flex-row" onSubmit={(e) => { e.preventDefault(); if (urlValid) fetchM.mutate(); }}>
