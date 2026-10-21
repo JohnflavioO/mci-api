@@ -12,3 +12,9 @@
 # Módulo de produtos (API própria + Oracle)
 - [x] Auditoria: backend/ local só tem /health; login, prévia e importação existem só na VPS.
 - [ ] Listagem, consulta, criação/edição, importação e publicação reais: aguarda código atual do backend da VPS e DDL das tabelas Oracle de produtos/preços/specs/imagens.
+
+# Migration 0002 proposta (Supabase próprio)
+- [x] Criar save_product transacional, controle de versão e permissões, sem execução externa.
+- [x] Criar e executar testes em PostgreSQL local descartável: 45 verificações SQL, dois cenários concorrentes e down/up.
+- [x] Documentar chamada futura do frontend e reversão; manter telas e Oracle intactos.
+- [ ] Aplicação e validação real: aguardam aprovação explícita para executar 0001 revisada + 0002 e testar Auth/PostgREST no ambiente escolhido.
