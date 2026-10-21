@@ -46,9 +46,11 @@ Erros propagam e revertem a chamada inteira, incluindo produto, preços, metadad
 ```sh
 python3 supabase/tests/run_0002_local.py
 bunx vitest run
-bun backend/test/unit/errors.test.ts
+NODE_PATH=/tmp/mci-0002-unit-deps/node_modules bun test backend/test/unit/errors.test.ts
 ```
 
 O teste local usa PostgreSQL real descartável, roles/Auth simulados, dois clientes concorrentes (RPC vs RPC e filho direto vs RPC), rollback após escrita, limites, publicação, preços, SKU, permissões e down/up com preservação de dados. **Não valida Supabase Auth/PostgREST real.** Os testes Oracle de integração não devem ser executados: requerem staging autorizado e contrariariam o escopo desta etapa.
+
+Executado nesta etapa: **45 verificações SQL**, **2 cenários concorrentes** e **down/up** passaram no PostgreSQL local; **40 testes frontend** e **9 testes unitários da API** passaram. Para estes últimos, dependências ausentes foram instaladas apenas em `/tmp/mci-0002-unit-deps` (oracledb, zod, fastify, dotenv), sem modificar os pacotes do projeto. Não houve verificação manual de tipos nem teste de gravação pelo frontend, que permanece sem integração; o último resultado automático do projeto foi `build OK`.
 
 Pendências: revisão/aprovação para aplicar 0001 revisada + 0002 no ambiente escolhido; validação de autenticação/RLS/RPC através de PostgREST real; integração futura das gravações no frontend em etapa separada. Nada disso foi executado nesta etapa.
