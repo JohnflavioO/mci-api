@@ -73,6 +73,24 @@ select test.assert((select row_version > :before_direct from public.products whe
 select row_version as before_direct from public.products where id=:'pid' \gset
 update public.products set name='Atualizado' where id=:'pid';
 select test.assert((select row_version=:before_direct+1 from public.products where id=:'pid'),'produto direto avança versão');
+select row_version as before_direct from public.products where id=:'pid' \gset
+insert into public.product_specs(product_id,label,value) values(:'pid','Extra','V');
+select test.assert((select row_version > :before_direct from public.products where id=:'pid'),'inserção filha avança versão');
+select row_version as before_direct from public.products where id=:'pid' \gset
+delete from public.product_specs where product_id=:'pid' and label='Extra';
+select test.assert((select row_version > :before_direct from public.products where id=:'pid'),'exclusão filha avança versão');
+-- Os limites são inclusivos; exatamente 20/100 passa.
+select public.save_product(null,null,jsonb_set(jsonb_set(test.payload('BOUNDARY'),'{images}',(select jsonb_agg(jsonb_build_object('url','https://example.test/a','position',i)) from generate_series(0,19) i)), '{specs}',(select jsonb_agg(jsonb_build_object('label','L'||i,'value','V')) from generate_series(1,100) i)));
+select test.assert((select count(*)=20 from public.product_images i join public.products p on p.id=i.product_id where p.sku='BOUNDARY') and (select count(*)=100 from public.product_specs s join public.products p on p.id=s.product_id where p.sku='BOUNDARY'),'limites inclusivos 20 imagens e 100 specs');
+-- Ambos os preços podem ser iguais (revenda não SUPERIOR ao cliente).
+select public.save_product(null,null,jsonb_set(test.payload('EQUAL'),'{pricing,resellerPrice}','100'));
+select test.assert((select reseller_price=100 from public.product_reseller_prices r join public.products p on p.id=r.product_id where p.sku='EQUAL'),'revenda igual ao cliente permitida');
+-- O estado intermediário publicado/incompleto não deve invalidar rascunho FINAL.
+begin;
+insert into public.products(name,sku,status) values('Transição','INTERMEDIATE','published');
+update public.products set status='draft' where sku='INTERMEDIATE';
+commit;
+select test.assert((select status='draft' from public.products where sku='INTERMEDIATE'),'publicação adiada consulta estado final');
 -- Rascunho permite listas vazias e preços null.
 select public.save_product(null,null,test.payload('DRAFT') || '{"status":"draft","images":[],"specs":[],"pricing":{"currency":"BRL","customerPrice":null,"resellerPrice":null}}');
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',false);

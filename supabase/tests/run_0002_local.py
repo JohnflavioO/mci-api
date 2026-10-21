@@ -63,6 +63,20 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
     if first.wait() != 0:
         raise RuntimeError(first.stderr.read())
     print('PASS: concorrência com duas conexões reais')
+    version = sql(f"select row_version from public.products where id='{pid}';").splitlines()[2].strip()
+    first = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV)
+    first.stdin.write(auth + f"begin; update public.product_specs set value='Concorrente' where product_id='{pid}'; select pg_sleep(2); commit;")
+    first.stdin.close()
+    for _ in range(100):
+        if '1' == sql("select count(*) from pg_stat_activity where wait_event='PgSleep';").splitlines()[2].strip():
+            break
+        time.sleep(.03)
+    else:
+        raise RuntimeError('Direct child writer did not acquire lock')
+    sql(auth + f"select test.reject(test.payload(),'40001','concorrência: filho direto invalida RPC','{pid}',{version});")
+    if first.wait() != 0:
+        raise RuntimeError(first.stderr.read())
+    print('PASS: escrita filha concorrente invalida snapshot RPC')
     # Non-destructive down/up: product rows and versions must not change.
     before = sql('select id,row_version from public.products order by id;')
     for name in ['0002_save_product.down.sql','0002_save_product.up.sql']:
