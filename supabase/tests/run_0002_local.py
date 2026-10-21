@@ -13,11 +13,17 @@ USER = 'pgt' if os.geteuid() == 0 else pwd.getpwuid(os.getuid()).pw_name
 account = pwd.getpwnam(USER)
 if os.geteuid() == 0:
     os.chown(TMP, account.pw_uid, account.pw_gid)
-PREFIX = ['runuser', '-u', USER, '--'] if os.geteuid() == 0 else []
+PREFIX = []
 ENV = {k: v for k, v in os.environ.items() if not k.startswith('PG')}
 
+def demote():
+    if os.geteuid() == 0:
+        os.setgroups([])
+        os.setgid(account.pw_gid)
+        os.setuid(account.pw_uid)
+
 def run(args, **kw):
-    return subprocess.run(args, env=ENV, check=True, text=True, **kw)
+    return subprocess.run(args, env=ENV, check=True, text=True, preexec_fn=demote, **kw)
 
 def sql(text):
     return run(PSQL, input=text, capture_output=True).stdout
