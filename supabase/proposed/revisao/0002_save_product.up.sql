@@ -26,6 +26,8 @@ create trigger specs_aggregate_bump after insert or update or delete on public.p
 create trigger images_aggregate_bump after insert or update or delete on public.product_images for each row execute function public.tg_bump_product_aggregate();
 create trigger prices_aggregate_bump after insert or update or delete on public.product_prices for each row execute function public.tg_bump_product_aggregate();
 create trigger reseller_aggregate_bump after insert or update or delete on public.product_reseller_prices for each row execute function public.tg_bump_product_aggregate();
+create trigger prices_freeze before update of product_id on public.product_prices for each row execute function public.tg_freeze_product_id();
+create trigger reseller_freeze before update of product_id on public.product_reseller_prices for each row execute function public.tg_freeze_product_id();
 
 -- Relação entre preços precisa avaliar o estado FINAL (subir/descer ambos é válido).
 -- Quantidades de specs/imagens continuam verificadas imediatamente pela 0001.
@@ -86,7 +88,7 @@ begin
   if (p_data->>'status') not in ('draft','published') then raise exception 'Status inválido.' using errcode = '22023'; end if;
   st := (p_data->>'status')::public.product_status;
   if jsonb_typeof(p_data->'pricing') is distinct from 'object' or p_data->'pricing'->>'currency' is distinct from 'BRL'
-    or (p_data->'pricing' - array['currency','customerPrice','resellerPrice']) <> '{}'::jsonb then
+    or ((p_data->'pricing') - array['currency','customerPrice','resellerPrice']) <> '{}'::jsonb then
     raise exception 'Preços exigem currency BRL, customerPrice e resellerPrice.' using errcode = '22023';
   end if;
   foreach k in array array['customerPrice','resellerPrice'] loop
@@ -143,7 +145,7 @@ begin
   select row_version into version from public.products where id=pid;
   return jsonb_build_object('id',pid,'rowVersion',version);
 exception when unique_violation then
-  -- Mantém o SQLSTATE e a constraint para distinguir SKU, imagem e rótulo repetidos.
+  -- Mantém o SQLSTATE; não expõe valores do registro que causou duplicidade.
   raise exception 'SKU, posição de imagem ou rótulo de especificação duplicado.' using errcode = '23505';
 end $$;
 revoke all on function public.save_product(uuid,integer,jsonb) from public, anon, service_role;

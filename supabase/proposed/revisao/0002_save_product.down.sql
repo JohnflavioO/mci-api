@@ -10,6 +10,8 @@ drop trigger specs_aggregate_bump on public.product_specs;
 drop trigger images_aggregate_bump on public.product_images;
 drop trigger prices_aggregate_bump on public.product_prices;
 drop trigger reseller_aggregate_bump on public.product_reseller_prices;
+drop trigger prices_freeze on public.product_prices;
+drop trigger reseller_freeze on public.product_reseller_prices;
 drop function public.tg_lock_product_aggregate(), public.tg_bump_product_aggregate();
 drop trigger prices_limits on public.product_prices;
 drop trigger reseller_limits on public.product_reseller_prices;
