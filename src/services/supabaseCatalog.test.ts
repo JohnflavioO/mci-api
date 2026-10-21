@@ -45,3 +45,26 @@ describe("createSupabaseCatalog", () => {
     expect(eq).toHaveBeenCalledWith("status", "published");
   });
 });
+
+import { parseCatalogSource } from "@/lib/api";
+describe("parseCatalogSource", () => {
+  it("defaults to oracle", () => {
+    expect(parseCatalogSource(undefined)).toBe("oracle");
+    expect(parseCatalogSource("SUPABASE")).toBe("oracle");
+  });
+  it("only explicit 'supabase' enables Supabase", () => {
+    expect(parseCatalogSource("supabase")).toBe("supabase");
+  });
+});
+
+describe("catalogService source selection", () => {
+  it("uses Oracle API when no source is set", async () => {
+    vi.resetModules();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ products: [] }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { catalogService } = await import("./catalog");
+    await catalogService.list();
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/products");
+    vi.unstubAllGlobals();
+  });
+});

@@ -1,4 +1,4 @@
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError, catalogSource } from "@/lib/api";
 import { demoProducts, type Product as DemoProduct } from "@/lib/demo-data";
 
 /** Contrato público de GET /products e GET /products/:id (ver backend/src/products.ts). */
@@ -68,7 +68,8 @@ const shouldFallback = (e: unknown) =>
 
 export const demoList = (): CatalogList => ({ products: demoProducts.map(fromDemo), isDemo: true });
 
-export const catalogService = {
+/** Leitura via API Oracle (origem padrão). */
+export const oracleCatalogService = {
   list: async (): Promise<CatalogList> => {
     try {
       const body = await apiFetch<{ products?: ApiProduct[] }>("/products");
@@ -90,6 +91,24 @@ export const catalogService = {
       return { product: demo ? fromDemo(demo) : null, isDemo: true };
     }
   },
+};
+
+/** Leitura via Supabase próprio: sem fallback demo — erros reais propagam. */
+export const supabaseCatalogService = {
+  list: async (): Promise<CatalogList> => {
+    const { createSupabaseCatalog } = await import("./supabaseCatalog");
+    return { products: await createSupabaseCatalog().listPublished(), isDemo: false };
+  },
+  get: async (slug: string): Promise<CatalogItem> => {
+    const { createSupabaseCatalog } = await import("./supabaseCatalog");
+    return { product: await createSupabaseCatalog().get(slug), isDemo: false };
+  },
+};
+
+/** Seleção explícita por VITE_CATALOG_SOURCE; Oracle é o padrão. */
+export const catalogService = {
+  list: () => (catalogSource() === "supabase" ? supabaseCatalogService : oracleCatalogService).list(),
+  get: (slug: string) => (catalogSource() === "supabase" ? supabaseCatalogService : oracleCatalogService).get(slug),
 };
 
 /** Categorias derivadas dos produtos exibidos (sem lista fixa quando conectado). */
