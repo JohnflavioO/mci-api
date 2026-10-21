@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, hasAuthToken, setAuthToken } from "@/lib/api";
+import { apiFetch, ApiError, catalogSource, hasAuthToken, setAuthToken } from "@/lib/api";
 import { fromApi, type ApiProduct, type CatalogProduct } from "./catalog";
 
 /**
@@ -14,6 +14,10 @@ export const ADMIN_PRODUCT_ENDPOINTS = {
 
 /** Lista administrativa: sem dados de demonstração — erro real é propagado. */
 export async function listPublishedProducts(): Promise<CatalogProduct[]> {
+  if (catalogSource() === "supabase") {
+    const { createSupabaseCatalog } = await import("./supabaseCatalog");
+    return createSupabaseCatalog().listPublished();
+  }
   const body = await apiFetch<{ products?: ApiProduct[] }>(ADMIN_PRODUCT_ENDPOINTS.list);
   return (body?.products ?? []).map(fromApi);
 }

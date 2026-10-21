@@ -11,6 +11,11 @@ export class ApiError extends Error {
 
 export const isApiConfigured = () => baseUrl !== "";
 
+export type CatalogSource = "oracle" | "supabase";
+/** Origem de leitura do catálogo. Só "supabase" explícito ativa o Supabase; qualquer outro valor = Oracle. */
+export const parseCatalogSource = (v: unknown): CatalogSource => (v === "supabase" ? "supabase" : "oracle");
+export const catalogSource = (): CatalogSource => parseCatalogSource(import.meta.env["VITE_CATALOG_SOURCE"]);
+
 /**
  * Token da sessão atual, mantido só em memória.
  * O login administrativo chama setAuthToken() após o servidor emitir o token.
