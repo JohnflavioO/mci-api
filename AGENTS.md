@@ -19,3 +19,4 @@
 - The own Supabase client lives in `src/lib/supabase.ts` (`getSupabase()`, public key from `VITE_SUPABASE_*` in root `.env`); never put secret/service_role keys in the frontend, and services migrate to it one at a time.
 - Catalog reads pick their source via `VITE_CATALOG_SOURCE` (`catalogSource()` in `src/lib/api.ts`); only the exact value `supabase` enables `src/services/supabaseCatalog.ts`, Oracle is the default until real validation.
 - Proposed Supabase product writes use the admin-only SECURITY INVOKER `save_product` full-snapshot RPC with a locked aggregate version; child triggers also advance that version so direct writes cannot leave stale edits undetected. SQL proposals and disposable local tests stay outside the frontend until explicitly approved.
+- Reseller onboarding: signup trigger creates a 'pendente' application; only the admin-checked SECURITY DEFINER RPC review_reseller_application grants the revendedor role (proposal 0003, not applied).
