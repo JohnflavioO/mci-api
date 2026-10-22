@@ -50,7 +50,7 @@ const rules: Record<UF, (d: string) => boolean> = {
     return d1 === Number(d[n - 2]) && d2 === Number(d[n - 1]);
   },
   CE: (d) => d.length === 9 && m11b(sum(d, w92)) === last(d),
-  DF: (d) => d.length === 13 && d.startsWith("07") && rules.AC("01" + d.slice(2)) === rules.AC("01" + d.slice(2))
+  DF: (d) => d.length === 13 && d.startsWith("07")
     && m11b(sum(d, [4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])) === Number(d[11])
     && m11b(sum(d, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])) === Number(d[12]),
   ES: (d) => d.length === 9 && m11a(sum(d, w92)) === last(d),
