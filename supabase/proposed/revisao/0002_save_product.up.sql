@@ -124,6 +124,13 @@ begin
       values(btrim(p_data->>'name'),btrim(p_data->>'brand'),nullif(btrim(p_data->>'sku'),''),nullif(btrim(p_data->>'category'),''),p_data->>'description',st)
       returning id into pid;
   else
+    -- Ordem de travas igual à de UPDATE/DELETE direto em filho (linha filha -> produto).
+    -- Travar o produto primeiro causava deadlock (40P01) com sessão que já segurava
+    -- uma linha filha existente. Ordem fixa: specs, imagens, preço, revenda, produto.
+    perform 1 from public.product_specs where product_id = p_id order by id for update;
+    perform 1 from public.product_images where product_id = p_id order by id for update;
+    perform 1 from public.product_prices where product_id = p_id for update;
+    perform 1 from public.product_reseller_prices where product_id = p_id for update;
     select row_version into version from public.products where id = p_id for update;
     if not found then raise exception 'Produto não encontrado.' using errcode = 'P0002'; end if;
     if version <> p_expected_row_version then raise exception 'Conflito de versão: produto alterado por outra pessoa. Recarregue.' using errcode = '40001', detail = format('expected=%s, current=%s',p_expected_row_version,version); end if;
