@@ -59,23 +59,23 @@ export const authService = {
     };
 
     if (role === "cliente") {
-      metadata.full_name = data["Nome completo"]?.trim() ?? "";
-      metadata.phone = data["Telefone"]?.trim() ?? "";
+      metadata["full_name"] = data["Nome completo"]?.trim() ?? "";
+      metadata["phone"] = data["Telefone"]?.trim() ?? "";
     } else if (role === "revendedor") {
       const problem = validateReseller(data);
       if (problem) throw new ApiError(problem, 400);
       const ie = data["Inscrição Estadual"]?.trim() ?? "";
-      metadata.company_name = data["Razão social"]?.trim() ?? "";
-      metadata.trade_name = data["Nome fantasia"]?.trim() ?? "";
-      metadata.cnpj = onlyDigits(data["CNPJ"] ?? "");
-      metadata.state_registration = isIeExempt(ie) ? "ISENTO" : onlyDigits(ie);
-      metadata.uf = data["UF"] ?? "";
-      metadata.full_name = data["Responsável"]?.trim() ?? "";
-      metadata.phone = onlyDigits(data["Telefone"] ?? "");
+      metadata["company_name"] = data["Razão social"]?.trim() ?? "";
+      metadata["trade_name"] = data["Nome fantasia"]?.trim() ?? "";
+      metadata["cnpj"] = onlyDigits(data["CNPJ"] ?? "");
+      metadata["state_registration"] = isIeExempt(ie) ? "ISENTO" : onlyDigits(ie);
+      metadata["uf"] = data["UF"] ?? "";
+      metadata["full_name"] = data["Responsável"]?.trim() ?? "";
+      metadata["phone"] = onlyDigits(data["Telefone"] ?? "");
     } else {
-      metadata.full_name = data["Nome completo"]?.trim() ?? "";
-      metadata.cpf = data["CPF"]?.trim() ?? "";
-      metadata.phone = data["Telefone"]?.trim() ?? "";
+      metadata["full_name"] = data["Nome completo"]?.trim() ?? "";
+      metadata["cpf"] = data["CPF"]?.trim() ?? "";
+      metadata["phone"] = data["Telefone"]?.trim() ?? "";
     }
 
     const { error } = await supabase.auth.signUp({
