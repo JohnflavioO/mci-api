@@ -1,30 +1,91 @@
+
 import { apiFetch, ApiError } from "@/lib/api";
+import { getSupabase } from "@/lib/supabase";
 import { loginAdmin } from "./adminAuth";
 
-/** Saúde da API — único endpoint já existente. */
 export const healthService = {
-  get: () => apiFetch<{ status: string; db: { status: string } }>("/health"),
+  get: () =>
+    apiFetch<{ status: string; db: { status: string } }>("/health"),
 };
-
-/** Rotas ainda não implementadas na API: falham de forma explícita, nunca simulam sucesso. */
-const pending = (feature: string): Promise<never> =>
-  Promise.reject(new ApiError(`${feature} ainda não está disponível na API.`, 501));
 
 export { catalogService } from "./catalog";
 
 export type Role = "cliente" | "revendedor" | "afiliado";
 
 export const authService = {
-  login: (email: string, password: string, admin = false) =>
-    admin ? loginAdmin(email, password) : pending("O login"),
-  register: (_role: Role, _data: Record<string, string>) => pending("O cadastro"),
+  login: async (email: string, password: string, admin = false) => {
+    if (admin) return loginAdmin(email, password);
+
+    const { error } = await getSupabase().auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (error) {
+      throw new ApiError(
+        error.message.includes("Email not confirmed")
+          ? "Confirme seu e-mail antes de entrar."
+          : "E-mail ou senha inválidos.",
+        401,
+      );
+    }
+  },
+
+  register: async (role: Role, data: Record<string, string>) => {
+    const supabase = getSupabase();
+
+    const email = data["E-mail"]?.trim().toLowerCase();
+    const password = data["Senha"];
+
+    if (!email || !password) {
+      throw new ApiError("Informe um e-mail e uma senha válidos.", 400);
+    }
+
+    const metadata: Record<string, string> = {
+      registration_type: role,
+    };
+
+    if (role === "cliente") {
+      metadata.full_name = data["Nome completo"]?.trim() ?? "";
+      metadata.phone = data["Telefone"]?.trim() ?? "";
+    } else if (role === "revendedor") {
+      metadata.company_name = data["Razão social"]?.trim() ?? "";
+      metadata.cnpj = data["CNPJ"]?.trim() ?? "";
+      metadata.full_name = data["Responsável"]?.trim() ?? "";
+      metadata.phone = data["Telefone"]?.trim() ?? "";
+    } else {
+      metadata.full_name = data["Nome completo"]?.trim() ?? "";
+      metadata.cpf = data["CPF"]?.trim() ?? "";
+      metadata.phone = data["Telefone"]?.trim() ?? "";
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata,
+      },
+    });
+
+    if (error) {
+      throw new ApiError(
+        error.message.includes("already registered")
+          ? "Este e-mail já está cadastrado."
+          : "Não foi possível criar a conta. Confira os dados e tente novamente.",
+        400,
+      );
+    }
+  },
 };
 
 export const orderService = {
-  create: (_items: { slug: string; qty: number }[]) => pending("A finalização de pedidos"),
-  list: () => pending("A lista de pedidos"),
+  create: (_items: { slug: string; qty: number }[]) =>
+    Promise.reject(new ApiError("A finalização de pedidos ainda não está disponível na API.", 501)),
+  list: () =>
+    Promise.reject(new ApiError("A lista de pedidos ainda não está disponível na API.", 501)),
 };
 
 export const portalService = {
-  section: (area: string, section: string) => pending(`A seção “${section}” de ${area}`),
+  section: (area: string, section: string) =>
+    Promise.reject(new ApiError(`A seção “${section}” de ${area} ainda não está disponível na API.`, 501)),
 };
