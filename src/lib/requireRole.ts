@@ -10,12 +10,19 @@ export async function requireRole(requiredRole: PortalRole) {
   try {
     supabase = getSupabase();
   } catch {
-    throw redirect({ to: "/entrar", search: { admin: requiredRole === "admin" } });
+    throw redirect({
+      to: "/entrar",
+      search: { admin: requiredRole === "admin", next: window.location.pathname + window.location.search },
+    });
   }
 
+  const next = window.location.pathname + window.location.search;
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
-    throw redirect({ to: "/entrar", search: { admin: requiredRole === "admin" } });
+    throw redirect({
+      to: "/entrar",
+      search: { admin: requiredRole === "admin", next },
+    });
   }
 
   const { data: roles, error: roleError } = await supabase
