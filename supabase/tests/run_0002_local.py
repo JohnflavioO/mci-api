@@ -110,7 +110,7 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
         b = subprocess.run(PSQL, input=auth + f"select public.save_product('{pid}',{version},test.payload());", capture_output=True, text=True, env=ENV, preexec_fn=demote)
         a_err = a.stderr.read(); a_code = a.wait()
         if 'deadlock' in (a_err + b.stderr).lower():
-            raise RuntimeError(f'FAIL: deadlock em {label}: {a_err} {b.stderr}')
+            raise RuntimeError(f'FAIL: deadlock em {label}: A={a_err} B={b.stderr}')
         if a_code != 0:
             raise RuntimeError(f'FAIL: escrita direta falhou em {label}: {a_err}')
         if b.returncode == 0 or 'Conflito de vers' not in b.stderr:
