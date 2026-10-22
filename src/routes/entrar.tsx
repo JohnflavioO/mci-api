@@ -1,3 +1,4 @@
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -9,14 +10,37 @@ import { Label } from "@/components/ui/label";
 import { authService } from "@/services";
 
 export const Route = createFileRoute("/entrar")({
-  validateSearch: (search: Record<string, unknown>): { admin?: boolean } =>
-    search["admin"] === true || search["admin"] === "true" ? { admin: true } : {},
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { admin?: boolean; next?: string } => {
+    const result: { admin?: boolean; next?: string } = {};
+
+    if (search["admin"] === true || search["admin"] === "true") {
+      result.admin = true;
+    }
+
+    if (
+      typeof search["next"] === "string" &&
+      search["next"].startsWith("/") &&
+      !search["next"].startsWith("//")
+    ) {
+      result.next = search["next"];
+    }
+
+    return result;
+  },
   head: () => ({
     meta: [
       { title: "Entrar | MCI Comercial" },
-      { name: "description", content: "Acesse sua conta de cliente, revendedor ou afiliado MCI." },
+      {
+        name: "description",
+        content: "Acesse sua conta de cliente, revendedor ou afiliado MCI.",
+      },
       { property: "og:title", content: "Entrar | MCI Comercial" },
-      { property: "og:description", content: "Acesse sua conta de cliente, revendedor ou afiliado MCI." },
+      {
+        property: "og:description",
+        content: "Acesse sua conta de cliente, revendedor ou afiliado MCI.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -25,30 +49,92 @@ export const Route = createFileRoute("/entrar")({
 });
 
 function Login() {
-  const { admin } = Route.useSearch();
+  const { admin, next } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const m = useMutation({
     mutationFn: () => authService.login(email, password, admin === true),
     onSuccess: async () => {
       setPassword("");
-      if (admin) await navigate({ to: "/admin/importar" });
+
+      if (admin) {
+        await navigate({ to: "/admin/importar" });
+        return;
+      }
+
+      if (next) {
+        await navigate({
+          to: next as "/revendedor" | "/afiliado" | "/catalogo",
+        });
+      }
     },
     onError: () => setPassword(""),
     gcTime: 0,
   });
+
   return (
     <SiteShell>
       <div className="mx-auto max-w-sm px-4 py-16">
-        <h1 className="text-3xl font-bold">{admin ? "Entrar como administrador" : "Entrar"}</h1>
-        <form className="mt-8 space-y-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
-          <div><Label htmlFor="email">E-mail</Label><Input id="email" type="email" autoComplete="username" required disabled={m.isPending} className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div><Label htmlFor="pw">Senha</Label><Input id="pw" type="password" autoComplete="current-password" required disabled={m.isPending} className="mt-1" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+        <h1 className="text-3xl font-bold">
+          {admin ? "Entrar como administrador" : "Entrar"}
+        </h1>
+
+        <form
+          className="mt-8 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            m.mutate();
+          }}
+        >
+          <div>
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="username"
+              required
+              disabled={m.isPending}
+              className="mt-1"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="pw">Senha</Label>
+            <Input
+              id="pw"
+              type="password"
+              autoComplete="current-password"
+              required
+              disabled={m.isPending}
+              className="mt-1"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
           {m.isError && <ErrorState message={m.error.message} />}
-          <Button type="submit" className="w-full" disabled={m.isPending}>{m.isPending ? "Entrando…" : "Entrar"}</Button>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={m.isPending}
+          >
+            {m.isPending ? "Entrando…" : "Entrar"}
+          </Button>
         </form>
-        {!admin && <p className="mt-6 text-sm text-muted-foreground">Não tem conta? <Link to="/cadastro" className="text-foreground underline">Cadastre-se</Link></p>}
+
+        {!admin && (
+          <p className="mt-6 text-sm text-muted-foreground">
+            Não tem conta?{" "}
+            <Link to="/cadastro" className="text-foreground underline">
+              Cadastre-se
+            </Link>
+          </p>
+        )}
       </div>
     </SiteShell>
   );
