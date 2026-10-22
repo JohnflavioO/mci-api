@@ -2,11 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import type { CatalogProduct } from "./catalog";
 
-/**
- * Adaptador Supabase para o catálogo (tabelas propostas em
- * supabase/proposed/revisao/0001_catalog.up.sql). Ainda NÃO ligado às telas:
- * a integração Oracle (catalog.ts / adminProducts.ts) continua ativa até as tabelas existirem.
- */
+/** Adaptador Supabase para catálogo público e administração de produtos. */
 export type SbProductRow = {
   id: string;
   name: string;
@@ -84,6 +80,33 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       const { data, error } = await sb().from("products").select(ADMIN_SELECT).order("updated_at", { ascending: false });
       if (error) throw new Error(error.message);
       return ((data ?? []) as unknown as SbProductRow[]).map(fromSupabase);
+    },
+    saveAdmin: async (input: {
+      id?: string;
+      name: string;
+      brand: string;
+      sku: string;
+      category: string;
+      description: string;
+      status: "draft" | "published";
+      customerPrice: number | null;
+      resellerPrice: number | null;
+      imageUrl: string;
+    }): Promise<string> => {
+      const { data, error } = await sb().rpc("admin_save_product", {
+        p_id: input.id || null,
+        p_name: input.name.trim(),
+        p_brand: input.brand.trim(),
+        p_sku: input.sku.trim() || null,
+        p_category: input.category.trim() || null,
+        p_description: input.description.trim() || null,
+        p_status: input.status,
+        p_customer_price: input.customerPrice,
+        p_reseller_price: input.resellerPrice,
+        p_image_url: input.imageUrl.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+      return String(data);
     },
   };
 }
