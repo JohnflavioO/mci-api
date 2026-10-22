@@ -13,10 +13,15 @@ export function requireRole(requiredRole: PortalRole) {
     const supabase = getSupabase();
     const { data, error } = await supabase.auth.getUser();
 
+    const next = window.location.pathname + window.location.search;
+
     if (error || !data.user) {
       throw redirect({
         to: "/entrar",
-        search: { admin: requiredRole === "admin" },
+        search: {
+          admin: requiredRole === "admin",
+          next,
+        },
       });
     }
 
@@ -31,7 +36,10 @@ export function requireRole(requiredRole: PortalRole) {
     ) {
       throw redirect({
         to: "/entrar",
-        search: { admin: requiredRole === "admin" },
+        search: {
+          admin: requiredRole === "admin",
+          next,
+        },
       });
     }
   };
