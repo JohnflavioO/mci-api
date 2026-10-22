@@ -48,7 +48,7 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
     pid, version = sql("select id,row_version from public.products where sku='BASE';").splitlines()[2].strip().split('|')
     pid, version = pid.strip(), version.strip()
     lock_sql = auth + f"begin; select public.save_product('{pid}',{version},test.payload()); select pg_sleep(2); commit;"
-    first = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV)
+    first = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV, preexec_fn=demote)
     first.stdin.write(lock_sql)
     first.stdin.close()
     # Wait until the first transaction holds its parent lock, not a blind sleep.
@@ -64,7 +64,7 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
         raise RuntimeError(first.stderr.read())
     print('PASS: concorrência com duas conexões reais')
     version = sql(f"select row_version from public.products where id='{pid}';").splitlines()[2].strip()
-    first = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV)
+    first = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV, preexec_fn=demote)
     first.stdin.write(auth + f"begin; update public.product_specs set value='Concorrente' where product_id='{pid}'; select pg_sleep(2); commit;")
     first.stdin.close()
     for _ in range(100):
@@ -77,6 +77,74 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
     if first.wait() != 0:
         raise RuntimeError(first.stderr.read())
     print('PASS: escrita filha concorrente invalida snapshot RPC')
+    def wait_sleep(label):
+        for _ in range(200):
+            if '1' == sql("select count(*) from pg_stat_activity where wait_event='PgSleep';").splitlines()[2].strip():
+                return
+            time.sleep(.03)
+        raise RuntimeError(label + ': concurrent session did not start')
+
+    def current_version():
+        return sql(f"select row_version from public.products where id='{pid}';").splitlines()[2].strip()
+
+    # Deadlock scenarios: session A already holds an EXISTING child row lock and only
+    # afterwards updates/deletes it (its trigger then needs the parent). Session B runs
+    # save_product meanwhile. Before the fix B held the parent and waited on the child
+    # -> 40P01. Now B must wait, A must commit, and B must fail cleanly with 40001.
+    scenarios = [
+        ('UPDATE spec', f"select 1 from public.product_specs where product_id='{pid}' for update", f"update public.product_specs set value='Concorrente 2' where product_id='{pid}'"),
+        ('DELETE spec', f"select 1 from public.product_specs where product_id='{pid}' for update", f"delete from public.product_specs where product_id='{pid}'"),
+        ('UPDATE image', f"select 1 from public.product_images where product_id='{pid}' for update", f"update public.product_images set url='https://example.test/c.jpg' where product_id='{pid}'"),
+        ('DELETE image', f"select 1 from public.product_images where product_id='{pid}' and position=1 for update", f"delete from public.product_images where product_id='{pid}' and position=1"),
+        ('UPDATE customer price', f"select 1 from public.product_prices where product_id='{pid}' for update", f"update public.product_prices set customer_price=120 where product_id='{pid}'"),
+        ('UPDATE reseller price', f"select 1 from public.product_reseller_prices where product_id='{pid}' for update", f"update public.product_reseller_prices set reseller_price=60 where product_id='{pid}'"),
+    ]
+    two_images = "test.payload() || jsonb_build_object('images', jsonb_build_array(jsonb_build_object('url','https://example.test/0.jpg','position',0), jsonb_build_object('url','https://example.test/1.jpg','position',1)))"
+    for label, lock, write in scenarios:
+        sql(auth + f"select public.save_product('{pid}',{current_version()},{two_images});")
+        version = current_version()
+        a = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV, preexec_fn=demote)
+        a.stdin.write(auth + f"begin; {lock}; select pg_sleep(1.5); {write}; commit;")
+        a.stdin.close()
+        wait_sleep(label)
+        b = subprocess.run(PSQL, input=auth + f"select public.save_product('{pid}',{version},test.payload());", capture_output=True, text=True, env=ENV, preexec_fn=demote)
+        a_err = a.stderr.read(); a_code = a.wait()
+        if 'deadlock' in (a_err + b.stderr).lower():
+            raise RuntimeError(f'FAIL: deadlock em {label}: {a_err} {b.stderr}')
+        if a_code != 0:
+            raise RuntimeError(f'FAIL: escrita direta falhou em {label}: {a_err}')
+        if b.returncode == 0 or 'Conflito de vers' not in b.stderr:
+            raise RuntimeError(f'FAIL: RPC deveria falhar com 40001 em {label}: {b.stderr}')
+        if int(current_version()) <= int(version):
+            raise RuntimeError(f'FAIL: versão não avançou em {label}')
+        print(f'PASS: sem deadlock, 40001 limpo: {label} direto vs save_product')
+
+    # Reverse order: RPC holds the aggregate, direct child write waits and then applies.
+    version = current_version()
+    a = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV, preexec_fn=demote)
+    a.stdin.write(auth + f"begin; select public.save_product('{pid}',{version},test.payload()); select pg_sleep(1.5); commit;")
+    a.stdin.close()
+    wait_sleep('RPC first')
+    sql(auth + f"update public.product_prices set customer_price=130 where product_id='{pid}';")
+    if a.wait() != 0:
+        raise RuntimeError(a.stderr.read())
+    assert sql(f"select customer_price from public.product_prices where product_id='{pid}';").splitlines()[2].strip() == '130.00'
+    print('PASS: RPC primeiro, escrita direta espera e aplica sem deadlock')
+
+    # RPC that fails after waiting leaves nothing; a second RPC with the SAME version then wins.
+    version = current_version()
+    before = sql(f"select p.name,p.row_version,pr.customer_price,(select count(*) from public.product_images where product_id=p.id) from public.products p join public.product_prices pr on pr.product_id=p.id where p.id='{pid}';")
+    a = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, env=ENV, preexec_fn=demote)
+    a.stdin.write(auth + f"begin; select public.save_product('{pid}',{version},jsonb_set(test.payload(),'{{name}}','\"Revertido\"')); select pg_sleep(1.5); rollback;")
+    a.stdin.close()
+    wait_sleep('rollback first')
+    assert sql(f"select name from public.products where id='{pid}';").splitlines()[2].strip() != 'Revertido'
+    sql(auth + f"select public.save_product('{pid}',{version},jsonb_set(test.payload(),'{{name}}','\"Vencedor\"'));")
+    a.wait()
+    assert sql(f"select name from public.products where id='{pid}';").splitlines()[2].strip() == 'Vencedor'
+    assert before != sql(f"select p.name,p.row_version,pr.customer_price,(select count(*) from public.product_images where product_id=p.id) from public.products p join public.product_prices pr on pr.product_id=p.id where p.id='{pid}';")
+    print('PASS: transação revertida não consome versão; mesma versão é aceita depois')
+
     # Non-destructive down/up: product rows and versions must not change.
     before = sql('select id,row_version from public.products order by id;')
     for name in ['0002_save_product.down.sql','0002_save_product.up.sql']:
