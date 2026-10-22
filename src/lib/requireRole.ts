@@ -35,11 +35,7 @@ export function requireRole(requiredRole: PortalRole) {
       !roles?.some((item) => item.role === requiredRole)
     ) {
       throw redirect({
-        to: "/entrar",
-        search: {
-          admin: requiredRole === "admin",
-          next,
-        },
+        to: "/catalogo",
       });
     }
   };
