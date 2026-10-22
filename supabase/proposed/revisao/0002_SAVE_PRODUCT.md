@@ -54,3 +54,24 @@ O teste local usa PostgreSQL real descartável, roles/Auth simulados, dois clien
 Executado nesta etapa: **45 verificações SQL**, **2 cenários concorrentes** e **down/up** passaram no PostgreSQL local; **40 testes frontend** e **9 testes unitários da API** passaram. Para estes últimos, dependências ausentes foram instaladas apenas em `/tmp/mci-0002-unit-deps` (oracledb, zod, fastify, dotenv), sem modificar os pacotes do projeto. Não houve verificação manual de tipos nem teste de gravação pelo frontend, que permanece sem integração; o último resultado automático do projeto foi `build OK`.
 
 Pendências: revisão/aprovação para aplicar 0001 revisada + 0002 no ambiente escolhido; validação de autenticação/RLS/RPC através de PostgREST real; integração futura das gravações no frontend em etapa separada. Nada disso foi executado nesta etapa.
+
+## Revisão 2026-10-22 — concorrência, versão, permissões e RPC
+**Validado só em PostgreSQL local descartável. Nada executado no Supabase.**
+
+### Mudança 1 (SQL corrigido): deadlock RPC × escrita direta em filho
+- **Causa (reproduzida localmente, 40P01):** `UPDATE`/`DELETE` direto em linha filha existente trava primeiro a linha filha e só depois, no trigger `tg_lock_product_aggregate`, o produto. `save_product` fazia o inverso (produto → filhos ao excluir/upsert).
+- **Correção em `0002_save_product.up.sql`:** na atualização, `save_product` trava antes as linhas filhas existentes em ordem fixa (specs, imagens, preço cliente, preço revenda, por `id`) e só então o produto. A ordem passa a ser a mesma das escritas diretas; a RPC espera e falha limpa com **40001** se o agregado mudou.
+- **Reversão:** `0002_save_product.down.sql` não muda (remove a função inteira). 0001 v2 não precisou de mudança.
+- **Residual documentado:** `DELETE` direto de produto (cascata produto → filhos) ou transações manuais que tocam várias tabelas em ordens diferentes ainda podem gerar 40P01. O PostgreSQL detecta, reverte uma das transações inteira e não há perda parcial; repetir após recarregar.
+
+### Testes adicionados
+- `run_0002_local.py`: 6 cenários (UPDATE/DELETE spec, UPDATE/DELETE imagem, UPDATE preço cliente, UPDATE revenda) com sessão já segurando linha filha existente enquanto outra executa `save_product`: sem deadlock, escrita direta confirma, RPC falha 40001 e versão avança. Também: RPC primeiro × escrita direta (espera e aplica); RPC concorrente revertida não consome versão e a mesma versão é aceita depois.
+- `0002_save_product.test.sql`: assinatura única/argumentos nomeados/VOLATILE/retorno jsonb (PostgREST), anon sem acesso à revenda, RLS ativo nas 5 tabelas.
+
+### Verificado sem mudança
+- `row_version`: travado antes da comparação em READ COMMITTED; falha após escritas reverte produto, preços, filhos e versão (testes existentes + novo cenário concorrente).
+- Permissões/RLS: EXECUTE só `authenticated`; SECURITY INVOKER; usuário comum não lê/escreve revenda nem altera produtos; preço público e revenda continuam em tabelas separadas.
+- PostgREST: chamar `rpc('save_product', { p_id, p_expected_row_version, p_data })` (POST). Tratar pelo `error.code` (SQLSTATE), não pelo status HTTP, pois o mapeamento HTTP de 40001/P0002/23514 pelo PostgREST não foi validado aqui. Após mudar funções no Supabase real, o cache de schema do PostgREST precisa recarregar.
+
+### Executado nesta revisão
+`python3 supabase/tests/run_0002_local.py` — 3 execuções seguidas, todas OK: 49 verificações SQL + 10 cenários concorrentes + down/up. (No sandbox foi preciso criar o usuário local `pgt`.)
