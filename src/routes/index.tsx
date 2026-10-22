@@ -64,6 +64,8 @@ function Index() {
         </div>
 
         <section className="relative isolate overflow-hidden">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 bg-cover bg-center opacity-35" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?auto=format&fit=crop&w=2200&q=85)" }} />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#111419] via-[#171a1f]/95 to-[#171a1f]/75" />
           <div className="pointer-events-none absolute -right-32 -top-24 -z-10 size-[34rem] rounded-full bg-[#ff681f]/10 blur-3xl" />
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:py-20 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:py-24">
             <div>
@@ -71,11 +73,11 @@ function Index() {
                 <Sparkles className="size-3.5" /> MCI Comercial
               </p>
               <h1 className="mt-6 max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.045em] sm:text-5xl lg:text-[4.25rem]">
-                Tecnologia profissional.
-                <span className="mt-1 block text-[#ff762f]">Novas possibilidades.</span>
+                Seja um revendedor,
+                <span className="mt-1 block text-[#ff762f]">cresça com a gente!</span>
               </h1>
               <p className="mt-6 max-w-xl text-base leading-7 text-white/65 sm:text-lg">
-                Equipamentos de áudio, vídeo e iluminação para quem transforma ideias em produções extraordinárias.
+                Tenha acesso a equipamentos profissionais de áudio, vídeo e iluminação e conte com a MCI para levar seus negócios e suas produções mais longe.
               </p>
 
               <form onSubmit={searchCatalog} className="mt-8 flex max-w-xl items-center rounded-xl border border-white/15 bg-white p-1.5 shadow-2xl shadow-black/20 focus-within:border-[#ff762f]">
