@@ -90,7 +90,7 @@ function ProductsPage() {
     imageUrl: p.images[0] ?? "", status: p.status,
   });
 
-  const field = (key: keyof ProductForm, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
+  const field = (key: Exclude<keyof ProductForm, "id" | "status">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
 
   return (
     <div className="space-y-6">
@@ -134,7 +134,7 @@ function ProductsPage() {
             <div className="space-y-1.5"><Label htmlFor="product-reseller-price">Preço de revenda (R$)</Label><Input id="product-reseller-price" inputMode="decimal" value={form.resellerPrice} onChange={(e) => field("resellerPrice", e.target.value)} placeholder="0,00" /></div>
             <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-image">URL da imagem (HTTPS)</Label><Input id="product-image" type="url" value={form.imageUrl} onChange={(e) => field("imageUrl", e.target.value)} placeholder="https://..." /></div>
             <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-description">Descrição</Label><textarea id="product-description" rows={4} maxLength={20000} value={form.description} onChange={(e) => field("description", e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" /></div>
-            <div className="space-y-1.5"><Label htmlFor="product-status">Status</Label><select id="product-status" value={form.status} onChange={(e) => field("status", e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="draft">Rascunho</option><option value="published">Publicado</option></select></div>
+            <div className="space-y-1.5"><Label htmlFor="product-status">Status</Label><select id="product-status" value={form.status} onChange={(e) => setForm((old) => old ? { ...old, status: e.target.value as ProductForm["status"] } : old)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="draft">Rascunho</option><option value="published">Publicado</option></select></div>
             <div className="flex items-end justify-end gap-2 md:col-span-2">
               <Button type="button" variant="outline" onClick={() => setForm(null)}>Cancelar</Button>
               <Button type="submit" disabled={save.isPending}>{save.isPending ? "Salvando…" : "Salvar produto"}</Button>
