@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ShieldCheck } from "lucide-react";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { availabilityLabel, priceLabel, ProductImage } from "@/components/shop/ProductCard";
 import { DemoBadge, EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
