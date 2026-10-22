@@ -3,8 +3,13 @@ import { redirect } from "@tanstack/react-router";
 import { getSupabase } from "@/lib/supabase";
 
 export async function requireAdmin() {
-  const supabase = getSupabase();
+  // A sessão deste cliente é mantida no navegador, não no SSR.
+  // A autorização dos dados continua sendo aplicada pelo RLS no banco.
+  if (typeof window === "undefined") {
+    return;
+  }
 
+  const supabase = getSupabase();
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {
