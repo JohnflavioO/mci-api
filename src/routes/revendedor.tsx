@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { portals } from "@/components/portal/portals";
+import { ResellerGate } from "@/components/portal/ResellerGate";
 
 export const Route = createFileRoute("/revendedor")({
   head: () => ({
@@ -13,5 +14,9 @@ export const Route = createFileRoute("/revendedor")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <PortalLayout title={portals.revendedor.title} base="/revendedor" sections={portals.revendedor.sections} />,
+  component: () => (
+    <ResellerGate>
+      <PortalLayout title={portals.revendedor.title} base="/revendedor" sections={portals.revendedor.sections} />
+    </ResellerGate>
+  ),
 });

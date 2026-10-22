@@ -18,3 +18,8 @@
 - [x] Criar e executar testes em PostgreSQL local descartável: 45 verificações SQL, dois cenários concorrentes e down/up.
 - [x] Documentar chamada futura do frontend e reversão; manter telas e Oracle intactos.
 - [ ] Aplicação e validação real: aguardam aprovação explícita para executar 0001 revisada + 0002 e testar Auth/PostgREST no ambiente escolhido.
+
+# Cadastro de revendedores
+- [x] Formulário com CNPJ/IE por UF validados, pedido Pendente, revisão admin (aprovar/rejeitar/solicitar documentação) e portal liberado só com papel revendedor.
+- [ ] Aplicar 0001 v2 + 0003 no Supabase: aguarda aprovação explícita.
+- [ ] Consulta automática de situação cadastral: aguarda fonte oficial contratada (hoje é conferência manual obrigatória antes de aprovar).
