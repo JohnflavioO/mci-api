@@ -1,23 +1,8 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ChevronRight, LayoutDashboard, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
-import { healthService } from "@/services";
-import { isApiConfigured } from "@/lib/api";
 
 export type PortalSection = { slug: string; label: string; icon: LucideIcon; group?: string; description?: string };
-
-function ApiStatus() {
-  const q = useQuery({ queryKey: ["health"], queryFn: () => healthService.get(), retry: false, enabled: isApiConfigured(), refetchInterval: 60000 });
-  if (!isApiConfigured() || q.isPending) return null;
-  const ok = q.isSuccess && q.data.status === "ok";
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium">
-      <span className={`size-2 rounded-full ${ok ? "bg-success" : "bg-destructive"}`} />
-      {ok ? "API conectada" : "API indisponível"}
-    </span>
-  );
-}
 
 export function PortalLayout({ title, base, sections }: { title: string; base: "/revendedor" | "/afiliado" | "/admin"; sections: PortalSection[] }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -71,7 +56,6 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
               <h1 className="mt-1 text-2xl font-bold">{current?.label ?? "Visão geral"}</h1>
               <p className="mt-1 text-sm text-muted-foreground">{current?.description ?? "Acompanhe os principais indicadores da operação comercial."}</p>
             </div>
-            <ApiStatus />
           </div>
         </header>
         <div className="p-6 md:p-10"><Outlet /></div>
