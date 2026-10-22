@@ -1,9 +1,12 @@
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign, Clock, FileEdit, Link2, Package, Receipt,
-  Settings, ShieldCheck, ShoppingCart, Store, Tags, Users, Wallet, type LucideIcon,
+  ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign,
+  Clock, FileEdit, Link2, Package, Plus, Receipt, Settings, ShieldCheck, ShoppingCart,
+  Store, Tags, Upload, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import { portalService } from "@/services";
+import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import type { PortalSection } from "./PortalLayout";
 
@@ -45,53 +48,143 @@ export const portals = {
 
 export type PortalKey = keyof typeof portals;
 
-function PendingBadge() {
+function MetricCard({
+  label, value, detail, icon: Icon, to, loading,
+}: {
+  label: string;
+  value: string | number;
+  detail: string;
+  icon: LucideIcon;
+  to: "/admin/produtos" | "/admin/revendedores";
+  loading: boolean;
+}) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent-foreground">
-      <Clock className="size-3" /> Integração pendente
-    </span>
+    <Link to={to} className="group rounded-xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sidebar-primary/50 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="mt-3 font-display text-3xl font-semibold tracking-tight text-foreground">
+            {loading ? <span className="inline-block h-8 w-12 animate-pulse rounded bg-muted" /> : value}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">{detail}</p>
+        </div>
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-foreground transition-colors group-hover:bg-sidebar-primary/15">
+          <Icon className="size-5" />
+        </span>
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors group-hover:text-foreground">
+        Ver detalhes <ArrowUpRight className="size-3.5" />
+      </div>
+    </Link>
   );
 }
 
-function MetricCard({ label, icon: Icon }: { label: string; icon: LucideIcon }) {
+function QuickAction({ to, title, description, icon: Icon }: {
+  to: "/admin/produtos" | "/admin/importar" | "/admin/revendedores";
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}) {
   return (
-    <div className="rounded-lg border bg-card p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <span className="grid size-9 place-items-center rounded-md bg-secondary"><Icon className="size-4" /></span>
-      </div>
-      <p className="mt-4 font-display text-3xl font-bold text-muted-foreground/50">—</p>
-      <div className="mt-2"><PendingBadge /></div>
-    </div>
+    <Link to={to} className="group flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:border-sidebar-primary/50 hover:shadow-sm">
+      <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-secondary text-foreground group-hover:bg-sidebar-primary/15">
+        <Icon className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{description}</span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    </Link>
   );
 }
 
 export function PortalOverview({ portal }: { portal: PortalKey }) {
   const p = portals[portal];
-  return (
-    <div className="space-y-8">
-      {portal === "admin" && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Total de produtos" icon={Package} />
-          <MetricCard label="Produtos publicados" icon={CheckCircle2} />
-          <MetricCard label="Rascunhos" icon={FileEdit} />
-          <MetricCard label="Revendedores ativos" icon={Store} />
-        </div>
-      )}
-      <div className="rounded-lg border bg-card">
-        <div className="border-b px-5 py-4">
-          <h2 className="font-semibold">Módulos e pendências</h2>
-          <p className="text-sm text-muted-foreground">Os dados aparecem aqui quando cada integração com a API estiver disponível.</p>
-        </div>
-        <ul className="divide-y">
-          {p.sections.map((s) => (
-            <li key={s.slug} className="flex items-center justify-between gap-4 px-5 py-3 text-sm">
-              <span className="flex items-center gap-3"><s.icon className="size-4 text-muted-foreground" />{s.label}</span>
-              {s.slug === "importar" ? <span className="text-xs font-medium text-success">Disponível</span> : <PendingBadge />}
-            </li>
-          ))}
-        </ul>
+  const productsQuery = useQuery({
+    queryKey: ["admin-dashboard", "products"],
+    queryFn: () => createSupabaseCatalog().listAdmin(),
+    enabled: portal === "admin",
+    staleTime: 30_000,
+    retry: 1,
+  });
+  const products = productsQuery.data ?? [];
+  const published = products.filter((product) => product.status === "published").length;
+  const drafts = products.filter((product) => product.status === "draft").length;
+  const categories = new Set(products.map((product) => product.category?.trim()).filter(Boolean)).size;
+
+  if (portal === "admin") {
+    return (
+      <div className="space-y-8">
+        <section>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sidebar-primary">Resumo da operação</p>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight">Sua operação em um só lugar</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Indicadores atualizados com os dados disponíveis no Supabase.</p>
+            </div>
+            <Link to="/admin/produtos" className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90">
+              <Plus className="size-4" /> Novo produto
+            </Link>
+          </div>
+
+          {productsQuery.isError ? (
+            <div className="mb-4 rounded-xl border border-destructive/25 bg-card p-4">
+              <p className="text-sm font-medium">Não foi possível carregar os indicadores de produtos.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Verifique a sessão administrativa e as permissões do Supabase.</p>
+              <button onClick={() => void productsQuery.refetch()} className="mt-3 text-sm font-semibold underline underline-offset-4">Tentar novamente</button>
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard label="Total de produtos" value={products.length} detail="Itens no catálogo administrativo" icon={Package} to="/admin/produtos" loading={productsQuery.isPending} />
+            <MetricCard label="Publicados" value={published} detail="Visíveis no catálogo público" icon={CheckCircle2} to="/admin/produtos" loading={productsQuery.isPending} />
+            <MetricCard label="Rascunhos" value={drafts} detail="Ainda não exibidos ao público" icon={FileEdit} to="/admin/produtos" loading={productsQuery.isPending} />
+            <MetricCard label="Categorias" value={categories} detail="Categorias utilizadas no catálogo" icon={Tags} to="/admin/produtos" loading={productsQuery.isPending} />
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold tracking-tight">Ações rápidas</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Acesse diretamente as tarefas mais comuns.</p>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            <QuickAction to="/admin/produtos" title="Gerenciar produtos" description="Cadastrar, editar, publicar e organizar o catálogo." icon={Package} />
+            <QuickAction to="/admin/importar" title="Importar por link" description="Iniciar uma importação a partir de um produto da MCI Store." icon={Upload} />
+            <QuickAction to="/admin/revendedores" title="Revendedores" description="Consultar cadastros e acompanhar aprovações." icon={Store} />
+          </div>
+        </section>
+
+        <section className="rounded-xl border bg-card p-5">
+          <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary"><Clock className="size-4 text-muted-foreground" /></span>
+            <div>
+              <h2 className="text-sm font-semibold">Status da plataforma</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                A gestão de produtos está conectada ao Supabase. Os módulos de pedidos, preços, afiliados e comissões ainda precisam de suas integrações funcionais; eles não são contabilizados como métricas até que existam dados confiáveis.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border bg-card">
+      <div className="border-b px-5 py-4">
+        <h2 className="font-semibold">Visão geral</h2>
+        <p className="text-sm text-muted-foreground">Acesse uma área do seu portal.</p>
+      </div>
+      <ul className="divide-y">
+        {p.sections.map((s) => (
+          <li key={s.slug} className="flex items-center justify-between gap-4 px-5 py-3 text-sm">
+            <span className="flex items-center gap-3"><s.icon className="size-4 text-muted-foreground" />{s.label}</span>
+            <span className="text-xs text-muted-foreground">{s.description}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -104,7 +197,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   return (
     <div className="rounded-lg border bg-card p-6">
       {q.isPending ? <LoadingState /> : q.isError ? (
-        <div className="space-y-3"><PendingBadge /><ErrorState message={q.error.message} onRetry={() => void q.refetch()} /></div>
+        <div className="space-y-3"><ErrorState message={q.error.message} onRetry={() => void q.refetch()} /></div>
       ) : null}
     </div>
   );
