@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { portals } from "@/components/portal/portals";
+import { AdminGate } from "@/components/portal/AdminGate";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -13,5 +14,9 @@ export const Route = createFileRoute("/admin")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <PortalLayout title={portals.admin.title} base="/admin" sections={portals.admin.sections} />,
+  component: () => (
+    <AdminGate>
+      <PortalLayout title={portals.admin.title} base="/admin" sections={portals.admin.sections} />
+    </AdminGate>
+  ),
 });
