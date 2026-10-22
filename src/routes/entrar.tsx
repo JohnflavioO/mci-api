@@ -7,10 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/services";
+import { getSupabase } from "@/lib/supabase";
+
+type LoginSearch = { admin?: boolean; next?: string };
 
 export const Route = createFileRoute("/entrar")({
-  validateSearch: (search: Record<string, unknown>): { admin?: boolean } =>
-    search["admin"] === true || search["admin"] === "true" ? { admin: true } : {},
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    ...(search["admin"] === true || search["admin"] === "true" ? { admin: true } : {}),
+    ...(typeof search["next"] === "string" &&
+    search["next"].startsWith("/") &&
+    !search["next"].startsWith("//") &&
+    !search["next"].startsWith("/entrar")
+      ? { next: search["next"] }
+      : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Entrar | MCI Comercial" },
@@ -25,7 +35,7 @@ export const Route = createFileRoute("/entrar")({
 });
 
 function Login() {
-  const { admin } = Route.useSearch();
+  const { admin, next } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +43,39 @@ function Login() {
     mutationFn: () => authService.login(email, password, admin === true),
     onSuccess: async () => {
       setPassword("");
-      if (admin) await navigate({ to: "/admin/importar" });
+      if (admin) {
+        await navigate({ to: "/admin/importar" });
+        return;
+      }
+
+      if (next) {
+        await navigate({ to: next });
+        return;
+      }
+
+      try {
+        const supabase = getSupabase();
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          const { data: roles, error } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userData.user.id);
+
+          if (!error && roles?.some((item) => item.role === "revendedor")) {
+            await navigate({ to: "/revendedor" });
+            return;
+          }
+          if (!error && roles?.some((item) => item.role === "afiliado")) {
+            await navigate({ to: "/afiliado" });
+            return;
+          }
+        }
+      } catch {
+        // If role lookup fails, keep the user in the public catalog.
+      }
+
+      await navigate({ to: "/catalogo" });
     },
     onError: () => setPassword(""),
     gcTime: 0,
