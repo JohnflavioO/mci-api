@@ -102,3 +102,8 @@ reset role;
 select test.assert(not has_function_privilege('anon','public.save_product(uuid,integer,jsonb)','execute'), 'anon sem EXECUTE');
 select test.assert(not has_function_privilege('service_role','public.save_product(uuid,integer,jsonb)','execute'), 'service_role sem EXECUTE RPC');
 select test.assert((select not prosecdef from pg_proc where oid='public.save_product(uuid,integer,jsonb)'::regprocedure),'RPC SECURITY INVOKER');
+-- Compatibilidade PostgREST /rpc: uma única assinatura, argumentos nomeados, VOLATILE (POST), retorno jsonb.
+select test.assert((select count(*)=1 from pg_proc where proname='save_product' and pronamespace='public'::regnamespace),'RPC sem sobrecarga');
+select test.assert((select proargnames=array['p_id','p_expected_row_version','p_data'] and provolatile='v' and prorettype='jsonb'::regtype from pg_proc where oid='public.save_product(uuid,integer,jsonb)'::regprocedure),'assinatura compatível com PostgREST');
+select test.assert(not has_table_privilege('anon','public.product_reseller_prices','select'),'anon sem acesso a revenda');
+select test.assert((select bool_and(relrowsecurity) from pg_class where oid in ('public.products'::regclass,'public.product_prices'::regclass,'public.product_reseller_prices'::regclass,'public.product_specs'::regclass,'public.product_images'::regclass)),'RLS ativo nas tabelas do agregado');
