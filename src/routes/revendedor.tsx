@@ -5,7 +5,7 @@ import { portals } from "@/components/portal/portals";
 import { requireRole } from "@/lib/requireRole";
 
 export const Route = createFileRoute("/revendedor")({
-  beforeLoad: () => requireRole("revendedor"),
+  beforeLoad: requireRole("revendedor"),
   head: () => ({
     meta: [
       { title: "Portal do Revendedor | MCI Comercial" },
