@@ -26,7 +26,9 @@ def run(args, **kw):
     return subprocess.run(args, env=ENV, check=True, text=True, preexec_fn=demote, **kw)
 
 def sql(text):
-    return run(PSQL, input=text, capture_output=True).stdout
+    r = subprocess.run(PSQL, env=ENV, text=True, preexec_fn=demote, input=text, capture_output=True)
+    if r.returncode: raise SystemExit(r.stderr[-800:])
+    return r.stdout
 
 started = False
 try:
