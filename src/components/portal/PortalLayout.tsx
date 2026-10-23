@@ -1,11 +1,21 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useState } from "react";
-import { ChevronRight, LayoutDashboard, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
+import { ChevronRight, LayoutDashboard, LogOut, Store, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
 
 export type PortalSection = { slug: string; label: string; icon: LucideIcon; group?: string; description?: string };
 
 export function PortalLayout({ title, base, sections }: { title: string; base: "/revendedor" | "/afiliado" | "/admin"; sections: PortalSection[] }) {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const signOut = async () => {
+    await qc.cancelQueries();
+    qc.clear();
+    if (isSupabaseConfigured()) await getSupabase().auth.signOut();
+    await navigate({ to: "/", replace: true });
+  };
   const path = useRouterState({ select: (s) => s.location.pathname });
   const current = sections.find((s) => path.startsWith(`${base}/${s.slug}`));
   const groups = [...new Set(sections.map((s) => s.group ?? "Seções"))];
@@ -55,6 +65,10 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
               </nav>
               <h1 className="mt-1 text-2xl font-bold">{current?.label ?? "Visão geral"}</h1>
               <p className="mt-1 text-sm text-muted-foreground">{current?.description ?? "Acompanhe os principais indicadores da operação comercial."}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to="/" className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-secondary"><Store className="size-4" /> Voltar para a loja</Link>
+              <button onClick={() => void signOut()} className="inline-flex h-9 items-center gap-2 rounded-md bg-graphite px-3 text-sm font-medium text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><LogOut className="size-4" /> Sair da conta</button>
             </div>
           </div>
         </header>

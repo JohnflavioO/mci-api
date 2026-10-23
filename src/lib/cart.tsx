@@ -1,11 +1,19 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-/** Carrinho local: guarda só itens e quantidades. Preços e totais virão da API. */
-export type CartItem = { slug: string; name: string; qty: number };
+/** Carrinho local: guarda itens, quantidades e o limite de estoque conhecido. Preços e totais virão da API. */
+export type CartItem = { slug: string; name: string; qty: number; maxQty?: number | null };
+
+/** Limita a quantidade entre 1 e o estoque conhecido (null = sem limite informado). */
+export function clampQty(qty: number, maxQty?: number | null): number {
+  const n = Number.isFinite(qty) ? Math.floor(qty) : 1;
+  const min = Math.max(1, n);
+  return maxQty != null ? Math.min(min, Math.max(0, maxQty)) : min;
+}
 
 type Cart = {
   items: CartItem[];
-  add: (item: Omit<CartItem, "qty">) => void;
+  /** Retorna false quando o estoque disponível já está todo no carrinho. */
+  add: (item: Omit<CartItem, "qty">) => boolean;
   setQty: (slug: string, qty: number) => void;
   remove: (slug: string) => void;
   count: number;
@@ -32,10 +40,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     items,
     count: items.reduce((n, i) => n + i.qty, 0),
     add: (item) => {
+      const max = item.maxQty ?? null;
+      if (max !== null && max <= 0) return false;
       const found = items.find((i) => i.slug === item.slug);
-      save(found ? items.map((i) => (i.slug === item.slug ? { ...i, qty: i.qty + 1 } : i)) : [...items, { ...item, qty: 1 }]);
+      if (found && max !== null && found.qty >= max) return false;
+      save(found ? items.map((i) => (i.slug === item.slug ? { ...i, maxQty: max, qty: clampQty(i.qty + 1, max) } : i)) : [...items, { ...item, maxQty: max, qty: 1 }]);
+      return true;
     },
-    setQty: (slug, qty) => save(items.map((i) => (i.slug === slug ? { ...i, qty: Math.max(1, qty) } : i))),
+    setQty: (slug, qty) => save(items.map((i) => (i.slug === slug ? { ...i, qty: clampQty(qty, i.maxQty) } : i))),
     remove: (slug) => save(items.filter((i) => i.slug !== slug)),
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
