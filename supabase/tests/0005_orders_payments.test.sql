@@ -3,7 +3,7 @@
 create schema if not exists test;
 create or replace function test.assert(ok boolean, label text) returns void language plpgsql as $$
 begin if ok is distinct from true then raise exception 'FAIL: %',label; end if; raise notice 'PASS: %',label; end $$;
-grant usage on schema test to authenticated, anon, service_role;
+grant usage, create on schema test to authenticated, service_role; grant usage on schema test to anon;
 grant execute on all functions in schema test to authenticated, anon, service_role;
 insert into auth.users(id) values ('00000000-0000-0000-0000-000000000101'),('00000000-0000-0000-0000-000000000102') on conflict do nothing;
 insert into public.user_roles(user_id,role) values ('00000000-0000-0000-0000-000000000101','admin') on conflict do nothing;
