@@ -93,4 +93,5 @@ reset role;
 select test.assert(not has_function_privilege('authenticated','public.apply_payment_status(uuid,text,text,text,text,numeric)','execute'),'usuário não aplica pagamento');
 select test.assert(not has_function_privilege('authenticated','public.claim_refund(integer)','execute'),'usuário não reserva estorno');
 select test.assert(not has_function_privilege('anon','public.create_order(uuid,uuid,jsonb)','execute'),'anônimo não cria pedido');
+select test.assert(not has_function_privilege('authenticated','public.confirm_sale_stock(jsonb)','execute'),'baixa de estoque paralela fechada');
 update public.products set stock_quantity = 1 where id in (:'a', :'b');

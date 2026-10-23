@@ -217,4 +217,8 @@ grant execute on function public.apply_payment_status(uuid, text, text, text, te
 grant execute on function public.claim_refund(integer) to service_role;
 grant execute on function public.record_refund_failure(uuid, text) to service_role;
 
+-- 0004 (já aplicada no banco real) deixou confirm_sale_stock executável por admins logados no navegador.
+-- A baixa de estoque passa a ocorrer só em apply_payment_status; fecha essa porta paralela.
+revoke execute on function public.confirm_sale_stock(jsonb) from authenticated;
+
 commit;
