@@ -28,6 +28,7 @@ import { Route as AfiliadoSecaoRouteImport } from './routes/afiliado.$secao'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
 import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
+import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
 import { Route as ApiPublicPagarmeWebhookRouteImport } from './routes/api/public/pagarme-webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -125,6 +126,11 @@ const RevendedorSecaoRoute = RevendedorSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => RevendedorRoute,
 } as any)
+const ApiAdminImportPreviewRoute = ApiAdminImportPreviewRouteImport.update({
+  id: '/api/admin/import-preview',
+  path: '/api/admin/import-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPagarmeWebhookRoute = ApiPublicPagarmeWebhookRouteImport.update({
   id: '/api/public/pagarme-webhook',
   path: '/api/public/pagarme-webhook',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
+  '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/afiliado': typeof AfiliadoIndexRoute
   '/revendedor': typeof RevendedorIndexRoute
+  '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
 }
 export interface FileRoutesById {
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
+  '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/afiliado/'
     | '/revendedor/'
+    | '/api/admin/import-preview'
     | '/api/public/pagarme-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/afiliado'
     | '/revendedor'
+    | '/api/admin/import-preview'
     | '/api/public/pagarme-webhook'
   id:
     | '__root__'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/afiliado/'
     | '/revendedor/'
+    | '/api/admin/import-preview'
     | '/api/public/pagarme-webhook'
   fileRoutesById: FileRoutesById
 }
@@ -272,6 +284,7 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   RevendedorRoute: typeof RevendedorRouteWithChildren
   ProdutoSlugRoute: typeof ProdutoSlugRoute
+  ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
   ApiPublicPagarmeWebhookRoute: typeof ApiPublicPagarmeWebhookRoute
 }
 
@@ -410,6 +423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RevendedorSecaoRouteImport
       parentRoute: typeof RevendedorRoute
     }
+    '/api/admin/import-preview': {
+      id: '/api/admin/import-preview'
+      path: '/api/admin/import-preview'
+      fullPath: '/api/admin/import-preview'
+      preLoaderRoute: typeof ApiAdminImportPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/pagarme-webhook': {
       id: '/api/public/pagarme-webhook'
       path: '/api/public/pagarme-webhook'
@@ -477,6 +497,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   RevendedorRoute: RevendedorRouteWithChildren,
   ProdutoSlugRoute: ProdutoSlugRoute,
+  ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
   ApiPublicPagarmeWebhookRoute: ApiPublicPagarmeWebhookRoute,
 }
 export const routeTree = rootRouteImport
