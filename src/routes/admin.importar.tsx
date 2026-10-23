@@ -174,7 +174,7 @@ function ImportPage() {
           </section>
 
           <section className="space-y-3 border-t pt-6">
-            <p className="text-sm text-muted-foreground">Origem: <span className="break-all">{draft.sourceUrl}</span> · a data da importação será registrada ao salvar.</p>
+            <p className="text-sm text-muted-foreground">Origem: <span className="break-all">{draft.sourceUrl}</span> · o link é exibido para conferência; o cadastro ainda não grava a URL de origem.</p>
             {errors.map((e) => <p key={e} className="text-sm text-destructive">{e}</p>)}
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
