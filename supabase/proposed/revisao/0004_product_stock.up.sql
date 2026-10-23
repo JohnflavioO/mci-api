@@ -15,7 +15,7 @@ set search_path = pg_catalog, public
 as $$
 declare r record;
 begin
-  if not public.has_role(auth.uid(), 'admin') then
+  if not public.has_role('admin') then
     raise exception 'acesso restrito' using errcode = '42501';
   end if;
   for r in
@@ -37,5 +37,23 @@ end $$;
 revoke all on function public.confirm_sale_stock(jsonb) from public, anon;
 grant execute on function public.confirm_sale_stock(jsonb) to authenticated;
 
+-- Admin define o estoque (NULL = não informado). Atualiza row_version via trigger existente.
+create or replace function public.set_product_stock(p_id uuid, p_stock integer)
+returns void language plpgsql security invoker set search_path = pg_catalog, public as $$
+begin
+  if not public.has_role('admin') then raise exception 'acesso restrito' using errcode = '42501'; end if;
+  if p_stock is not null and p_stock < 0 then raise exception 'estoque negativo' using errcode = '22023'; end if;
+  update public.products set stock_quantity = p_stock where id = p_id;
+  if not found then raise exception 'produto não encontrado' using errcode = 'P0002'; end if;
+end $$;
+revoke all on function public.set_product_stock(uuid, integer) from public, anon;
+grant execute on function public.set_product_stock(uuid, integer) to authenticated;
+
+-- Revendedor aprovado (papel concedido só por review_reseller_application) lê o preço
+-- de revenda de produtos publicados. anon continua sem GRANT; clientes/afiliados não passam no RLS.
+create policy "reseller reads published reseller prices" on public.product_reseller_prices
+  for select to authenticated
+  using (public.has_role('revendedor') and exists (
+    select 1 from public.products p where p.id = product_id and p.status = 'published'));
+
 commit;
--- Pendente: incluir stock_quantity no snapshot de save_product (0002) e no formulário admin.

@@ -32,12 +32,13 @@ type ProductForm = {
   customerPrice: string;
   resellerPrice: string;
   imageUrl: string;
+  stock: string;
   status: "draft" | "published";
 };
 
 const emptyForm: ProductForm = {
   name: "", brand: "", sku: "", category: "", description: "",
-  customerPrice: "", resellerPrice: "", imageUrl: "", status: "draft",
+  customerPrice: "", resellerPrice: "", imageUrl: "", stock: "", status: "draft",
 };
 
 const priceNumber = (v: string): number | null => {
@@ -63,11 +64,15 @@ function ProductsPage() {
       const reseller = priceNumber(f.resellerPrice);
       if (customer !== null && reseller !== null && reseller > customer) throw new Error("O preço de revenda não pode ser maior que o preço ao cliente.");
       if (f.imageUrl.trim() && !/^https:\/\//i.test(f.imageUrl.trim())) throw new Error("A imagem precisa usar uma URL HTTPS.");
-      return catalog.saveAdmin({
+      const stock = f.stock.trim() === "" ? null : Number(f.stock);
+      if (stock !== null && (!Number.isInteger(stock) || stock < 0)) throw new Error("Estoque disponível deve ser um número inteiro maior ou igual a zero.");
+      const id = await catalog.saveAdmin({
         ...(f.id ? { id: f.id } : {}), name: f.name, brand: f.brand, sku: f.sku, category: f.category,
         description: f.description, status: f.status, customerPrice: customer,
         resellerPrice: reseller, imageUrl: f.imageUrl,
       });
+      if (stock !== null) await catalog.setStock(id, stock);
+      return id;
     },
     onSuccess: async () => {
       toast.success("Produto salvo no Supabase.");
@@ -87,7 +92,7 @@ function ProductsPage() {
     category: p.category ?? "", description: p.description ?? "",
     customerPrice: p.customerPrice == null ? "" : String(p.customerPrice),
     resellerPrice: p.resellerPrice == null ? "" : String(p.resellerPrice),
-    imageUrl: p.images[0] ?? "", status: p.status,
+    imageUrl: p.images[0] ?? "", stock: p.stock == null ? "" : String(p.stock), status: p.status,
   });
 
   const field = (key: Exclude<keyof ProductForm, "id" | "status">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
@@ -132,6 +137,7 @@ function ProductsPage() {
             <div className="space-y-1.5"><Label htmlFor="product-category">Categoria</Label><Input id="product-category" maxLength={100} value={form.category} onChange={(e) => field("category", e.target.value)} placeholder="Ex.: Iluminação" /></div>
             <div className="space-y-1.5"><Label htmlFor="product-customer-price">Preço ao cliente (R$)</Label><Input id="product-customer-price" inputMode="decimal" value={form.customerPrice} onChange={(e) => field("customerPrice", e.target.value)} placeholder="0,00" /></div>
             <div className="space-y-1.5"><Label htmlFor="product-reseller-price">Preço de revenda (R$)</Label><Input id="product-reseller-price" inputMode="decimal" value={form.resellerPrice} onChange={(e) => field("resellerPrice", e.target.value)} placeholder="0,00" /></div>
+            <div className="space-y-1.5"><Label htmlFor="product-stock">Estoque disponível</Label><Input id="product-stock" type="number" min={0} step={1} inputMode="numeric" value={form.stock} onChange={(e) => field("stock", e.target.value)} placeholder="Não informado" /></div>
             <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-image">URL da imagem (HTTPS)</Label><Input id="product-image" type="url" value={form.imageUrl} onChange={(e) => field("imageUrl", e.target.value)} placeholder="https://..." /></div>
             <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-description">Descrição</Label><textarea id="product-description" rows={4} maxLength={20000} value={form.description} onChange={(e) => field("description", e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" /></div>
             <div className="space-y-1.5"><Label htmlFor="product-status">Status</Label><select id="product-status" value={form.status} onChange={(e) => setForm((old) => old ? { ...old, status: e.target.value as ProductForm["status"] } : old)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="draft">Rascunho</option><option value="published">Publicado</option></select></div>
