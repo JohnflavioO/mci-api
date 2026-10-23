@@ -71,7 +71,7 @@ function ProductsPage() {
         description: f.description, status: f.status, customerPrice: customer,
         resellerPrice: reseller, imageUrl: f.imageUrl,
       });
-      if (stock !== null || f.id) await catalog.setStock(id, stock);
+      if (stock !== null) await catalog.setStock(id, stock);
       return id;
     },
     onSuccess: async () => {
