@@ -1,30 +1,75 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { AlertCircle, ArrowRight, Clock, Loader2, Lock, RotateCw, UserPlus } from "lucide-react";
 import { resellerService, statusLabel } from "@/services/resellers";
-import { ErrorState, LoadingState } from "@/components/shop/states";
+import { Button } from "@/components/ui/button";
+
+const benefits = ["Preços exclusivos para revenda", "Pedidos e histórico em um só lugar", "Atendimento comercial dedicado"];
+
+function Frame({ children }: { children: ReactNode }) {
+  return (
+    <div className="mx-auto grid max-w-6xl gap-0 overflow-hidden px-4 py-10 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:py-16">
+      <section className="rounded-t-xl bg-graphite p-8 text-graphite-foreground sm:p-10 lg:rounded-l-xl lg:rounded-tr-none lg:p-12">
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand">Portal do Revendedor</p>
+        <h1 className="mt-4 font-display text-3xl font-bold leading-tight sm:text-4xl">Condições profissionais para quem revende audiovisual.</h1>
+        <p className="mt-4 max-w-md text-sm leading-6 text-graphite-muted">Acesse preços de revenda, acompanhe pedidos e conte com a equipe MCI Xpress para crescer com equipamentos profissionais.</p>
+        <ul className="mt-8 space-y-3 border-t border-graphite-foreground/10 pt-6 text-sm">
+          {benefits.map((b) => <li key={b} className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-brand" />{b}</li>)}
+        </ul>
+      </section>
+      <section className="rounded-b-xl border border-t-0 border-border bg-card p-8 sm:p-10 lg:rounded-r-xl lg:rounded-bl-none lg:border-l-0 lg:border-t lg:p-12">
+        {children}
+        <p className="mt-8 flex items-center gap-2 border-t border-border pt-5 text-xs text-muted-foreground"><Lock className="size-3.5" /> Acesso restrito. Preços de revenda só aparecem para cadastros aprovados.</p>
+      </section>
+    </div>
+  );
+}
 
 /** Libera o portal só para quem tem o papel "revendedor" no banco; o banco (RLS) continua sendo a barreira real. */
 export function ResellerGate({ children }: { children: ReactNode }) {
   const q = useQuery({ queryKey: ["reseller", "access"], queryFn: resellerService.myAccess, retry: false });
-  if (q.isPending) return <div className="mx-auto max-w-lg p-10"><LoadingState /></div>;
-  if (q.isError) return <div className="mx-auto max-w-lg p-10"><ErrorState message={q.error.message} onRetry={() => void q.refetch()} /></div>;
+  if (q.isPending) {
+    return <Frame><div role="status" className="flex items-center gap-3 text-sm text-muted-foreground"><Loader2 className="size-5 animate-spin text-brand" /> Verificando seu acesso…</div></Frame>;
+  }
+  if (q.isError) {
+    return (
+      <Frame>
+        <div className="flex items-start gap-3"><AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" /><div><h2 className="font-display text-xl font-bold">Não foi possível verificar seu acesso</h2><p className="mt-2 text-sm text-muted-foreground">{q.error.message}</p></div></div>
+        <Button variant="outline" className="mt-6 gap-2" onClick={() => void q.refetch()}><RotateCw className="size-4" /> Tentar novamente</Button>
+      </Frame>
+    );
+  }
   if (q.data.isReseller) return <>{children}</>;
   const app = q.data.application;
   return (
-    <div className="mx-auto max-w-lg px-4 py-16">
-      <h1 className="text-2xl font-bold">Portal do Revendedor</h1>
+    <Frame>
       {!q.data.signedIn ? (
-        <p className="mt-4 text-muted-foreground">Entre com sua conta de revendedor. <Link to="/entrar" className="underline">Entrar</Link> · <Link to="/cadastro" className="underline">Cadastrar</Link></p>
+        <>
+          <h2 className="font-display text-2xl font-bold">Acesse sua conta</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Entre com sua conta de revendedor ou solicite seu cadastro. Novos cadastros passam por aprovação.</p>
+          <div className="mt-8 grid gap-3">
+            <Button asChild size="lg" className="h-12 justify-between bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/entrar">Entrar <ArrowRight className="size-4" /></Link></Button>
+            <Button asChild size="lg" variant="outline" className="h-12 justify-between"><Link to="/cadastro">Quero ser revendedor <UserPlus className="size-4" /></Link></Button>
+          </div>
+        </>
       ) : !app ? (
-        <p className="mt-4 text-muted-foreground">Sua conta não possui cadastro de revendedor.</p>
+        <>
+          <h2 className="font-display text-2xl font-bold">Cadastro de revendedor necessário</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Sua conta está ativa, mas ainda não possui cadastro de revendedor. Envie os dados da empresa para análise.</p>
+          <Button asChild size="lg" className="mt-8 h-12 w-full justify-between bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/cadastro">Solicitar cadastro <ArrowRight className="size-4" /></Link></Button>
+        </>
       ) : (
-        <div className="mt-4 space-y-2">
-          <p>Situação do cadastro: <span className="font-semibold">{statusLabel[app.status]}</span></p>
-          {app.review_note && <p className="text-sm text-muted-foreground">Observação: {app.review_note}</p>}
-          <p className="text-sm text-muted-foreground">O acesso é liberado após a aprovação do administrador.</p>
-        </div>
+        <>
+          <h2 className="font-display text-2xl font-bold">Situação do cadastro</h2>
+          <div className="mt-5 flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+            <Clock className="size-5 text-brand" />
+            <div><p className="text-xs uppercase tracking-wider text-muted-foreground">Status</p><p className="font-semibold">{statusLabel[app.status]}</p></div>
+          </div>
+          {app.review_note && <div className="mt-4 border-l-2 border-brand pl-4 text-sm"><p className="font-semibold">Observação</p><p className="mt-1 text-muted-foreground">{app.review_note}</p></div>}
+          <p className="mt-5 text-sm leading-6 text-muted-foreground">O portal é liberado após a aprovação do administrador. Você será avisado quando a análise for concluída.</p>
+        </>
       )}
-    </div>
+    </Frame>
   );
 }

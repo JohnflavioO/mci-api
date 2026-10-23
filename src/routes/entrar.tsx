@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { AlertCircle, Loader2, Lock } from "lucide-react";
 import { SiteShell } from "@/components/shop/SiteShell";
-import { ErrorState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,16 +13,18 @@ export const Route = createFileRoute("/entrar")({
     search["admin"] === true || search["admin"] === "true" ? { admin: true } : {},
   head: () => ({
     meta: [
-      { title: "Entrar | MCI Comercial" },
-      { name: "description", content: "Acesse sua conta de cliente, revendedor ou afiliado MCI." },
-      { property: "og:title", content: "Entrar | MCI Comercial" },
-      { property: "og:description", content: "Acesse sua conta de cliente, revendedor ou afiliado MCI." },
+      { title: "Entrar | MCI Xpress" },
+      { name: "description", content: "Acesse sua conta de cliente, revendedor ou afiliado MCI Xpress." },
+      { property: "og:title", content: "Entrar | MCI Xpress" },
+      { property: "og:description", content: "Acesse sua conta de cliente, revendedor ou afiliado MCI Xpress." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Login,
 });
+
+const field = "mt-2 h-11 focus-visible:border-brand focus-visible:ring-brand/30";
 
 function Login() {
   const { admin } = Route.useSearch();
@@ -40,15 +42,22 @@ function Login() {
   });
   return (
     <SiteShell>
-      <div className="mx-auto max-w-sm px-4 py-16">
-        <h1 className="text-3xl font-bold">{admin ? "Entrar como administrador" : "Entrar"}</h1>
-        <form className="mt-8 space-y-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
-          <div><Label htmlFor="email">E-mail</Label><Input id="email" type="email" autoComplete="username" required disabled={m.isPending} className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div><Label htmlFor="pw">Senha</Label><Input id="pw" type="password" autoComplete="current-password" required disabled={m.isPending} className="mt-1" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-          {m.isError && <ErrorState message={m.error.message} />}
-          <Button type="submit" className="w-full" disabled={m.isPending}>{m.isPending ? "Entrando…" : "Entrar"}</Button>
-        </form>
-        {!admin && <p className="mt-6 text-sm text-muted-foreground">Não tem conta? <Link to="/cadastro" className="text-foreground underline">Cadastre-se</Link></p>}
+      <div className="mx-auto max-w-md px-4 py-12 sm:py-16">
+        <div className="rounded-xl border border-border bg-card p-7 shadow-sm sm:p-9">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand">{admin ? "Área administrativa" : "Clientes, revendedores e afiliados"}</p>
+          <h1 className="mt-3 font-display text-3xl font-bold">{admin ? "Entrar como administrador" : "Entrar na sua conta"}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{admin ? "Acesso exclusivo para a equipe MCI Xpress." : "Use o e-mail e a senha cadastrados para acessar seu portal."}</p>
+          <form className="mt-8 space-y-5" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+            <div><Label htmlFor="email">E-mail</Label><Input id="email" type="email" autoComplete="username" required disabled={m.isPending} className={field} value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div><Label htmlFor="pw">Senha</Label><Input id="pw" type="password" autoComplete="current-password" required disabled={m.isPending} className={field} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+            {m.isError && <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" />{m.error.message}</div>}
+            <Button type="submit" size="lg" className="h-12 w-full bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground" disabled={m.isPending}>
+              {m.isPending ? <><Loader2 className="size-4 animate-spin" /> Entrando…</> : "Entrar"}
+            </Button>
+          </form>
+          {!admin && <p className="mt-6 border-t border-border pt-5 text-sm text-muted-foreground">Ainda não tem conta? <Link to="/cadastro" className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">Cadastre-se</Link></p>}
+        </div>
+        <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground"><Lock className="size-3.5" /> Sua senha nunca é exibida nem armazenada neste navegador.</p>
       </div>
     </SiteShell>
   );
