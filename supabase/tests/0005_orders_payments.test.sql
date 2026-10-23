@@ -22,12 +22,13 @@ select public.set_product_stock(:'a', 5), public.set_product_stock(:'b', 5);
 reset role;
 grant select on ids to service_role;
 
-set role service_role;
 create or replace function test.order_(key text, qa int, qb int) returns uuid language sql as $$
   select public.create_order('00000000-0000-0000-0000-000000000102', key::uuid,
     jsonb_build_array(jsonb_build_object('product_id',(select a from ids),'qty',qa), jsonb_build_object('product_id',(select b from ids),'qty',qb))) $$;
 create or replace function test.stock(p uuid) returns int language sql as $$ select stock_quantity from public.products where id=p $$;
 
+grant execute on all functions in schema test to service_role;
+set role service_role;
 -- Pix pendente
 select test.order_('00000000-0000-0000-0000-00000000a001',1,1) as o1 \gset
 select test.assert(public.apply_payment_status(:'o1','pagarme','ch_1','pending','ev1',30)='pending_payment','pix pendente mantém pedido aguardando');
