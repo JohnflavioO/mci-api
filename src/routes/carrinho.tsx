@@ -33,7 +33,7 @@ function CartPage() {
                 {items.map((i) => (
                   <li key={i.slug} className="flex items-center gap-4 py-4">
                     <span className="flex-1 font-medium">{i.name}</span>
-                    <input type="number" min={1} value={i.qty} onChange={(e) => setQty(i.slug, Number(e.target.value))} className="w-16 rounded-sm border bg-background px-2 py-1" aria-label="Quantidade" />
+                    <input type="number" min={1} max={i.maxQty ?? undefined} value={i.qty} onChange={(e) => setQty(i.slug, Number(e.target.value))} className="w-16 rounded-sm border bg-background px-2 py-1" aria-label="Quantidade" />
                     <button onClick={() => remove(i.slug)} className="text-sm text-muted-foreground underline">Remover</button>
                   </li>
                 ))}
