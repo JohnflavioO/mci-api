@@ -57,6 +57,7 @@ function ProductPage() {
               </div>
               <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{p.name}</h1>
               {(p.brand || p.sku) && <p className="mt-1 text-sm text-muted-foreground">{[p.brand, p.sku && `SKU ${p.sku}`].filter(Boolean).join(" · ")}</p>}
+              <div className="mt-5 border-y border-border py-4"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço</p><p className="mt-1 font-display text-4xl font-bold text-foreground">{priceLabel(p)}</p></div>
               {p.customerPrice == null && <p className="text-sm text-muted-foreground">O preço para seu perfil será informado pela plataforma após login.</p>}
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock > 0 ? `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}` : "Sem estoque no momento"}</p>}
@@ -64,7 +65,6 @@ function ProductPage() {
                 Adicionar ao carrinho
               </Button>
               <div className="mt-6 rounded-xl bg-muted/50 p-4 sm:p-5"><h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Descrição do produto</h2><p className="mt-2 whitespace-pre-line text-sm leading-7 text-foreground/80">{p.description || "Consulte nossa equipe para mais informações sobre este produto."}</p></div>
-              <div className="mt-6 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Condição comercial</p><p className="mt-1 font-display text-2xl font-bold">{priceLabel(p)}</p></div></div>
               </div>
               <div className="mt-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
                 <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Ficha técnica</p><h2 className="mt-1 text-xl font-bold">Especificações do produto</h2></div><span className="rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{p.specs.length} itens</span></div>
