@@ -62,26 +62,37 @@ export function fromSupabase(row: SbProductRow): SupabaseCatalogProduct {
   };
 }
 
-const PUBLIC_SELECT =
+const BASE_SELECT =
   "id,name,brand,sku,category,description,status,row_version,product_prices(currency,customer_price),product_specs(label,value),product_images(url,position)";
+/** Com estoque (proposta 0004). Antes dela a coluna não existe e cai no BASE_SELECT. */
+const PUBLIC_SELECT = `${BASE_SELECT},stock_quantity`;
 /** Preço de revenda: RLS só libera para papéis autorizados. */
 const ADMIN_SELECT = `${PUBLIC_SELECT},product_reseller_prices(reseller_price)`;
+const ADMIN_BASE_SELECT = `${BASE_SELECT},product_reseller_prices(reseller_price)`;
+
+/** 42703 = coluna inexistente (0004 ainda não aplicada). */
+export const isMissingStockColumn = (e: { code?: string; message?: string } | null) =>
+  !!e && (e.code === "42703" || /stock_quantity/.test(e.message ?? ""));
 
 export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const withStockFallback = async (run: (sel: string) => PromiseLike<{ data: any; error: any }>, sel: string, base: string) => {
+    let r = await run(sel);
+    if (isMissingStockColumn(r.error)) r = await run(base);
+    if (r.error) throw new Error(r.error.message);
+    return r.data;
+  };
   return {
     listPublished: async (): Promise<SupabaseCatalogProduct[]> => {
-      const { data, error } = await sb().from("products").select(PUBLIC_SELECT).eq("status", "published").order("name");
-      if (error) throw new Error(error.message);
+      const data = await withStockFallback((s) => sb().from("products").select(s).eq("status", "published").order("name"), PUBLIC_SELECT, BASE_SELECT);
       return ((data ?? []) as unknown as SbProductRow[]).map(fromSupabase);
     },
     get: async (id: string): Promise<SupabaseCatalogProduct | null> => {
-      const { data, error } = await sb().from("products").select(PUBLIC_SELECT).eq("id", id).eq("status", "published").maybeSingle();
-      if (error) throw new Error(error.message);
+      const data = await withStockFallback((s) => sb().from("products").select(s).eq("id", id).eq("status", "published").maybeSingle(), PUBLIC_SELECT, BASE_SELECT);
       return data ? fromSupabase(data as unknown as SbProductRow) : null;
     },
     listAdmin: async (): Promise<SupabaseCatalogProduct[]> => {
-      const { data, error } = await sb().from("products").select(ADMIN_SELECT).order("updated_at", { ascending: false });
-      if (error) throw new Error(error.message);
+      const data = await withStockFallback((s) => sb().from("products").select(s).order("updated_at", { ascending: false }), ADMIN_SELECT, ADMIN_BASE_SELECT);
       return ((data ?? []) as unknown as SbProductRow[]).map(fromSupabase);
     },
     saveAdmin: async (input: {
