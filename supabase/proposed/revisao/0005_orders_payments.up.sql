@@ -1,4 +1,4 @@
--- 0005 (PROPOSTA, NÃO APLICADA): pedidos e pagamentos Mercado Pago (Pix e cartão).
+-- 0005 (PROPOSTA, NÃO APLICADA): pedidos e pagamentos, independente do provedor (previsto: Pagar.me, Pix e cartão).
 -- Requer 0001 v2 + 0004. Preço e estoque são decididos aqui no banco; o frontend só envia {product_id, qty}.
 begin;
 
@@ -12,11 +12,13 @@ create table public.orders (
   currency text not null default 'BRL' check (currency = 'BRL'),
   total numeric(12,2) not null check (total > 0),
   stock_debited boolean not null default false,
-  mp_preference_id text,
-  mp_payment_id text unique,
+  provider text,
+  provider_order_id text,
+  provider_charge_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (user_id, idempotency_key)
+  unique (user_id, idempotency_key),
+  unique (provider, provider_charge_id)
 );
 
 create table public.order_items (
@@ -32,12 +34,12 @@ create table public.order_items (
 -- Cada notificação do provedor é registrada uma vez (idempotência do webhook).
 create table public.payment_events (
   id bigserial primary key,
-  provider text not null default 'mercadopago',
+  provider text not null,
   provider_event_id text not null,
-  mp_payment_id text not null,
-  mp_status text not null,
+  provider_charge_id text not null,
+  status text not null,
   received_at timestamptz not null default now(),
-  unique (provider, provider_event_id, mp_status)
+  unique (provider, provider_event_id, status)
 );
 
 grant select on public.orders, public.order_items to authenticated;
@@ -94,26 +96,29 @@ begin
   return v_id;
 end $$;
 
--- Aplica um status do Mercado Pago (já consultado no servidor via API, nunca confiando só no corpo do webhook).
+-- Aplica um status NORMALIZADO pelo servidor ('pending','paid','failed','canceled','refunded','chargedback'),
+-- obtido consultando a API do provedor (nunca só pelo corpo do webhook).
 -- Trava o pedido; baixa estoque uma única vez ao aprovar, em ordem de id; estoque insuficiente
 -- => erro e nada é debitado (o servidor então estorna o pagamento).
 create or replace function public.apply_payment_status(
-  p_order_id uuid, p_mp_payment_id text, p_mp_status text, p_event_id text, p_amount numeric)
+  p_order_id uuid, p_provider text, p_charge_id text, p_status text, p_event_id text, p_amount numeric)
 returns public.order_status language plpgsql security invoker set search_path = pg_catalog, public as $$
 declare o public.orders; r record; v_new public.order_status;
 begin
-  insert into public.payment_events (provider_event_id, mp_payment_id, mp_status)
-    values (p_event_id, p_mp_payment_id, p_mp_status) on conflict do nothing;
+  insert into public.payment_events (provider, provider_event_id, provider_charge_id, status)
+    values (p_provider, p_event_id, p_charge_id, p_status) on conflict do nothing;
   select * into o from public.orders where id = p_order_id for update;
   if not found then raise exception 'pedido não encontrado' using errcode = 'P0002'; end if;
 
-  v_new := case p_mp_status
-    when 'approved' then 'paid'
-    when 'rejected' then 'rejected'
-    when 'cancelled' then 'cancelled'
+  v_new := case p_status
+    when 'paid' then 'paid'
+    when 'failed' then 'rejected'
+    when 'canceled' then 'cancelled'
     when 'refunded' then 'refunded'
-    when 'charged_back' then 'refunded'
-    else 'pending_payment' end;  -- pending / in_process / authorized
+    when 'chargedback' then 'refunded'
+    when 'pending' then 'pending_payment'
+    else null end;
+  if v_new is null then raise exception 'status inválido' using errcode = '22023'; end if;
 
   if v_new = 'paid' and o.status = 'pending_payment' then
     if p_amount is distinct from o.total then raise exception 'valor divergente' using errcode = '23514'; end if;
@@ -122,7 +127,7 @@ begin
        where id = r.product_id and stock_quantity is not null and stock_quantity >= r.qty;
       if not found then raise exception 'estoque insuficiente para %', r.product_id using errcode = '23514'; end if;
     end loop;
-    update public.orders set status = 'paid', stock_debited = true, mp_payment_id = p_mp_payment_id, updated_at = now() where id = o.id;
+    update public.orders set status = 'paid', stock_debited = true, provider = p_provider, provider_charge_id = p_charge_id, updated_at = now() where id = o.id;
   elsif v_new = 'refunded' and o.status = 'paid' then
     if o.stock_debited then
       update public.products p set stock_quantity = p.stock_quantity + i.qty
@@ -130,14 +135,14 @@ begin
     end if;
     update public.orders set status = 'refunded', stock_debited = false, updated_at = now() where id = o.id;
   elsif v_new in ('rejected','cancelled') and o.status = 'pending_payment' then
-    update public.orders set status = v_new, mp_payment_id = p_mp_payment_id, updated_at = now() where id = o.id;
+    update public.orders set status = v_new, provider = p_provider, provider_charge_id = p_charge_id, updated_at = now() where id = o.id;
   end if;  -- demais transições (repetidas/fora de ordem) são ignoradas: idempotente
   return (select status from public.orders where id = o.id);
 end $$;
 
 revoke all on function public.create_order(uuid, uuid, jsonb) from public, anon, authenticated;
-revoke all on function public.apply_payment_status(uuid, text, text, text, numeric) from public, anon, authenticated;
+revoke all on function public.apply_payment_status(uuid, text, text, text, text, numeric) from public, anon, authenticated;
 grant execute on function public.create_order(uuid, uuid, jsonb) to service_role;
-grant execute on function public.apply_payment_status(uuid, text, text, text, numeric) to service_role;
+grant execute on function public.apply_payment_status(uuid, text, text, text, text, numeric) to service_role;
 
 commit;
