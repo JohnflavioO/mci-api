@@ -14,7 +14,7 @@
 - All HTTP calls go through `src/lib/api.ts` + `src/services/*`; prices, permissions and commissions are decided by the API, never computed in the frontend.
 - Demo content lives only in `src/lib/demo-data.ts` and must render with the `DemoBadge`, so it is never mistaken for real data.
 - Public frontend configuration goes in the project-root `.env` with the `VITE_` prefix (read only through `src/lib/api.ts`); real secrets never go there — they stay server-side.
-- Administrative import reuses `/entrar?admin=true` and `authService.login` to obtain an API-issued bearer token; keep it in memory only, require a new login after reload or preview 401, and leave authorization to the external API.
+- Administrative import uses the Supabase admin session: preview goes through the site's own `/api/admin/import-preview` route (bearer + server-side `has_role('admin')`, mci.tv-only fetch), saving goes through `admin_save_product`; Oracle is no longer involved.
 - The catalog reads `GET /products` and `GET /products/:id` through `src/services/catalog.ts`, which maps the public API contract to the screen model; it falls back to labelled demo data only on network/5xx/route-missing errors, never on a valid empty list or a product 404.
 - The own Supabase client lives in `src/lib/supabase.ts` (`getSupabase()`, public key from `VITE_SUPABASE_*` in root `.env`); never put secret/service_role keys in the frontend, and services migrate to it one at a time.
 - Catalog reads pick their source via `VITE_CATALOG_SOURCE` (`catalogSource()` in `src/lib/api.ts`); only the exact value `supabase` enables `src/services/supabaseCatalog.ts`, Oracle is the default until real validation.
