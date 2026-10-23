@@ -18,7 +18,7 @@ export function ProductImage({ src, alt = "", className = "" }: { src?: string |
 }
 
 export const availabilityLabel = (p: CatalogProduct) =>
-  p.inStock === null ? "Disponibilidade sob consulta" : p.inStock ? "Disponível" : "Indisponível";
+  p.inStock === false || p.stock === 0 ? "Indisponível" : p.stock == null ? "Estoque a confirmar" : "Disponível";
 
 export const priceLabel = (p: CatalogProduct) =>
   p.customerPrice != null ? formatPrice(p.customerPrice, p.currency) : "Preço sob consulta";
