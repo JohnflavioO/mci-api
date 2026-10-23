@@ -6,7 +6,7 @@ import type { ChargeSnapshot, OrdersDb, PaymentProvider } from "./types";
 const ORDER = "11111111-1111-1111-1111-111111111111";
 const provider = (snap: Partial<ChargeSnapshot> | Error): PaymentProvider => ({
   name: "pagarme",
-  getCharge: vi.fn(async () => { if (snap instanceof Error) throw snap; return { chargeId: "ch_1", orderId: ORDER, status: "paid", amount: 30, ...snap }; }),
+  getCharge: vi.fn(async (): Promise<ChargeSnapshot> => { if (snap instanceof Error) throw snap; return { chargeId: "ch_1", orderId: ORDER, status: "paid", amount: 30, ...snap }; }),
   requestRefund: vi.fn(async () => undefined),
 });
 const db = (over: Partial<OrdersDb> = {}): OrdersDb => ({
