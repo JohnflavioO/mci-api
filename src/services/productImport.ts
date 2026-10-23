@@ -94,40 +94,70 @@ export const isDuplicateError = (e: unknown) => e instanceof ApiError && e.statu
 export const isEndpointPending = (e: unknown) =>
   e instanceof ApiError && (e.status === 404 || e.status === 501 || e.status === null);
 
-/** Formato atual retornado pelo backend Fastify (campos podem faltar). */
+/** Formato retornado pelo endpoint de prévia. Campos adicionais são opcionais para compatibilidade. */
 export type BackendPreview = {
   sourceUrl?: string | null;
   name?: string | null;
+  brand?: string | null;
   sku?: string | null;
   description?: string | null;
   imageUrl?: string | null;
+  images?: unknown;
+  specs?: unknown;
+  referencePrice?: unknown;
+  sourceCategory?: string | null;
   previewOnly?: boolean;
   savedToDatabase?: boolean;
 };
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+const safeHttpsUrl = (v: unknown): string | null => {
+  const value = str(v);
+  if (!value) return null;
+  try { return new URL(value).protocol === "https:" ? value : null; } catch { return null; }
+};
+const normalizeImages = (raw: BackendPreview): string[] => {
+  const values = Array.isArray(raw.images) ? raw.images : raw.imageUrl ? [raw.imageUrl] : [];
+  return [...new Set(values.map(safeHttpsUrl).filter((v): v is string => !!v))].slice(0, 20);
+};
+const normalizeSpecs = (raw: unknown): { label: string; value: string }[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const label = str((item as Record<string, unknown>).label);
+    const value = str((item as Record<string, unknown>).value);
+    return label && value ? [{ label, value }] : [];
+  }).slice(0, 100);
+};
+const normalizePrice = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
 
-/** Converte a resposta do backend sem inventar dados: o que não veio fica null e vai para missingFields. */
+/** Converte a resposta sem inventar dados; agora preserva marca, specs, categoria, preço e várias imagens. */
 export function normalizePreview(raw: BackendPreview, requestedUrl: string): ImportPreview & { previewOnly: boolean; savedToDatabase: boolean } {
   const name = str(raw.name);
+  const brand = str(raw.brand);
   const sku = str(raw.sku);
   const description = str(raw.description);
-  const imageUrl = str(raw.imageUrl);
+  const images = normalizeImages(raw);
+  const specs = normalizeSpecs(raw.specs);
+  const referencePrice = normalizePrice(raw.referencePrice);
+  const sourceCategory = str(raw.sourceCategory);
   const missing: string[] = [];
   if (!name) missing.push("nome");
   if (!sku) missing.push("SKU");
   if (!description) missing.push("descrição");
-  if (!imageUrl) missing.push("imagem");
-  missing.push("marca", "especificações", "categoria de origem", "preço de referência");
+  if (!images.length) missing.push("imagem");
+  if (!brand) missing.push("marca");
+  if (!specs.length) missing.push("especificações");
+  if (!sourceCategory) missing.push("categoria de origem");
+  if (referencePrice == null) missing.push("preço de referência");
   const warnings: string[] = [];
   if (raw.savedToDatabase === true) warnings.push("Atenção: o servidor informou que a prévia foi gravada. A prévia não deveria salvar dados.");
   return {
     sourceUrl: str(raw.sourceUrl) ?? requestedUrl,
-    name, brand: null, sku, description,
-    specs: [],
-    images: imageUrl && /^https:\/\//.test(imageUrl) ? [imageUrl] : [],
-    referencePrice: null,
-    sourceCategory: null,
+    name, brand, sku, description, specs, images, referencePrice, sourceCategory,
     missingFields: missing,
     warnings,
     duplicates: [],
@@ -160,7 +190,7 @@ async function previewRequest(url: string): Promise<BackendPreview> {
 
 export const productImportService = {
   preview: async (url: string) => normalizePreview(await previewRequest(url), url),
-  /** Grava pelo Supabase (admin_save_product). Hoje a função aceita 1 imagem e não grava especificações. */
+  /** A gravação ainda usa a RPC legada, que só persiste uma imagem e não persiste especificações. */
   save: async (input: ImportSaveInput) => {
     if (input.status === "published" && !canPublishPrices(input))
       throw new ApiError("Para publicar, informe os dois preços maiores que zero.", 400);
