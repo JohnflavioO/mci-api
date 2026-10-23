@@ -43,7 +43,8 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
     for name in ['0001_catalog.up.sql', '0002_save_product.up.sql', '0004_product_stock.up.sql', '0005_orders_payments.up.sql']:
         run(PSQL + ['-f', str(ROOT/'supabase/proposed/revisao'/name)], stdout=subprocess.DEVNULL)
     run(PSQL + ['-f', str(ROOT/'supabase/tests/0002_save_product.test.sql')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    out = run(PSQL + ['-f', str(ROOT/'supabase/tests/0005_orders_payments.test.sql')], capture_output=True)
+    out = subprocess.run(PSQL + ['-f', str(ROOT/'supabase/tests/0005_orders_payments.test.sql')], env=ENV, text=True, preexec_fn=demote, capture_output=True)
+    if out.returncode: print(out.stderr[-1500:]); raise SystemExit(1)
     passes = out.stderr.count('PASS:'); print('SQL 0005:', passes, 'PASS')
     # Compras simultâneas: dois pedidos pagos ao mesmo tempo disputando 1 unidade de cada produto.
     svc = "set role service_role;"
