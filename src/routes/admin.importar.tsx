@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { categories } from "@/lib/demo-data";
-import { ApiError, hasAuthToken } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import {
   IMPORT_ENDPOINTS,
   canPublishPrices,
@@ -85,22 +85,10 @@ function ImportPage() {
   }
   const canPublish = errors.length === 0 && draft != null && canPublishPrices(draft) && confirmed;
 
-  if (!hasAuthToken()) {
-    return (
-      <div className="max-w-4xl">
-        <h2 className="sr-only">Importar produto por link</h2>
-        <p className="mt-4 text-muted-foreground">
-          {fetchM.isError ? "Sua sessão expirou. Entre novamente como administrador." : "Entre como administrador para buscar o produto."}
-        </p>
-        <Button asChild className="mt-6"><Link to="/entrar" search={{ admin: true }}>Entrar como administrador</Link></Button>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-4xl">
       <h2 className="sr-only">Importar produto por link</h2>
-      <p className="mt-2 text-muted-foreground">Cole o link de um produto da loja www.mci.tv. A busca é feita pelo servidor da MCI.</p>
+      <p className="mt-2 text-muted-foreground">Cole o link de um produto da loja www.mci.tv. A busca é feita pelo servidor do site, só para administradores.</p>
 
       <form className="mt-6 flex flex-col gap-3 sm:flex-row" onSubmit={(e) => { e.preventDefault(); if (urlValid) fetchM.mutate(); }}>
         <Input placeholder="https://www.mci.tv/..." value={url} onChange={(e) => setUrl(e.target.value)} aria-label="URL do produto" />

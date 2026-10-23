@@ -1,3 +1,4 @@
+import { ApiError } from "@/lib/api";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import type { CatalogProduct } from "./catalog";
@@ -119,7 +120,10 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
         p_reseller_price: input.resellerPrice,
         p_image_url: input.imageUrl.trim() || null,
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        const status = error.code === "23505" ? 409 : error.code === "42501" ? 403 : error.code === "23514" ? 422 : error.code === "PGRST202" ? 404 : 400;
+        throw new ApiError(status === 409 ? "SKU já cadastrado." : status === 403 ? "Sua conta não tem permissão de administrador." : error.message, status);
+      }
       return String(data);
     },
     /** Requer proposta 0004. null = estoque não informado. */

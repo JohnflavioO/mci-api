@@ -6,6 +6,7 @@ import { availabilityLabel, priceLabel, ProductImage } from "@/components/shop/P
 import { DemoBadge, EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
+import { canSell } from "@/lib/cart";
 import { catalogService } from "@/services";
 import { catalogSource } from "@/lib/api";
 import { formatPrice } from "@/services/catalog";
@@ -64,8 +65,9 @@ function ProductPage() {
               <div className="mt-5 border-y border-border py-4"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço</p><p className="mt-1 font-display text-4xl font-bold text-foreground">{priceLabel(p)}</p>{rp.data != null && <p className="mt-2 text-sm font-semibold text-brand">Seu preço de revenda: {formatPrice(rp.data, p.currency)}</p>}</div>
               {p.customerPrice == null && <p className="text-sm text-muted-foreground">O preço para seu perfil será informado pela plataforma após login.</p>}
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
+              {p.stock == null && <p className="mt-1 text-sm text-muted-foreground">Estoque a confirmar — venda indisponível no momento</p>}
               {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock > 0 ? `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}` : "Sem estoque no momento"}</p>}
-              <Button className="mt-5 h-12 w-full bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:w-auto sm:px-10" size="lg" disabled={p.inStock === false || p.stock === 0} onClick={() => { if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock })) toast.success("Adicionado ao carrinho"); else toast.error("Quantidade máxima em estoque já está no carrinho."); }}>
+              <Button className="mt-5 h-12 w-full bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:w-auto sm:px-10" size="lg" disabled={!canSell(p)} onClick={() => { if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock })) toast.success("Adicionado ao carrinho"); else toast.error("Quantidade máxima em estoque já está no carrinho."); }}>
                 Adicionar ao carrinho
               </Button>
               <div className="mt-6 rounded-xl bg-muted/50 p-4 sm:p-5"><h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Descrição do produto</h2><p className="mt-2 whitespace-pre-line text-sm leading-7 text-foreground/80">{p.description || "Consulte nossa equipe para mais informações sobre este produto."}</p></div>

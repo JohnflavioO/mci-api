@@ -3,6 +3,7 @@ import { Package } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
+import { canSell } from "@/lib/cart";
 import { formatPrice, type CatalogProduct } from "@/services/catalog";
 
 export function ProductImage({ src, alt = "", className = "" }: { src?: string | undefined; alt?: string; className?: string }) {
@@ -34,7 +35,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
       <p className="mt-2 font-display text-lg font-bold">{priceLabel(product)}</p>
       <p className={`text-xs ${unavailable ? "text-destructive" : "text-muted-foreground"}`}>{availabilityLabel(product)}</p>
     </Link>
-    <button type="button" disabled={unavailable}
+    <button type="button" disabled={!canSell(product)}
       onClick={() => { if (cart.add({ slug: product.slug, name: product.name, maxQty: product.stock })) toast.success("Adicionado ao carrinho"); else toast.error("Quantidade máxima em estoque já está no carrinho."); }}
       className="mt-3 h-10 rounded-md bg-graphite text-sm font-semibold text-graphite-foreground transition hover:bg-brand hover:text-brand-foreground disabled:opacity-40">
       {unavailable ? "Indisponível" : "Adicionar ao carrinho"}
