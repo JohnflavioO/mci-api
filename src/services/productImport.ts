@@ -1,4 +1,5 @@
-import { apiFetch, ApiError, hasAuthToken, setAuthToken } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { getSupabase } from "@/lib/supabase";
 
 /**
  * Importação de produto por link da loja mci.tv.
@@ -6,8 +7,8 @@ import { apiFetch, ApiError, hasAuthToken, setAuthToken } from "@/lib/api";
  * A prévia exige um token emitido pelo login administrativo da API.
  */
 export const IMPORT_ENDPOINTS = {
-  preview: "/admin/products/import/preview",
-  save: "/admin/products/import",
+  preview: "/api/admin/import-preview",
+  save: "admin_save_product",
 } as const;
 
 /** Checagem apenas de usabilidade. A validação real de domínio é obrigatória no backend. */
@@ -135,27 +136,41 @@ export function normalizePreview(raw: BackendPreview, requestedUrl: string): Imp
   };
 }
 
+/** Prévia: rota do próprio site (/api/admin/import-preview), com sessão Supabase e papel admin checado no servidor. */
+async function previewRequest(url: string): Promise<BackendPreview> {
+  const { data } = await getSupabase().auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new ApiError("Entre como administrador para buscar o produto.", 401);
+  let res: Response;
+  try {
+    res = await fetch(IMPORT_ENDPOINTS.preview, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ url }),
+    });
+  } catch {
+    throw new ApiError("Não foi possível conectar ao servidor", null);
+  }
+  const body = (await res.json().catch(() => null)) as (BackendPreview & { error?: string }) | null;
+  if (res.status === 401) throw new ApiError("Sua sessão expirou. Entre novamente como administrador.", 401);
+  if (res.status === 403) throw new ApiError("Sua conta não tem autorização para importar produtos.", 403);
+  if (!res.ok || !body) throw new ApiError(body?.error ?? `Erro ${res.status}`, res.status);
+  return body;
+}
+
 export const productImportService = {
-  preview: async (url: string) => {
-    if (!hasAuthToken()) throw new ApiError("Entre como administrador para buscar o produto.", 401);
-    try {
-      return normalizePreview(
-        await apiFetch<BackendPreview>(IMPORT_ENDPOINTS.preview, { method: "POST", body: JSON.stringify({ url }) }, 30000),
-        url,
-      );
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        setAuthToken(null);
-        throw new ApiError("Sua sessão expirou. Entre novamente como administrador.", 401);
-      }
-      if (error instanceof ApiError && error.status === 403)
-        throw new ApiError("Sua conta não tem autorização para importar produtos.", 403);
-      throw error;
-    }
-  },
-  save: (input: ImportSaveInput) => {
+  preview: async (url: string) => normalizePreview(await previewRequest(url), url),
+  /** Grava pelo Supabase (admin_save_product). Hoje a função aceita 1 imagem e não grava especificações. */
+  save: async (input: ImportSaveInput) => {
     if (input.status === "published" && !canPublishPrices(input))
-      return Promise.reject(new ApiError("Para publicar, informe os dois preços maiores que zero.", 400));
-    return apiFetch<{ productId: string; status: string }>(IMPORT_ENDPOINTS.save, { method: "POST", body: JSON.stringify(toSavePayload(input)) });
+      throw new ApiError("Para publicar, informe os dois preços maiores que zero.", 400);
+    const { createSupabaseCatalog } = await import("./supabaseCatalog");
+    const p = toSavePayload(input);
+    const productId = await createSupabaseCatalog().saveAdmin({
+      name: p.name, brand: p.brand, sku: p.sku ?? "", category: p.category ?? "", description: p.description ?? "",
+      status: p.status, customerPrice: p.pricing.customerPrice, resellerPrice: p.pricing.resellerPrice,
+      imageUrl: p.images[0]?.url ?? "",
+    });
+    return { productId, status: p.status };
   },
 };

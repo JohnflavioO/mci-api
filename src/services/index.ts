@@ -99,11 +99,31 @@ export const authService = {
   },
 };
 
+export type MyOrder = {
+  id: string; status: "pending_payment" | "paid" | "rejected" | "cancelled" | "refund_required" | "refunded";
+  total: number; currency: string; created_at: string;
+  order_items: { name_snapshot: string; qty: number; unit_price: number }[];
+};
+
+export const ORDER_STATUS_LABEL: Record<MyOrder["status"], string> = {
+  pending_payment: "Aguardando pagamento", paid: "Pago", rejected: "Pagamento recusado",
+  cancelled: "Cancelado", refund_required: "Reembolso em processamento", refunded: "Reembolsado",
+};
+
 export const orderService = {
   create: (_items: { slug: string; qty: number }[]) =>
     Promise.reject(new ApiError("A finalização de pedidos ainda não está disponível na API.", 501)),
-  list: () =>
-    Promise.reject(new ApiError("A lista de pedidos ainda não está disponível na API.", 501)),
+  /** Pedidos do próprio usuário (RLS da 0005). Antes da 0005, a tabela não existe => 501. */
+  list: async (): Promise<MyOrder[]> => {
+    const sb = getSupabase();
+    const { data: s } = await sb.auth.getSession();
+    if (!s.session) throw new ApiError("Entre na sua conta para ver seus pedidos.", 401);
+    const { data, error } = await sb.from("orders")
+      .select("id,status,total,currency,created_at,order_items(name_snapshot,qty,unit_price)")
+      .order("created_at", { ascending: false }).limit(50);
+    if (error) throw new ApiError(error.code === "PGRST205" ? "Os pedidos ainda não foram ativados no banco." : "Não foi possível carregar seus pedidos.", error.code === "PGRST205" ? 501 : 500);
+    return (data ?? []) as MyOrder[];
+  },
 };
 
 export const portalService = {

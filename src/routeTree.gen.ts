@@ -17,6 +17,7 @@ import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as RevendedorRouteImport } from './routes/revendedor'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSecaoRouteImport } from './routes/admin.$secao'
@@ -28,6 +29,7 @@ import { Route as AfiliadoSecaoRouteImport } from './routes/afiliado.$secao'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
 import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
+import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
 import { Route as ApiPublicPagarmeWebhookRouteImport } from './routes/api/public/pagarme-webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -68,6 +70,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
 const EntrarRoute = EntrarRouteImport.update({
   id: '/entrar',
   path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeusPedidosRoute = MeusPedidosRouteImport.update({
+  id: '/meus-pedidos',
+  path: '/meus-pedidos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RevendedorRoute = RevendedorRouteImport.update({
@@ -125,6 +132,11 @@ const RevendedorSecaoRoute = RevendedorSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => RevendedorRoute,
 } as any)
+const ApiAdminImportPreviewRoute = ApiAdminImportPreviewRouteImport.update({
+  id: '/api/admin/import-preview',
+  path: '/api/admin/import-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPagarmeWebhookRoute = ApiPublicPagarmeWebhookRouteImport.update({
   id: '/api/public/pagarme-webhook',
   path: '/api/public/pagarme-webhook',
@@ -140,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/meus-pedidos': typeof MeusPedidosRoute
   '/revendedor': typeof RevendedorRouteWithChildren
   '/admin/$secao': typeof AdminSecaoRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -151,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
+  '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -160,6 +174,7 @@ export interface FileRoutesByTo {
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/meus-pedidos': typeof MeusPedidosRoute
   '/admin/$secao': typeof AdminSecaoRoute
   '/admin/importar': typeof AdminImportarRoute
   '/admin/produtos': typeof AdminProdutosRoute
@@ -170,6 +185,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/afiliado': typeof AfiliadoIndexRoute
   '/revendedor': typeof RevendedorIndexRoute
+  '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
 }
 export interface FileRoutesById {
@@ -182,6 +198,7 @@ export interface FileRoutesById {
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/meus-pedidos': typeof MeusPedidosRoute
   '/revendedor': typeof RevendedorRouteWithChildren
   '/admin/$secao': typeof AdminSecaoRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -193,6 +210,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
+  '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -206,6 +224,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/meus-pedidos'
     | '/revendedor'
     | '/admin/$secao'
     | '/admin/importar'
@@ -217,6 +236,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/afiliado/'
     | '/revendedor/'
+    | '/api/admin/import-preview'
     | '/api/public/pagarme-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -226,6 +246,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/meus-pedidos'
     | '/admin/$secao'
     | '/admin/importar'
     | '/admin/produtos'
@@ -236,6 +257,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/afiliado'
     | '/revendedor'
+    | '/api/admin/import-preview'
     | '/api/public/pagarme-webhook'
   id:
     | '__root__'
@@ -247,6 +269,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/meus-pedidos'
     | '/revendedor'
     | '/admin/$secao'
     | '/admin/importar'
@@ -258,6 +281,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/afiliado/'
     | '/revendedor/'
+    | '/api/admin/import-preview'
     | '/api/public/pagarme-webhook'
   fileRoutesById: FileRoutesById
 }
@@ -270,8 +294,10 @@ export interface RootRouteChildren {
   CatalogoRoute: typeof CatalogoRoute
   CheckoutRoute: typeof CheckoutRoute
   EntrarRoute: typeof EntrarRoute
+  MeusPedidosRoute: typeof MeusPedidosRoute
   RevendedorRoute: typeof RevendedorRouteWithChildren
   ProdutoSlugRoute: typeof ProdutoSlugRoute
+  ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
   ApiPublicPagarmeWebhookRoute: typeof ApiPublicPagarmeWebhookRoute
 }
 
@@ -331,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/entrar'
       fullPath: '/entrar'
       preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meus-pedidos': {
+      id: '/meus-pedidos'
+      path: '/meus-pedidos'
+      fullPath: '/meus-pedidos'
+      preLoaderRoute: typeof MeusPedidosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/revendedor': {
@@ -410,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RevendedorSecaoRouteImport
       parentRoute: typeof RevendedorRoute
     }
+    '/api/admin/import-preview': {
+      id: '/api/admin/import-preview'
+      path: '/api/admin/import-preview'
+      fullPath: '/api/admin/import-preview'
+      preLoaderRoute: typeof ApiAdminImportPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/pagarme-webhook': {
       id: '/api/public/pagarme-webhook'
       path: '/api/public/pagarme-webhook'
@@ -475,8 +515,10 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogoRoute: CatalogoRoute,
   CheckoutRoute: CheckoutRoute,
   EntrarRoute: EntrarRoute,
+  MeusPedidosRoute: MeusPedidosRoute,
   RevendedorRoute: RevendedorRouteWithChildren,
   ProdutoSlugRoute: ProdutoSlugRoute,
+  ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
   ApiPublicPagarmeWebhookRoute: ApiPublicPagarmeWebhookRoute,
 }
 export const routeTree = rootRouteImport
