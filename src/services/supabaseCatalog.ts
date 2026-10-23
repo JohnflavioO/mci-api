@@ -111,5 +111,18 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       if (error) throw new Error(error.message);
       return String(data);
     },
+    /** Requer proposta 0004. null = estoque não informado. */
+    setStock: async (id: string, stock: number | null): Promise<void> => {
+      const { error } = await sb().rpc("set_product_stock", { p_id: id, p_stock: stock });
+      if (error) throw new Error(error.code === "PGRST202" ? "O controle de estoque ainda não foi ativado no banco." : error.message);
+    },
+    /** Preço de revenda: o RLS só devolve linha para revendedor aprovado; demais recebem null. */
+    resellerPrice: async (id: string): Promise<number | null> => {
+      const { data: s } = await sb().auth.getSession();
+      if (!s.session) return null;
+      const { data, error } = await sb().from("product_reseller_prices").select("reseller_price").eq("product_id", id).maybeSingle();
+      if (error || !data) return null;
+      return toPrice((data as { reseller_price: number | string | null }).reseller_price);
+    },
   };
 }

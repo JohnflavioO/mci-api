@@ -7,6 +7,8 @@ import { DemoBadge, EmptyState, ErrorState, LoadingState } from "@/components/sh
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
 import { catalogService } from "@/services";
+import { catalogSource } from "@/lib/api";
+import { formatPrice } from "@/services/catalog";
 
 export const Route = createFileRoute("/produto/$slug")({
   head: () => ({
@@ -26,6 +28,8 @@ function ProductPage() {
   const { slug } = Route.useParams();
   const q = useQuery({ queryKey: ["product", slug], queryFn: () => catalogService.get(slug) });
   const cart = useCart();
+  const rp = useQuery({ queryKey: ["reseller-price", slug], enabled: catalogSource() === "supabase", retry: false,
+    queryFn: async () => (await import("@/services/supabaseCatalog")).createSupabaseCatalog().resellerPrice(slug) });
   const p = q.data?.product;
 
   return (
@@ -57,7 +61,7 @@ function ProductPage() {
               </div>
               <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{p.name}</h1>
               {(p.brand || p.sku) && <p className="mt-1 text-sm text-muted-foreground">{[p.brand, p.sku && `SKU ${p.sku}`].filter(Boolean).join(" · ")}</p>}
-              <div className="mt-5 border-y border-border py-4"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço</p><p className="mt-1 font-display text-4xl font-bold text-foreground">{priceLabel(p)}</p></div>
+              <div className="mt-5 border-y border-border py-4"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço</p><p className="mt-1 font-display text-4xl font-bold text-foreground">{priceLabel(p)}</p>{rp.data != null && <p className="mt-2 text-sm font-semibold text-brand">Seu preço de revenda: {formatPrice(rp.data, p.currency)}</p>}</div>
               {p.customerPrice == null && <p className="text-sm text-muted-foreground">O preço para seu perfil será informado pela plataforma após login.</p>}
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock > 0 ? `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}` : "Sem estoque no momento"}</p>}
