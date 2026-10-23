@@ -1,5 +1,8 @@
--- Reverte só a 0005. Atenção: apaga pedidos e eventos de pagamento. Não devolve estoque já debitado.
+-- Reverte só a 0005. Atenção: apaga pedidos, eventos de pagamento e a fila de estornos pendentes.
+-- Não devolve estoque já debitado. Não rodar com pedidos 'refund_required' sem estornar antes.
 begin;
+drop function if exists public.record_refund_failure(uuid, text);
+drop function if exists public.claim_refund(integer);
 drop function if exists public.apply_payment_status(uuid, text, text, text, text, numeric);
 drop function if exists public.create_order(uuid, uuid, jsonb);
 drop table if exists public.payment_events;
