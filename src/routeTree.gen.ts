@@ -17,6 +17,7 @@ import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as RevendedorRouteImport } from './routes/revendedor'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSecaoRouteImport } from './routes/admin.$secao'
@@ -69,6 +70,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
 const EntrarRoute = EntrarRouteImport.update({
   id: '/entrar',
   path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeusPedidosRoute = MeusPedidosRouteImport.update({
+  id: '/meus-pedidos',
+  path: '/meus-pedidos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RevendedorRoute = RevendedorRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/meus-pedidos': typeof MeusPedidosRoute
   '/revendedor': typeof RevendedorRouteWithChildren
   '/admin/$secao': typeof AdminSecaoRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/meus-pedidos': typeof MeusPedidosRoute
   '/admin/$secao': typeof AdminSecaoRoute
   '/admin/importar': typeof AdminImportarRoute
   '/admin/produtos': typeof AdminProdutosRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/meus-pedidos': typeof MeusPedidosRoute
   '/revendedor': typeof RevendedorRouteWithChildren
   '/admin/$secao': typeof AdminSecaoRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/meus-pedidos'
     | '/revendedor'
     | '/admin/$secao'
     | '/admin/importar'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/meus-pedidos'
     | '/admin/$secao'
     | '/admin/importar'
     | '/admin/produtos'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/meus-pedidos'
     | '/revendedor'
     | '/admin/$secao'
     | '/admin/importar'
@@ -282,6 +294,7 @@ export interface RootRouteChildren {
   CatalogoRoute: typeof CatalogoRoute
   CheckoutRoute: typeof CheckoutRoute
   EntrarRoute: typeof EntrarRoute
+  MeusPedidosRoute: typeof MeusPedidosRoute
   RevendedorRoute: typeof RevendedorRouteWithChildren
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
@@ -344,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/entrar'
       fullPath: '/entrar'
       preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meus-pedidos': {
+      id: '/meus-pedidos'
+      path: '/meus-pedidos'
+      fullPath: '/meus-pedidos'
+      preLoaderRoute: typeof MeusPedidosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/revendedor': {
@@ -495,6 +515,7 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogoRoute: CatalogoRoute,
   CheckoutRoute: CheckoutRoute,
   EntrarRoute: EntrarRoute,
+  MeusPedidosRoute: MeusPedidosRoute,
   RevendedorRoute: RevendedorRouteWithChildren,
   ProdutoSlugRoute: ProdutoSlugRoute,
   ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
