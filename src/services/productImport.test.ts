@@ -61,17 +61,16 @@ describe("toSavePayload", () => {
   });
 });
 
-describe("save error investigation (mocked fetch only, no Oracle writes)", () => {
-  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
-  it("propaga exatamente o erro interno devolvido pelo servidor em ambos os estados", async () => {
+describe("importação grava pelo Supabase", () => {
+  afterEach(() => vi.doUnmock("@/lib/supabase"));
+  it("envia para admin_save_product e traduz SKU duplicado em 409", async () => {
     vi.resetModules();
-    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
-    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({ error: "Erro interno" }), { status: 500 }));
-    vi.stubGlobal("fetch", fetchMock);
+    const rpc = vi.fn().mockResolvedValueOnce({ data: "id-1", error: null }).mockResolvedValueOnce({ data: null, error: { code: "23505", message: "dup" } });
+    vi.doMock("@/lib/supabase", () => ({ getSupabase: () => ({ rpc }) }));
     const { productImportService } = await import("./productImport");
-    for (const status of ["draft", "published"] as const) {
-      await expect(productImportService.save({ status, sourceUrl: "https://www.mci.tv/p", name: "Produto", brand: "Amaran", sku: "5542", description: "", targetCategory: "Iluminação", specs: [], images: [], customerPrice: 4210, resellerPrice: 2500 })).rejects.toMatchObject({ status: 500, message: "Erro interno" });
-    }
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const input = { status: "draft" as const, sourceUrl: "https://www.mci.tv/p", name: "Produto", brand: "Amaran", sku: "5542", description: "", targetCategory: "Iluminação", specs: [], images: ["https://www.mci.tv/a.jpg"], customerPrice: 4210, resellerPrice: 2500 };
+    await expect(productImportService.save(input)).resolves.toEqual({ productId: "id-1", status: "draft" });
+    expect(rpc).toHaveBeenCalledWith("admin_save_product", expect.objectContaining({ p_sku: "5542", p_category: "Iluminação", p_image_url: "https://www.mci.tv/a.jpg", p_status: "draft" }));
+    await expect(productImportService.save(input)).rejects.toMatchObject({ status: 409 });
   });
 });

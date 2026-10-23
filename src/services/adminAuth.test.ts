@@ -1,39 +1,34 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("administrative login and import preview", () => {
+describe("prévia de importação (rota do próprio site)", () => {
+  const getSession = vi.fn();
   beforeEach(() => {
-    vi.resetModules();
-    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+    vi.resetModules(); getSession.mockReset();
+    vi.doMock("@/lib/supabase", () => ({ getSupabase: () => ({ auth: { getSession } }) }));
   });
-  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
-
-  it("does not send a preview without a server-issued session", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+  afterEach(() => { vi.doUnmock("@/lib/supabase"); vi.unstubAllGlobals(); });
+  const run = async (status: number) => {
+    getSession.mockResolvedValue({ data: { session: { access_token: "t" } } });
+    const f = vi.fn(async () => new Response(JSON.stringify({ error: "x", name: "Produto" }), { status }));
+    vi.stubGlobal("fetch", f);
+    const { productImportService } = await import("./productImport");
+    return { f, p: productImportService.preview("https://www.mci.tv/p") };
+  };
+  it("sem sessão não chama o servidor", async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    const f = vi.fn(); vi.stubGlobal("fetch", f);
     const { productImportService } = await import("./productImport");
     await expect(productImportService.preview("https://www.mci.tv/p")).rejects.toMatchObject({ status: 401 });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(f).not.toHaveBeenCalled();
   });
-
-  it("clears an expired preview session on 401", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "Autenticação necessária" }), { status: 401 })));
-    const { setAuthToken, hasAuthToken } = await import("@/lib/api");
-    const { productImportService } = await import("./productImport");
-    setAuthToken("expired-test-session");
-    await expect(productImportService.preview("https://www.mci.tv/p")).rejects.toMatchObject({ status: 401 });
-    expect(hasAuthToken()).toBe(false);
+  it("envia o token da sessão e mantém 401/403 do servidor", async () => {
+    const a = await run(200); await expect(a.p).resolves.toMatchObject({ name: "Produto" });
+    const call = a.f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(call[0]).toBe("/api/admin/import-preview");
+    expect((call[1].headers as Record<string, string>)["Authorization"]).toBe("Bearer t");
+    await expect((await run(401)).p).rejects.toMatchObject({ status: 401 });
+    await expect((await run(403)).p).rejects.toMatchObject({ status: 403 });
   });
-
-  it("preserves backend denial on 403 without bypassing permissions", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }));
-    vi.stubGlobal("fetch", fetchMock);
-    const { setAuthToken } = await import("@/lib/api");
-    const { productImportService } = await import("./productImport");
-    setAuthToken("non-admin-test-session");
-    await expect(productImportService.preview("https://www.mci.tv/p")).rejects.toMatchObject({ status: 403 });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
 });
 
 describe("Supabase login (cliente e administrador)", () => {
