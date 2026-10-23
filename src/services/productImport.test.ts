@@ -63,14 +63,14 @@ describe("toSavePayload", () => {
 
 describe("importação grava pelo Supabase", () => {
   afterEach(() => vi.doUnmock("@/lib/supabase"));
-  it("envia para admin_save_product e traduz SKU duplicado em 409", async () => {
+  it("envia produto, preços, imagens e specs para save_product e traduz duplicidade em 409", async () => {
     vi.resetModules();
-    const rpc = vi.fn().mockResolvedValueOnce({ data: "id-1", error: null }).mockResolvedValueOnce({ data: null, error: { code: "23505", message: "dup" } });
+    const rpc = vi.fn().mockResolvedValueOnce({ data: { id: "id-1", rowVersion: 1 }, error: null }).mockResolvedValueOnce({ data: null, error: { code: "23505", message: "dup" } });
     vi.doMock("@/lib/supabase", () => ({ getSupabase: () => ({ rpc }) }));
     const { productImportService } = await import("./productImport");
-    const input = { status: "draft" as const, sourceUrl: "https://www.mci.tv/p", name: "Produto", brand: "Amaran", sku: "5542", description: "", targetCategory: "Iluminação", specs: [], images: ["https://www.mci.tv/a.jpg"], customerPrice: 4210, resellerPrice: 2500 };
-    await expect(productImportService.save(input)).resolves.toEqual({ productId: "id-1", status: "draft" });
-    expect(rpc).toHaveBeenCalledWith("admin_save_product", expect.objectContaining({ p_sku: "5542", p_category: "Iluminação", p_image_url: "https://www.mci.tv/a.jpg", p_status: "draft" }));
+    const input = { status: "draft" as const, sourceUrl: "https://www.mci.tv/p", name: "Produto", brand: "Amaran", sku: "5542", description: "", targetCategory: "Iluminação", specs: [{ label: "Potência", value: "200W" }], images: ["https://www.mci.tv/a.jpg", "https://www.mci.tv/b.jpg"], customerPrice: 4210, resellerPrice: 2500 };
+    await expect(productImportService.save(input)).resolves.toEqual({ productId: "id-1", status: "draft", rowVersion: 1 });
+    expect(rpc).toHaveBeenCalledWith("save_product", expect.objectContaining({ p_id: null, p_expected_row_version: null, p_data: expect.objectContaining({ sku: "5542", category: "Iluminação", images: [{ url: "https://www.mci.tv/a.jpg", position: 0 }, { url: "https://www.mci.tv/b.jpg", position: 1 }], specs: [{ label: "Potência", value: "200W" }] }) }));
     await expect(productImportService.save(input)).rejects.toMatchObject({ status: 409 });
   });
 });
