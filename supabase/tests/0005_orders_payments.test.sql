@@ -10,21 +10,21 @@ insert into public.user_roles(user_id,role) values ('00000000-0000-0000-0000-000
 
 set role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000101',false);
-create temp table ids as
+create table test.ids as
 select (public.save_product(null,null, jsonb_build_object('name','A','brand','','sku','P5A','category','C','description',null,'status','published',
   'pricing',jsonb_build_object('currency','BRL','customerPrice',10,'resellerPrice',5),
   'images',jsonb_build_array(jsonb_build_object('url','https://e.test/a.jpg','position',0)),'specs','[]'::jsonb))->>'id')::uuid as a,
        (public.save_product(null,null, jsonb_build_object('name','B','brand','','sku','P5B','category','C','description',null,'status','published',
   'pricing',jsonb_build_object('currency','BRL','customerPrice',20,'resellerPrice',5),
   'images',jsonb_build_array(jsonb_build_object('url','https://e.test/b.jpg','position',0)),'specs','[]'::jsonb))->>'id')::uuid as b;
-select a, b from ids \gset
+select a, b from test.ids \gset
 select public.set_product_stock(:'a', 5), public.set_product_stock(:'b', 5);
 reset role;
-grant select on ids to service_role;
+grant select on test.ids to service_role;
 
 create or replace function test.order_(key text, qa int, qb int) returns uuid language sql as $$
   select public.create_order('00000000-0000-0000-0000-000000000102', key::uuid,
-    jsonb_build_array(jsonb_build_object('product_id',(select a from ids),'qty',qa), jsonb_build_object('product_id',(select b from ids),'qty',qb))) $$;
+    jsonb_build_array(jsonb_build_object('product_id',(select a from test.ids),'qty',qa), jsonb_build_object('product_id',(select b from test.ids),'qty',qb))) $$;
 create or replace function test.stock(p uuid) returns int language sql as $$ select stock_quantity from public.products where id=p $$;
 
 grant execute on all functions in schema test to service_role;
