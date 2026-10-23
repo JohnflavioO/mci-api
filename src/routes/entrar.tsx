@@ -57,7 +57,7 @@ function Login() {
           </form>
           {!admin && <p className="mt-6 border-t border-border pt-5 text-sm text-muted-foreground">Ainda não tem conta? <Link to="/cadastro" className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">Cadastre-se</Link></p>}
         </div>
-        <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground"><Lock className="size-3.5" /> Sua senha nunca é exibida nem armazenada neste navegador.</p>
+        <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground"><Lock className="size-3.5" /> Conexão via HTTPS.</p>
       </div>
     </SiteShell>
   );
