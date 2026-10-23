@@ -23,6 +23,24 @@ describe("normalizePreview", () => {
     expect(p.images).toEqual(["https://www.mci.tv/a.jpg"]);
     expect(p.missingFields).toContain("descrição");
   });
+  it("preserva marca, specs, categoria, preço e múltiplas imagens recebidos do backend", () => {
+    const p = normalizePreview({
+      name: "QuikBeam",
+      brand: "Astera",
+      sku: "QB-1",
+      description: "Projetor LED",
+      images: ["https://cdn.mci.tv/a.jpg", "https://cdn.mci.tv/b.jpg", "http://cdn.mci.tv/insegura.jpg"],
+      specs: [{ label: "Potência", value: "100 W" }, { label: "", value: "descartar" }, { label: "IP", value: "65" }],
+      referencePrice: "1234.50",
+      sourceCategory: "Iluminação",
+    }, "https://www.mci.tv/p");
+    expect(p.brand).toBe("Astera");
+    expect(p.specs).toEqual([{ label: "Potência", value: "100 W" }, { label: "IP", value: "65" }]);
+    expect(p.images).toEqual(["https://cdn.mci.tv/a.jpg", "https://cdn.mci.tv/b.jpg"]);
+    expect(p.referencePrice).toBe(1234.5);
+    expect(p.sourceCategory).toBe("Iluminação");
+    expect(p.missingFields).toEqual([]);
+  });
   it("avisa se o servidor disser que a prévia gravou no banco", () => {
     const p = normalizePreview({ savedToDatabase: true }, "https://www.mci.tv/p");
     expect(p.savedToDatabase).toBe(true);
