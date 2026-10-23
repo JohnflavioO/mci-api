@@ -82,6 +82,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-graphite-foreground">Loja</p>
             <Link to="/catalogo" className="mt-4 block text-graphite-muted transition hover:text-brand">Catálogo de produtos</Link>
             <Link to="/carrinho" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Meu carrinho</Link>
+            <Link to="/meus-pedidos" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Meus pedidos</Link>
           </div>
           <div className="text-sm">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-graphite-foreground">Seja parceiro</p>
