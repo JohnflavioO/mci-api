@@ -8,7 +8,7 @@ import { getSupabase } from "@/lib/supabase";
  */
 export const IMPORT_ENDPOINTS = {
   preview: "/api/admin/import-preview",
-  save: "admin_save_product",
+  save: "save_product",
 } as const;
 
 /** Checagem apenas de usabilidade. A validação real de domínio é obrigatória no backend. */
@@ -190,17 +190,43 @@ async function previewRequest(url: string): Promise<BackendPreview> {
 
 export const productImportService = {
   preview: async (url: string) => normalizePreview(await previewRequest(url), url),
-  /** A gravação ainda usa a RPC legada, que só persiste uma imagem e não persiste especificações. */
+  /** Salva produto, preços, todas as imagens e especificações pela RPC transacional. */
   save: async (input: ImportSaveInput) => {
     if (input.status === "published" && !canPublishPrices(input))
       throw new ApiError("Para publicar, informe os dois preços maiores que zero.", 400);
-    const { createSupabaseCatalog } = await import("./supabaseCatalog");
     const p = toSavePayload(input);
-    const productId = await createSupabaseCatalog().saveAdmin({
-      name: p.name, brand: p.brand, sku: p.sku ?? "", category: p.category ?? "", description: p.description ?? "",
-      status: p.status, customerPrice: p.pricing.customerPrice, resellerPrice: p.pricing.resellerPrice,
-      imageUrl: p.images[0]?.url ?? "",
+    const { data, error } = await getSupabase().rpc("save_product", {
+      p_id: null,
+      p_expected_row_version: null,
+      p_data: {
+        name: p.name,
+        brand: p.brand,
+        sku: p.sku,
+        category: p.category,
+        description: p.description,
+        status: p.status,
+        pricing: p.pricing,
+        images: p.images,
+        specs: p.specs,
+      },
     });
-    return { productId, status: p.status };
+    if (error) {
+      const status = error.code === "23505" ? 409
+        : error.code === "42501" ? 403
+        : error.code === "23514" ? 422
+        : error.code === "PGRST202" ? 404
+        : error.code === "40001" ? 409
+        : 400;
+      const message = error.code === "23505" ? "SKU, posição de imagem ou especificação duplicada."
+        : error.code === "42501" ? "Sua conta não tem permissão de administrador."
+        : error.code === "23514" ? error.message
+        : error.code === "PGRST202" ? "A função save_product não está disponível na API do Supabase."
+        : error.code === "40001" ? "Conflito de versão. Recarregue os dados e tente novamente."
+        : error.message;
+      throw new ApiError(message, status);
+    }
+    const result = data as { id?: unknown; rowVersion?: unknown } | null;
+    if (!result || typeof result.id !== "string") throw new ApiError("O banco não retornou o ID do produto salvo.", 500);
+    return { productId: result.id, status: p.status, rowVersion: typeof result.rowVersion === "number" ? result.rowVersion : null };
   },
 };
