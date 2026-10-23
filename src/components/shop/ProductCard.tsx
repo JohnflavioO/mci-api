@@ -25,7 +25,7 @@ export const priceLabel = (p: CatalogProduct) =>
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const cart = useCart();
-  const unavailable = product.inStock === false || product.stock === 0;
+  const unavailable = !canSell(product);
   return (
     <div className="flex h-full flex-col">
     <Link to="/produto/$slug" params={{ slug: product.slug }} className="group block">
