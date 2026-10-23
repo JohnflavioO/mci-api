@@ -44,6 +44,11 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-success: var(--success);
+  --color-graphite: var(--graphite);
+  --color-graphite-foreground: var(--graphite-foreground);
+  --color-graphite-muted: var(--graphite-muted);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --color-input: var(--input);
@@ -99,6 +104,11 @@
   --sidebar-accent-foreground: oklch(0.98 0.004 85);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.78 0.16 70);
+  --graphite: oklch(0.21 0.011 260);
+  --graphite-foreground: oklch(0.98 0.003 260);
+  --graphite-muted: oklch(0.72 0.01 260);
+  --brand: oklch(0.68 0.2 42);
+  --brand-foreground: oklch(0.99 0 0);
 }
 
 .dark {
