@@ -12,6 +12,8 @@ export type SbProductRow = {
   description: string | null;
   status: "draft" | "published";
   row_version: number;
+  /** Só existe após a proposta 0004 (estoque). */
+  stock_quantity?: number | null;
   product_prices?: { currency: string; customer_price: number | string | null } | { currency: string; customer_price: number | string | null }[] | null;
   product_reseller_prices?: { reseller_price: number | string | null } | { reseller_price: number | string | null }[] | null;
   product_specs?: { label: string; value: string | null }[] | null;
@@ -50,7 +52,8 @@ export function fromSupabase(row: SbProductRow): SupabaseCatalogProduct {
     description: row.description,
     specs: (row.product_specs ?? []).filter((s) => s.value != null && s.value !== "").map((s) => ({ label: s.label, value: s.value as string })),
     images: [...(row.product_images ?? [])].sort((a, b) => a.position - b.position).map((i) => i.url).filter(isHttpsUrl),
-    inStock: null,
+    inStock: row.stock_quantity == null ? null : row.stock_quantity > 0,
+    stock: row.stock_quantity ?? null,
     customerPrice: toPrice(price?.customer_price),
     currency: price?.currency?.trim() || null,
     resellerPrice: toPrice(reseller?.reseller_price),

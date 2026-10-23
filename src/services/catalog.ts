@@ -25,6 +25,8 @@ export type CatalogProduct = {
   specs: { label: string; value: string }[];
   images: string[];
   inStock: boolean | null;
+  /** Unidades disponíveis; null = origem não informa estoque. */
+  stock: number | null;
   customerPrice: number | null;
   currency: string | null;
 };
@@ -49,6 +51,7 @@ export function fromApi(p: ApiProduct): CatalogProduct {
     specs: (p.specs ?? []).filter((s) => s.value != null && s.value !== "").map((s) => ({ label: s.label, value: s.value as string })),
     images: [...(p.images ?? [])].sort((a, b) => a.position - b.position).map((i) => i.url).filter(isHttpsUrl),
     inStock: null,
+    stock: null,
     customerPrice: typeof price === "number" && Number.isFinite(price) && price > 0 ? price : null,
     currency: p.pricing?.currency ?? null,
   };
@@ -58,7 +61,7 @@ export function fromDemo(p: DemoProduct): CatalogProduct {
   return {
     slug: p.slug, name: p.name, brand: p.brand, sku: null, category: p.category, description: p.description,
     specs: Object.entries(p.specs).map(([label, value]) => ({ label, value })),
-    images: [], inStock: p.inStock, customerPrice: null, currency: null,
+    images: [], inStock: p.inStock, stock: null, customerPrice: null, currency: null,
   };
 }
 

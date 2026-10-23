@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/services";
+import { getSupabase } from "@/lib/supabase";
+
+/** Destino pós-login conforme o papel registrado no banco. */
+async function portalFor(): Promise<"/revendedor" | "/afiliado" | "/"> {
+  const sb = getSupabase();
+  const [r, a] = await Promise.all([sb.rpc("has_role", { _role: "revendedor" }), sb.rpc("has_role", { _role: "afiliado" })]);
+  if (r.data === true) return "/revendedor";
+  if (a.data === true) return "/afiliado";
+  return "/";
+}
 
 export const Route = createFileRoute("/entrar")({
   validateSearch: (search: Record<string, unknown>): { admin?: boolean } =>
@@ -36,6 +46,7 @@ function Login() {
     onSuccess: async () => {
       setPassword("");
       if (admin) await navigate({ to: "/admin/importar" });
+      else await navigate({ to: await portalFor().catch(() => "/" as const) });
     },
     onError: () => setPassword(""),
     gcTime: 0,
