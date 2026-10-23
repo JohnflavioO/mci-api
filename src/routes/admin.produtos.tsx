@@ -79,7 +79,7 @@ function ProductsPage() {
   });
 
   const products = q.data ?? [];
-  const list = useMemo(() => filterCatalog(products, { q: term, categoria: cat || undefined }), [products, term, cat]);
+  const list = useMemo(() => filterCatalog(products, { q: term, categoria: cat || undefined }), [products, term, cat]) as typeof products;
   const cats = categoriesOf(products);
 
   const editProduct = (p: SupabaseCatalogProduct) => setForm({
