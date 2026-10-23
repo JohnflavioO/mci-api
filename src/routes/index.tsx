@@ -156,7 +156,7 @@ function Index() {
         {categories.length > 0 ? (
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {categories.map((category, index) => {
-              const Icon = categoryIcons[index % categoryIcons.length];
+              const Icon = categoryIcons[index % categoryIcons.length]!;
               const count = products.filter((p) => p.category === category).length;
               return <Link key={category} to="/catalogo" search={{ categoria: category }} className="group rounded-2xl border bg-white p-4 transition duration-200 hover:-translate-y-1 hover:border-[#ff681f]/50 hover:shadow-lg hover:shadow-slate-900/5 sm:p-5">
                 <span className="flex size-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-[#fff0e8] group-hover:text-[#e95b19]"><Icon className="size-5" /></span>

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Menu } from "lucide-react";
+import { ShoppingBag, Menu, ShieldCheck } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart";
 

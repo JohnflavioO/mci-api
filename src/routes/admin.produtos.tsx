@@ -64,7 +64,7 @@ function ProductsPage() {
       if (customer !== null && reseller !== null && reseller > customer) throw new Error("O preço de revenda não pode ser maior que o preço ao cliente.");
       if (f.imageUrl.trim() && !/^https:\/\//i.test(f.imageUrl.trim())) throw new Error("A imagem precisa usar uma URL HTTPS.");
       return catalog.saveAdmin({
-        id: f.id, name: f.name, brand: f.brand, sku: f.sku, category: f.category,
+        ...(f.id ? { id: f.id } : {}), name: f.name, brand: f.brand, sku: f.sku, category: f.category,
         description: f.description, status: f.status, customerPrice: customer,
         resellerPrice: reseller, imageUrl: f.imageUrl,
       });
@@ -79,7 +79,7 @@ function ProductsPage() {
   });
 
   const products = q.data ?? [];
-  const list = useMemo(() => filterCatalog(products, { q: term, categoria: cat || undefined }), [products, term, cat]);
+  const list = useMemo(() => filterCatalog(products, { q: term, categoria: cat || undefined }), [products, term, cat]) as typeof products;
   const cats = categoriesOf(products);
 
   const editProduct = (p: SupabaseCatalogProduct) => setForm({
