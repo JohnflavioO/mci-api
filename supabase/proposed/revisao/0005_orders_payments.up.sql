@@ -1,8 +1,13 @@
--- 0005 (PROPOSTA, NÃO APLICADA): pedidos e pagamentos, independente do provedor (previsto: Pagar.me, Pix e cartão).
+-- 0005 (PROPOSTA, NÃO APLICADA): pedidos e pagamentos, independente do provedor (previsto: Pagar.me v5, Pix e cartão).
 -- Requer 0001 v2 + 0004. Preço e estoque são decididos aqui no banco; o frontend só envia {product_id, qty}.
+-- Todas as funções são executáveis só por service_role (servidor). O status de pagamento recebido
+-- já vem NORMALIZADO pelo servidor após CONSULTAR a API do provedor (nunca só pelo corpo do webhook).
 begin;
 
-create type public.order_status as enum ('pending_payment','paid','rejected','cancelled','refunded');
+-- refund_required = pagamento capturado que precisa ser estornado (ex.: faltou estoque).
+-- Só vira 'refunded' quando o provedor confirmar o estorno.
+create type public.order_status as enum
+  ('pending_payment','paid','rejected','cancelled','refund_required','refunded');
 
 create table public.orders (
   id uuid primary key default gen_random_uuid(),
@@ -15,10 +20,17 @@ create table public.orders (
   provider text,
   provider_order_id text,
   provider_charge_id text,
+  refund_reason text,
+  -- Chave fixa por pedido, enviada como Idempotency-Key no estorno: retentativas nunca estornam duas vezes.
+  refund_idempotency_key uuid,
+  refund_attempts integer not null default 0 check (refund_attempts >= 0),
+  refund_locked_until timestamptz,
+  refund_last_error text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, idempotency_key),
-  unique (provider, provider_charge_id)
+  unique (provider, provider_charge_id),
+  check (status <> 'refund_required' or (refund_idempotency_key is not null and not stock_debited))
 );
 
 create table public.order_items (
@@ -34,10 +46,12 @@ create table public.order_items (
 -- Cada notificação do provedor é registrada uma vez (idempotência do webhook).
 create table public.payment_events (
   id bigserial primary key,
+  order_id uuid references public.orders(id) on delete restrict,
   provider text not null,
   provider_event_id text not null,
   provider_charge_id text not null,
   status text not null,
+  result public.order_status,
   received_at timestamptz not null default now(),
   unique (provider, provider_event_id, status)
 );
@@ -96,53 +110,111 @@ begin
   return v_id;
 end $$;
 
--- Aplica um status NORMALIZADO pelo servidor ('pending','paid','failed','canceled','refunded','chargedback'),
--- obtido consultando a API do provedor (nunca só pelo corpo do webhook).
--- Trava o pedido; baixa estoque uma única vez ao aprovar, em ordem de id; estoque insuficiente
--- => erro e nada é debitado (o servidor então estorna o pagamento).
+-- Aplica um status normalizado: 'pending','paid','failed','canceled','refunded','chargedback'.
+-- Tudo numa transação: registra o evento, trava o pedido e muda o estado.
+-- Aprovação: trava os produtos em ordem de id; se QUALQUER item não tiver estoque, nada é debitado
+-- e o pedido vira 'refund_required' (evento registrado junto). Senão debita tudo uma única vez.
+-- Pagamento aprovado chegando depois de recusado/cancelado (fora de ordem) também vira 'refund_required'.
+-- Evento repetido (mesmo id+status) não muda nada. Transições não previstas são ignoradas.
 create or replace function public.apply_payment_status(
   p_order_id uuid, p_provider text, p_charge_id text, p_status text, p_event_id text, p_amount numeric)
 returns public.order_status language plpgsql security invoker set search_path = pg_catalog, public as $$
-declare o public.orders; r record; v_new public.order_status;
+declare o public.orders; r record; v_new public.order_status; v_event bigint; v_short boolean := false;
 begin
-  insert into public.payment_events (provider, provider_event_id, provider_charge_id, status)
-    values (p_provider, p_event_id, p_charge_id, p_status) on conflict do nothing;
-  select * into o from public.orders where id = p_order_id for update;
-  if not found then raise exception 'pedido não encontrado' using errcode = 'P0002'; end if;
-
   v_new := case p_status
-    when 'paid' then 'paid'
-    when 'failed' then 'rejected'
-    when 'canceled' then 'cancelled'
-    when 'refunded' then 'refunded'
-    when 'chargedback' then 'refunded'
-    when 'pending' then 'pending_payment'
+    when 'paid' then 'paid' when 'failed' then 'rejected' when 'canceled' then 'cancelled'
+    when 'refunded' then 'refunded' when 'chargedback' then 'refunded' when 'pending' then 'pending_payment'
     else null end;
   if v_new is null then raise exception 'status inválido' using errcode = '22023'; end if;
 
+  select * into o from public.orders where id = p_order_id for update;
+  if not found then raise exception 'pedido não encontrado' using errcode = 'P0002'; end if;
+  if o.provider_charge_id is not null and o.provider_charge_id <> p_charge_id then
+    raise exception 'cobrança não pertence ao pedido' using errcode = '23514';
+  end if;
+
+  insert into public.payment_events (order_id, provider, provider_event_id, provider_charge_id, status)
+    values (o.id, p_provider, p_event_id, p_charge_id, p_status)
+    on conflict do nothing returning id into v_event;
+  if v_event is null then return o.status; end if;  -- notificação repetida
+
+  if v_new = 'paid' and p_amount is distinct from o.total then
+    raise exception 'valor divergente' using errcode = '23514';
+  end if;
+
   if v_new = 'paid' and o.status = 'pending_payment' then
-    if p_amount is distinct from o.total then raise exception 'valor divergente' using errcode = '23514'; end if;
-    for r in select product_id, qty from public.order_items where order_id = o.id order by product_id loop
-      update public.products set stock_quantity = stock_quantity - r.qty
-       where id = r.product_id and stock_quantity is not null and stock_quantity >= r.qty;
-      if not found then raise exception 'estoque insuficiente para %', r.product_id using errcode = '23514'; end if;
+    for r in
+      select i.qty, p.stock_quantity from public.order_items i
+      join public.products p on p.id = i.product_id
+      where i.order_id = o.id order by p.id for update of p
+    loop
+      if r.stock_quantity is null or r.stock_quantity < r.qty then v_short := true; end if;
     end loop;
-    update public.orders set status = 'paid', stock_debited = true, provider = p_provider, provider_charge_id = p_charge_id, updated_at = now() where id = o.id;
-  elsif v_new = 'refunded' and o.status = 'paid' then
+    if v_short then
+      update public.orders set status = 'refund_required', refund_reason = 'estoque insuficiente',
+        refund_idempotency_key = gen_random_uuid(), provider = p_provider, provider_charge_id = p_charge_id,
+        updated_at = now() where id = o.id;
+    else
+      update public.products p set stock_quantity = p.stock_quantity - i.qty
+        from public.order_items i where i.order_id = o.id and p.id = i.product_id;
+      update public.orders set status = 'paid', stock_debited = true, provider = p_provider,
+        provider_charge_id = p_charge_id, updated_at = now() where id = o.id;
+    end if;
+  elsif v_new = 'paid' and o.status in ('rejected','cancelled') then
+    update public.orders set status = 'refund_required', refund_reason = 'pago após cancelamento',
+      refund_idempotency_key = gen_random_uuid(), provider = p_provider, provider_charge_id = p_charge_id,
+      updated_at = now() where id = o.id;
+  elsif v_new = 'refunded' and o.status in ('paid','refund_required') then
+    -- Só devolve estoque que foi de fato debitado, e uma única vez (stock_debited vira false).
     if o.stock_debited then
       update public.products p set stock_quantity = p.stock_quantity + i.qty
         from public.order_items i where i.order_id = o.id and p.id = i.product_id and p.stock_quantity is not null;
     end if;
-    update public.orders set status = 'refunded', stock_debited = false, updated_at = now() where id = o.id;
+    update public.orders set status = 'refunded', stock_debited = false, refund_locked_until = null,
+      refund_last_error = null, updated_at = now() where id = o.id;
   elsif v_new in ('rejected','cancelled') and o.status = 'pending_payment' then
     update public.orders set status = v_new, provider = p_provider, provider_charge_id = p_charge_id, updated_at = now() where id = o.id;
-  end if;  -- demais transições (repetidas/fora de ordem) são ignoradas: idempotente
-  return (select status from public.orders where id = o.id);
+  end if;
+
+  select status into v_new from public.orders where id = o.id;
+  update public.payment_events set result = v_new where id = v_event;
+  return v_new;
+end $$;
+
+-- Reserva o próximo estorno pendente para um processo do servidor (lease de p_lease_seconds).
+-- Dois processos nunca pegam o mesmo pedido ao mesmo tempo (skip locked + lease).
+-- Retorna a chave de idempotência fixa do pedido; o servidor a envia ao provedor no estorno.
+create or replace function public.claim_refund(p_lease_seconds integer default 120)
+returns table (order_id uuid, provider_charge_id text, amount numeric, refund_idempotency_key uuid, attempt integer)
+language plpgsql security invoker set search_path = pg_catalog, public as $$
+begin
+  if p_lease_seconds not between 10 and 3600 then raise exception 'lease inválido' using errcode = '22023'; end if;
+  return query
+  update public.orders o set refund_attempts = o.refund_attempts + 1,
+    refund_locked_until = now() + make_interval(secs => p_lease_seconds), updated_at = now()
+  where o.id = (
+    select x.id from public.orders x
+    where x.status = 'refund_required' and (x.refund_locked_until is null or x.refund_locked_until < now())
+    order by x.updated_at limit 1 for update skip locked)
+  returning o.id, o.provider_charge_id, o.total, o.refund_idempotency_key, o.refund_attempts;
+end $$;
+
+-- Falha ao pedir o estorno: mantém 'refund_required', libera o lease e guarda o erro para nova tentativa.
+-- Sucesso do pedido de estorno NÃO muda o status: só apply_payment_status('refunded') após consulta ao provedor.
+create or replace function public.record_refund_failure(p_order_id uuid, p_error text)
+returns void language plpgsql security invoker set search_path = pg_catalog, public as $$
+begin
+  update public.orders set refund_locked_until = null, refund_last_error = left(coalesce(p_error,''), 500), updated_at = now()
+   where id = p_order_id and status = 'refund_required';
 end $$;
 
 revoke all on function public.create_order(uuid, uuid, jsonb) from public, anon, authenticated;
 revoke all on function public.apply_payment_status(uuid, text, text, text, text, numeric) from public, anon, authenticated;
+revoke all on function public.claim_refund(integer) from public, anon, authenticated;
+revoke all on function public.record_refund_failure(uuid, text) from public, anon, authenticated;
 grant execute on function public.create_order(uuid, uuid, jsonb) to service_role;
 grant execute on function public.apply_payment_status(uuid, text, text, text, text, numeric) to service_role;
+grant execute on function public.claim_refund(integer) to service_role;
+grant execute on function public.record_refund_failure(uuid, text) to service_role;
 
 commit;
