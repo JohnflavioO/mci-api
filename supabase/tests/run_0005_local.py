@@ -50,22 +50,26 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
     passes = out.stderr.count('PASS:'); print('SQL 0005:', passes, 'PASS')
     # Compras simultâneas: dois pedidos pagos ao mesmo tempo disputando 1 unidade de cada produto.
     svc = "set role service_role;"
+    def val(q):
+        r = subprocess.run(PSQL + ['-At', '-q'], env=ENV, text=True, preexec_fn=demote, input=q, capture_output=True)
+        if r.returncode: raise SystemExit(r.stderr[-800:])
+        return r.stdout.strip().splitlines()[-1].strip()
     def mk(k):
-        return sql(svc + f"select test.order_('{k}',1,1);").splitlines()[2].strip()
+        return val(svc + f"select test.order_('{k}',1,1);")
     o1, o2 = mk('00000000-0000-0000-0000-00000000c001'), mk('00000000-0000-0000-0000-00000000c002')
-    total = sql("select total from public.orders where id='%s';" % o1).splitlines()[2].strip()
+    total = val("select total from public.orders where id='%s';" % o1)
     procs = [subprocess.Popen(PSQL, env=ENV, text=True, preexec_fn=demote, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
              for _ in range(2)]
     for p, (o, ch) in zip(procs, [(o1,'ch_c1'), (o2,'ch_c2')]):
         p.stdin.write(svc + f"begin; select public.apply_payment_status('{o}','pagarme','{ch}','paid','ev_{ch}',{total}); select pg_sleep(1); commit;\n"); p.stdin.close()
     for p in procs: p.wait(); assert p.returncode == 0, p.stderr.read()
-    st = sql(f"select string_agg(status::text, ',' order by status::text) from public.orders where id in ('{o1}','{o2}');").splitlines()[2].strip()
-    stock = sql("select string_agg(stock_quantity::text, ',') from public.products where sku in ('P5A','P5B');").splitlines()[2].strip()
+    st = val(f"select string_agg(status::text, ',' order by status::text) from public.orders where id in ('{o1}','{o2}');")
+    stock = val("select string_agg(stock_quantity::text, ',') from public.products where sku in ('P5A','P5B');")
     assert st == 'paid,refund_required' and stock == '0,0', (st, stock)
     print('concorrência: um pago, outro reembolso necessário, estoque 0 sem negativo')
     run(PSQL + ['-f', str(ROOT/'supabase/proposed/revisao/0005_orders_payments.down.sql')], stdout=subprocess.DEVNULL)
-    left = sql("select count(*) from pg_tables where tablename in ('orders','order_items','payment_events');").splitlines()[2].strip()
-    prods = sql("select count(*) from public.products where sku in ('P5A','P5B');").splitlines()[2].strip()
+    left = val("select count(*) from pg_tables where tablename in ('orders','order_items','payment_events');")
+    prods = val("select count(*) from public.products where sku in ('P5A','P5B');")
     assert left == '0' and prods == '2', (left, prods)
     run(PSQL + ['-f', str(ROOT/'supabase/proposed/revisao/0005_orders_payments.up.sql')], stdout=subprocess.DEVNULL)
     print('down/up: tabelas removidas, produtos preservados, reaplicação OK')
