@@ -20,6 +20,18 @@ describe("importação: segurança da busca", () => {
     const p = extractPreview(html, "https://www.mci.tv/p");
     expect(p).toMatchObject({ name: "Luz & Cia", sku: "5541", imageUrl: "https://cdn.mci.tv/a.jpg", description: null, savedToDatabase: false });
   });
+  it("extrai marca, várias imagens, categoria, preço e especificações estruturadas", () => {
+    const html = `<script type="application/ld+json">{"@type":"Product","name":"QuikBeam","brand":{"@type":"Brand","name":"Astera"},"category":"Iluminação","image":["https://cdn.mci.tv/a.jpg","https://cdn.mci.tv/b.jpg"],"offers":{"price":"1234.50"},"additionalProperty":[{"@type":"PropertyValue","name":"Potência","value":"100 W"}]}</script>`;
+    const p = extractPreview(html, "https://www.mci.tv/p");
+    expect(p).toMatchObject({
+      name: "QuikBeam",
+      brand: "Astera",
+      sourceCategory: "Iluminação",
+      referencePrice: 1234.5,
+      images: ["https://cdn.mci.tv/a.jpg", "https://cdn.mci.tv/b.jpg"],
+      specs: [{ label: "Potência", value: "100 W" }],
+    });
+  });
 });
 
 describe("venda só com estoque conhecido", () => {
