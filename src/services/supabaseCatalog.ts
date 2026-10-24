@@ -15,6 +15,7 @@ export type SbProductRow = {
   row_version: number;
   /** Só existe após a proposta 0004 (estoque). */
   stock_quantity?: number | null;
+  stock_confirmed?: boolean | null;
   product_prices?: { currency: string; customer_price: number | string | null } | { currency: string; customer_price: number | string | null }[] | null;
   product_reseller_prices?: { reseller_price: number | string | null } | { reseller_price: number | string | null }[] | null;
   product_specs?: { label: string; value: string | null }[] | null;
@@ -25,6 +26,7 @@ export type SupabaseCatalogProduct = CatalogProduct & {
   status: "draft" | "published";
   rowVersion: number;
   resellerPrice: number | null;
+  stockConfirmed: boolean;
 };
 
 const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null);
@@ -55,6 +57,7 @@ export function fromSupabase(row: SbProductRow): SupabaseCatalogProduct {
     images: [...(row.product_images ?? [])].sort((a, b) => a.position - b.position).map((i) => i.url).filter(isHttpsUrl),
     inStock: row.stock_quantity == null ? null : row.stock_quantity > 0,
     stock: row.stock_quantity ?? null,
+    stockConfirmed: row.stock_confirmed === true,
     customerPrice: toPrice(price?.customer_price),
     currency: price?.currency?.trim() || null,
     resellerPrice: toPrice(reseller?.reseller_price),
@@ -66,7 +69,7 @@ export function fromSupabase(row: SbProductRow): SupabaseCatalogProduct {
 const BASE_SELECT =
   "id,name,brand,sku,category,description,status,row_version,product_prices(currency,customer_price),product_specs(label,value),product_images(url,position)";
 /** Com estoque (proposta 0004). Antes dela a coluna não existe e cai no BASE_SELECT. */
-const PUBLIC_SELECT = `${BASE_SELECT},stock_quantity`;
+const PUBLIC_SELECT = `${BASE_SELECT},stock_quantity,stock_confirmed`;
 /** Preço de revenda: RLS só libera para papéis autorizados. */
 const ADMIN_SELECT = `${PUBLIC_SELECT},product_reseller_prices(reseller_price)`;
 const ADMIN_BASE_SELECT = `${BASE_SELECT},product_reseller_prices(reseller_price)`;
@@ -85,12 +88,24 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
   };
   return {
     listPublished: async (): Promise<SupabaseCatalogProduct[]> => {
-      const data = await withStockFallback((s) => sb().from("products").select(s).eq("status", "published").order("name"), PUBLIC_SELECT, BASE_SELECT);
-      return ((data ?? []) as unknown as SbProductRow[]).map(fromSupabase);
+      const client = sb();
+      const [data, setting] = await Promise.all([
+        withStockFallback((s) => client.from("products").select(s).eq("status", "published").order("name"), PUBLIC_SELECT, BASE_SELECT),
+        client.from("platform_settings").select("setting_value").eq("setting_key", "manual_stock_confirmation").maybeSingle(),
+      ]);
+      const manual = setting.error ? true : (setting.data?.setting_value as { enabled?: boolean } | null)?.enabled !== false;
+      return ((data ?? []) as unknown as SbProductRow[]).map(fromSupabase).map((p) => ({ ...p, stockConfirmed: manual ? p.stockConfirmed : true }));
     },
     get: async (id: string): Promise<SupabaseCatalogProduct | null> => {
-      const data = await withStockFallback((s) => sb().from("products").select(s).eq("id", id).eq("status", "published").maybeSingle(), PUBLIC_SELECT, BASE_SELECT);
-      return data ? fromSupabase(data as unknown as SbProductRow) : null;
+      const client = sb();
+      const [data, setting] = await Promise.all([
+        withStockFallback((s) => client.from("products").select(s).eq("id", id).eq("status", "published").maybeSingle(), PUBLIC_SELECT, BASE_SELECT),
+        client.from("platform_settings").select("setting_value").eq("setting_key", "manual_stock_confirmation").maybeSingle(),
+      ]);
+      if (!data) return null;
+      const product = fromSupabase(data as unknown as SbProductRow);
+      const manual = setting.error ? true : (setting.data?.setting_value as { enabled?: boolean } | null)?.enabled !== false;
+      return { ...product, stockConfirmed: manual ? product.stockConfirmed : true };
     },
     listAdmin: async (): Promise<SupabaseCatalogProduct[]> => {
       const data = await withStockFallback((s) => sb().from("products").select(s).order("updated_at", { ascending: false }), ADMIN_SELECT, ADMIN_BASE_SELECT);
@@ -127,9 +142,18 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       return String(data);
     },
     /** Requer proposta 0004. null = estoque não informado. */
-    setStock: async (id: string, stock: number | null): Promise<void> => {
-      const { error } = await sb().rpc("set_product_stock", { p_id: id, p_stock: stock });
+    setStock: async (id: string, stock: number | null, confirmed = false): Promise<void> => {
+      const { error } = await sb().rpc("set_product_stock", { p_id: id, p_stock: stock, p_confirmed: confirmed });
       if (error) throw new Error(error.code === "PGRST202" ? "O controle de estoque ainda não foi ativado no banco." : error.message);
+    },
+    getStockConfirmationMode: async (): Promise<boolean> => {
+      const { data, error } = await sb().from("platform_settings").select("setting_value").eq("setting_key", "manual_stock_confirmation").maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data?.setting_value as { enabled?: boolean } | null)?.enabled !== false;
+    },
+    setStockConfirmationMode: async (enabled: boolean): Promise<void> => {
+      const { error } = await sb().rpc("set_stock_confirmation_mode", { p_enabled: enabled });
+      if (error) throw new Error(error.message);
     },
     /** Preço de revenda: o RLS só devolve linha para revendedor aprovado; demais recebem null. */
     resellerPrice: async (id: string): Promise<number | null> => {
