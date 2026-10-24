@@ -99,7 +99,7 @@ function ApplicationCard({ a }: { a: ResellerApplication }) {
           ] as const).map(([key, label]) => <label key={key} className="space-y-1 text-sm"><span className="font-medium">{label}</span><input value={form[key]} maxLength={key === "uf" ? 2 : key === "cnpj" ? 18 : 200} onChange={(e) => setForm((v) => ({ ...v, [key]: e.target.value }))} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-ring" /></label>)}
         </div>
         <div className="mt-4 flex flex-wrap gap-2"><Button disabled={editMutation.isPending} onClick={() => editMutation.mutate()}>{editMutation.isPending ? "Salvando..." : "Salvar alterações"}</Button><Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button></div>
-      </div>
+      </div>}
       {a.review_note && <p className="mt-3 text-sm"><span className="font-medium">Observação:</span> {a.review_note}</p>}
       {!editing && <div className="mt-4 grid gap-3 border-t pt-4 text-sm sm:grid-cols-3">
         <div className="flex items-start gap-2"><Building2 className="mt-0.5 size-4 text-muted-foreground" /><span><span className="block text-xs text-muted-foreground">Empresa / CNPJ</span>{a.company_name}<span className="block text-muted-foreground">{fmtCnpj(a.cnpj)}</span></span></div>
