@@ -26,6 +26,21 @@ export { catalogService } from "./catalog";
 export type Role = "cliente" | "revendedor" | "afiliado";
 
 export const authService = {
+  requestPasswordReset: async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) throw new ApiError("Informe o e-mail cadastrado.", 400);
+    const { error } = await getSupabase().auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    if (error) throw new ApiError("Não foi possível solicitar a recuperação. Tente novamente em instantes.", 400);
+  },
+
+  updatePassword: async (password: string) => {
+    if (password.length < 8) throw new ApiError("A nova senha precisa ter pelo menos 8 caracteres.", 400);
+    const { error } = await getSupabase().auth.updateUser({ password });
+    if (error) throw new ApiError("O link pode ter expirado. Solicite uma nova recuperação de senha.", 400);
+  },
+
   login: async (email: string, password: string, admin = false) => {
     if (admin) return loginAdmin(email, password);
 
