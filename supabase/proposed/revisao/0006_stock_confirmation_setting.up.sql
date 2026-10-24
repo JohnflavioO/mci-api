@@ -42,7 +42,8 @@ revoke all on function public.set_stock_confirmation_mode(boolean) from public, 
 grant execute on function public.set_stock_confirmation_mode(boolean) to authenticated;
 
 -- A confirmação só pode ser marcada explicitamente por um administrador.
-create or replace function public.set_product_stock(p_id uuid, p_stock integer, p_confirmed boolean default false)
+drop function if exists public.set_product_stock(uuid, integer);
+create or replace function public.set_product_stock(p_id uuid, p_stock integer, p_confirmed boolean)
 returns void language plpgsql security invoker set search_path = pg_catalog, public as $$
 begin
   if auth.uid() is null or not public.has_role('admin'::public.app_role) then
