@@ -1,8 +1,9 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { AlertCircle, ArrowRight, Clock, Loader2, Lock, RotateCw, UserPlus } from "lucide-react";
 import { resellerService, statusLabel } from "@/services/resellers";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 
 const benefits = ["Preços exclusivos para revenda", "Pedidos e histórico em um só lugar", "Atendimento comercial dedicado"];
@@ -28,6 +29,7 @@ function Frame({ children }: { children: ReactNode }) {
 
 /** Libera o portal só para quem tem o papel "revendedor" no banco; o banco (RLS) continua sendo a barreira real. */
 export function ResellerGate({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const q = useQuery({ queryKey: ["reseller", "access"], queryFn: resellerService.myAccess, retry: false });
   if (q.isPending) {
     return <Frame><div role="status" className="flex items-center gap-3 text-sm text-muted-foreground"><Loader2 className="size-5 animate-spin text-brand" /> Verificando seu acesso…</div></Frame>;
@@ -46,18 +48,23 @@ export function ResellerGate({ children }: { children: ReactNode }) {
     <Frame>
       {!q.data.signedIn ? (
         <>
-          <h2 className="font-display text-2xl font-bold">Acesse sua conta</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Entre com sua conta de revendedor ou solicite seu cadastro. Novos cadastros passam por aprovação.</p>
-          <div className="mt-8 grid gap-3">
-            <Button asChild size="lg" className="h-12 justify-between bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/entrar">Entrar <ArrowRight className="size-4" /></Link></Button>
-            <Button asChild size="lg" variant="outline" className="h-12 justify-between"><Link to="/cadastro">Quero ser revendedor <UserPlus className="size-4" /></Link></Button>
+          <h2 className="font-display text-2xl font-bold">Já tem uma conta?</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Entre para consultar sua inscrição, acompanhar a análise e acessar os preços exclusivos quando seu cadastro for aprovado.</p>
+          <Button asChild size="lg" className="mt-6 h-12 w-full justify-between bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/entrar">Entrar na minha conta <ArrowRight className="size-4" /></Link></Button>
+          <div className="mt-6 border-t border-border pt-5">
+            <p className="text-sm font-semibold">Ainda não tem conta?</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">Solicite seu cadastro de revendedor. A liberação de preços depende da aprovação da equipe MCI.</p>
+            <Button asChild size="lg" variant="outline" className="mt-3 h-11 w-full justify-between"><Link to="/cadastro?tipo=revendedor">Quero ser revendedor <UserPlus className="size-4" /></Link></Button>
           </div>
         </>
       ) : !app ? (
         <>
-          <h2 className="font-display text-2xl font-bold">Cadastro de revendedor necessário</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Sua conta está ativa, mas ainda não possui cadastro de revendedor. Envie os dados da empresa para análise.</p>
-          <Button asChild size="lg" className="mt-8 h-12 w-full justify-between bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/cadastro">Solicitar cadastro <ArrowRight className="size-4" /></Link></Button>
+          <h2 className="font-display text-2xl font-bold">Sua conta está conectada</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Esta conta ainda não possui uma inscrição de revendedor associada. Para evitar criar uma segunda conta com o mesmo e-mail, entre no cadastro existente ou saia para acessar outra conta.</p>
+          <Button type="button" size="lg" className="mt-6 h-12 w-full justify-between bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground" onClick={async () => { await getSupabase().auth.signOut(); await navigate({ to: "/entrar" }); }}>Sair e entrar em outra conta <ArrowRight className="size-4" /></Button>
+          <div className="mt-6 rounded-lg border border-border bg-secondary p-4 text-sm leading-6 text-muted-foreground">
+            Se esta é a conta correta, a inscrição comercial precisa ser concluída. Não é necessário repetir o cadastro de autenticação.
+          </div>
         </>
       ) : (
         <>
