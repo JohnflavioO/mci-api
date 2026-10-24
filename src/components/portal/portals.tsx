@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign,
   Clock, FileEdit, Link2, Package, Plus, Receipt, Settings, ShieldCheck, ShoppingCart,
-  Store, Tags, Upload, Users, Wallet, type LucideIcon,
+  Store, Tags, Upload, Users, Wallet, UserRoundCog, type LucideIcon,
 } from "lucide-react";
 import { portalService } from "@/services";
+import { resellerService, statusLabel } from "@/services/resellers";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import type { PortalSection } from "./PortalLayout";
@@ -18,6 +19,7 @@ export const portals = {
       { slug: "pedidos", label: "Pedidos", icon: ShoppingCart, description: "Acompanhe seus pedidos." },
       { slug: "empresa", label: "Dados da empresa", icon: Building2, description: "Informações cadastrais da empresa." },
       { slug: "aprovacao", label: "Status de aprovação", icon: CheckCircle2, description: "Situação da análise do seu cadastro." },
+      { slug: "conta", label: "Configurações da conta", icon: UserRoundCog, description: "Foto de perfil, contato e dados da empresa." },
     ],
   },
   afiliado: {
@@ -112,6 +114,7 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
   const published = products.filter((product) => product.status === "published").length;
   const drafts = products.filter((product) => product.status === "draft").length;
   const categories = new Set(products.map((product) => product.category?.trim()).filter(Boolean)).size;
+  const resellerQuery = useQuery({ queryKey: ["reseller", "dashboard-overview"], queryFn: () => resellerService.myAccess(), enabled: portal === "revendedor", retry: false });
 
   if (portal === "admin") {
     return (
@@ -171,20 +174,38 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
     );
   }
 
+  if (portal === "revendedor") {
+    const app = resellerQuery.data?.application;
+    const status = app ? statusLabel[app.status] : resellerQuery.data?.signedIn ? "Cadastro não localizado" : "Entre na sua conta";
+    return (
+      <div className="space-y-6">
+        <section className="rounded-2xl bg-graphite p-6 text-graphite-foreground sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">Área do parceiro MCI</p>
+          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Bem-vindo ao Portal do Revendedor</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-graphite-muted">Gerencie seus dados comerciais, acompanhe a análise do cadastro e consulte as áreas disponíveis para sua conta.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/revendedor/$secao" params={{ secao: "conta" }} className="inline-flex h-10 items-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-brand-foreground hover:opacity-90"><UserRoundCog className="size-4" /> Configurar minha conta</Link>
+            <Link to="/revendedor/$secao" params={{ secao: "aprovacao" }} className="inline-flex h-10 items-center gap-2 rounded-md border border-graphite-foreground/20 px-4 text-sm font-medium hover:bg-graphite-foreground/5"><CheckCircle2 className="size-4" /> Ver aprovação</Link>
+          </div>
+        </section>
+        <section className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-xl border bg-card p-5"><p className="text-sm text-muted-foreground">Situação do cadastro</p><p className="mt-3 text-xl font-semibold">{resellerQuery.isPending ? "Carregando…" : status}</p><p className="mt-2 text-xs text-muted-foreground">A aprovação libera os preços exclusivos de revenda.</p></div>
+          <Link to="/revendedor/$secao" params={{ secao: "empresa" }} className="rounded-xl border bg-card p-5 transition hover:border-brand/50 hover:shadow-sm"><Building2 className="size-5 text-brand" /><p className="mt-3 font-semibold">Dados da empresa</p><p className="mt-1 text-sm text-muted-foreground">Revise os dados cadastrais e contatos comerciais.</p><span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold">Ver dados <ArrowRight className="size-4" /></span></Link>
+          <Link to="/revendedor/$secao" params={{ secao: "catalogo" }} className="rounded-xl border bg-card p-5 transition hover:border-brand/50 hover:shadow-sm"><Store className="size-5 text-brand" /><p className="mt-3 font-semibold">Catálogo de revenda</p><p className="mt-1 text-sm text-muted-foreground">Consulte produtos e preços disponíveis para sua conta aprovada.</p><span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold">Abrir catálogo <ArrowRight className="size-4" /></span></Link>
+        </section>
+        <section className="rounded-xl border bg-card p-5 sm:p-6">
+          <h3 className="font-semibold">Acesso rápido</h3>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {p.sections.map((s) => <Link key={s.slug} to="/revendedor/$secao" params={{ secao: s.slug }} className="flex items-center gap-3 rounded-lg border p-4 text-sm transition hover:bg-secondary"><s.icon className="size-4 text-brand" /><span className="min-w-0 flex-1"><span className="block font-semibold">{s.label}</span><span className="mt-1 block text-xs text-muted-foreground">{s.description}</span></span><ArrowRight className="size-4 text-muted-foreground" /></Link>)}
+          </div>
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border bg-card">
-      <div className="border-b px-5 py-4">
-        <h2 className="font-semibold">Visão geral</h2>
-        <p className="text-sm text-muted-foreground">Acesse uma área do seu portal.</p>
-      </div>
-      <ul className="divide-y">
-        {p.sections.map((s) => (
-          <li key={s.slug} className="flex items-center justify-between gap-4 px-5 py-3 text-sm">
-            <span className="flex items-center gap-3"><s.icon className="size-4 text-muted-foreground" />{s.label}</span>
-            <span className="text-xs text-muted-foreground">{s.description}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="border-b px-5 py-4"><h2 className="font-semibold">Visão geral</h2><p className="text-sm text-muted-foreground">Acesse uma área do seu portal.</p></div>
+      <ul className="divide-y">{p.sections.map((s) => <li key={s.slug} className="flex items-center justify-between gap-4 px-5 py-3 text-sm"><span className="flex items-center gap-3"><s.icon className="size-4 text-muted-foreground" />{s.label}</span><span className="text-xs text-muted-foreground">{s.description}</span></li>)}</ul>
     </div>
   );
 }
