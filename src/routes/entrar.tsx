@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { AlertCircle, Loader2, Lock } from "lucide-react";
@@ -51,6 +51,8 @@ function Login() {
     onError: () => setPassword(""),
     gcTime: 0,
   });
+  if (admin) return <Navigate to="/admin-login" replace />;
+
   return (
     <SiteShell>
       <div className="mx-auto max-w-md px-4 py-12 sm:py-16">
