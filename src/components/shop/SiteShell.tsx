@@ -6,7 +6,7 @@ import { useCart } from "@/lib/cart";
 const nav = [
   { to: "/catalogo", label: "Catálogo" },
   { to: "/revendedor", label: "Revendedores" },
-  { to: "/afiliado", label: "Afiliados" },
+  { to: "/seja-afiliado", label: "Afiliados" },
 ] as const;
 
 export function Logo({ inverted = false }: { inverted?: boolean }) {
@@ -87,7 +87,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <div className="text-sm">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-graphite-foreground">Seja parceiro</p>
             <Link to="/cadastro" className="mt-4 block text-graphite-muted transition hover:text-brand">Seja revendedor</Link>
-            <Link to="/cadastro" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Seja afiliado</Link>
+            <Link to="/seja-afiliado" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Seja afiliado</Link>
             <Link to="/entrar" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Acessar minha conta</Link>
           </div>
         </div>

@@ -11,6 +11,7 @@ import { UFS } from "@/lib/br-docs";
 import { CheckCircle2, Info, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/cadastro")({
+  validateSearch: (search: Record<string, unknown>): { tipo?: Role } => ({ tipo: search["tipo"] === "afiliado" || search["tipo"] === "revendedor" || search["tipo"] === "cliente" ? search["tipo"] : undefined }),
   head: () => ({
     meta: [
       { title: "Cadastro | MCI Comercial" },
@@ -40,7 +41,8 @@ const roleInfo: Record<Role, { label: string; desc: string }> = {
 const fieldCls = "mt-2 h-11 focus-visible:border-brand focus-visible:ring-brand/30";
 
 function Register() {
-  const [role, setRole] = useState<Role>("cliente");
+  const { tipo } = Route.useSearch();
+  const [role, setRole] = useState<Role>(tipo ?? "cliente");
   const m = useMutation({ mutationFn: (data: Record<string, string>) => authService.register(role, data) });
   if (m.isSuccess) {
     return (
