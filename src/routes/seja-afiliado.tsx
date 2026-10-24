@@ -41,7 +41,7 @@ function AffiliateLanding() {
               Faça parte da rede de parceiros MCI Xpress. Compartilhe produtos e soluções profissionais, acompanhe as vendas atribuídas às suas indicações e consulte suas comissões em um só lugar.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link to="/cadastro" className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#ff681f] px-5 text-sm font-bold text-white shadow-lg shadow-black/20 transition hover:bg-[#e95712]">
+              <Link to="/cadastro" search={{ tipo: "afiliado" }} className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#ff681f] px-5 text-sm font-bold text-white shadow-lg shadow-black/20 transition hover:bg-[#e95712]">
                 Quero ser afiliado <ArrowRight className="size-4" />
               </Link>
               <Link to="/entrar" className="inline-flex h-12 items-center justify-center rounded-lg border border-white/20 px-5 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/5">
@@ -95,7 +95,7 @@ function AffiliateLanding() {
         <div className="mt-10 flex flex-col items-start justify-between gap-5 rounded-2xl bg-secondary p-6 sm:flex-row sm:items-center sm:p-8">
           <div><h2 className="text-xl font-semibold">Pronto para começar?</h2><p className="mt-1 text-sm text-muted-foreground">Crie sua conta de afiliado ou entre para acessar seu portal.</p></div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <Link to="/cadastro" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">Fazer cadastro <ArrowRight className="size-4" /></Link>
+            <Link to="/cadastro" search={{ tipo: "afiliado" }} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">Fazer cadastro <ArrowRight className="size-4" /></Link>
             <Link to="/entrar" className="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-background px-5 text-sm font-semibold transition hover:bg-card">Entrar na conta</Link>
           </div>
         </div>
