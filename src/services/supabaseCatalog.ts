@@ -87,6 +87,16 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
     return r.data;
   };
   return {
+    /** Catálogo do revendedor: preço exclusivo sujeito às políticas RLS do banco. */
+    listReseller: async (): Promise<SupabaseCatalogProduct[]> => {
+      const client = sb();
+      const [data, setting] = await Promise.all([
+        withStockFallback((sel) => client.from("products").select(sel).eq("status", "published").order("name"), ADMIN_SELECT, ADMIN_BASE_SELECT),
+        client.from("platform_settings").select("setting_value").eq("setting_key", "manual_stock_confirmation").maybeSingle(),
+      ]);
+      const manual = setting.error ? true : (setting.data?.setting_value as { enabled?: boolean } | null)?.enabled !== false;
+      return ((data ?? []) as unknown as SbProductRow[]).map(fromSupabase).map((p) => ({ ...p, stockConfirmed: manual ? p.stockConfirmed : true }));
+    },
     listPublished: async (): Promise<SupabaseCatalogProduct[]> => {
       const client = sb();
       const [data, setting] = await Promise.all([
