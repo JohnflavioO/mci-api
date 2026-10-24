@@ -20,7 +20,7 @@ export function AdminGate({ children }: { children: ReactNode }) {
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError || !sessionData.session) {
-          if (active) void navigate({ to: "/entrar", search: { admin: true }, replace: true });
+          if (active) void navigate({ to: "/admin-login", replace: true });
           return;
         }
 
@@ -30,13 +30,13 @@ export function AdminGate({ children }: { children: ReactNode }) {
 
         if (roleError || isAdmin !== true) {
           await supabase.auth.signOut();
-          if (active) void navigate({ to: "/entrar", search: { admin: true }, replace: true });
+          if (active) void navigate({ to: "/admin-login", replace: true });
           return;
         }
 
         if (active) setAllowed(true);
       } catch {
-        if (active) void navigate({ to: "/entrar", search: { admin: true }, replace: true });
+        if (active) void navigate({ to: "/admin-login", replace: true });
       }
     };
 
