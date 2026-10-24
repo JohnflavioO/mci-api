@@ -3,17 +3,18 @@ import { createSupabaseCatalog, fromSupabase, isMissingStockColumn, type SbProdu
 
 const base: SbProductRow = { id: "p1", name: "X", brand: null, sku: null, category: "C", description: null, status: "published", row_version: 1 };
 
-function fakeClient(responses: { data: unknown; error: unknown }[], selects: string[]) {
-  const chain = (sel: string) => {
-    selects.push(sel);
-    const r = responses.shift()!;
+function fakeClient(responses: Record<string, { data: unknown; error: unknown }[]>, selects: string[]) {
+  const chain = (table: string, sel: string) => {
+    selects.push(`${table}:${sel}`);
+    const queue = responses[table] ?? [];
+    const r = queue.shift() ?? { data: null, error: { code: "42P01", message: "table missing" } };
     const c: Record<string, unknown> = {};
     for (const k of ["eq", "order"]) c[k] = () => c;
     c["maybeSingle"] = () => Promise.resolve(r);
     c["then"] = (f: (v: unknown) => unknown) => Promise.resolve(r).then(f);
     return c;
   };
-  return () => ({ from: () => ({ select: chain }) }) as never;
+  return () => ({ from: (table: string) => ({ select: (sel: string) => chain(table, sel) }) }) as never;
 }
 
 describe("estoque no catálogo Supabase", () => {
@@ -27,14 +28,14 @@ describe("estoque no catálogo Supabase", () => {
   });
   it("seleciona stock_quantity e refaz sem ele se a coluna não existir (0004 pendente)", async () => {
     const selects: string[] = [];
-    const sb = fakeClient([{ data: null, error: { code: "42703", message: "column products.stock_quantity does not exist" } }, { data: [base], error: null }], selects);
+    const sb = fakeClient({ products: [{ data: null, error: { code: "42703", message: "column products.stock_quantity does not exist" } }, { data: [base], error: null }], platform_settings: [{ data: null, error: { code: "42P01", message: "table missing" } }] }, selects);
     const list = await createSupabaseCatalog(sb).listPublished();
-    expect(selects[0]).toContain("stock_quantity");
-    expect(selects[1]).not.toContain("stock_quantity");
+    expect(selects.some((s) => s.includes("products:") && s.includes("stock_quantity"))).toBe(true);
+    expect(selects.some((s) => s.startsWith("products:") && !s.includes("stock_quantity"))).toBe(true);
     expect(list[0]!.stock).toBeNull();
   });
   it("outros erros propagam", async () => {
-    const sb = fakeClient([{ data: null, error: { code: "42501", message: "permission denied" } }], []);
+    const sb = fakeClient({ products: [{ data: null, error: { code: "42501", message: "permission denied" } }], platform_settings: [{ data: null, error: { code: "42P01", message: "table missing" } }] }, []);
     await expect(createSupabaseCatalog(sb).listPublished()).rejects.toThrow("permission denied");
     expect(isMissingStockColumn({ code: "42501" })).toBe(false);
   });
