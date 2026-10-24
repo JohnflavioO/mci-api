@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Menu, X, ShieldCheck, UserRound } from "lucide-react";
+import { ShoppingBag, Menu, X, ShieldCheck, UserRound, LayoutDashboard, LogOut, Loader2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 const nav = [
   { to: "/catalogo", label: "Catálogo" },
@@ -20,9 +22,61 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
 
 const linkBase = "relative rounded-md px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand";
 
+type AccountDestination = "/revendedor" | "/afiliado" | "/meus-pedidos";
+type AccountState = { user: User | null; destination: AccountDestination; loading: boolean };
+
 export function SiteShell({ children }: { children: ReactNode }) {
   const { count } = useCart();
   const [open, setOpen] = useState(false);
+  const [account, setAccount] = useState<AccountState>({ user: null, destination: "/meus-pedidos", loading: true });
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      setAccount({ user: null, destination: "/meus-pedidos", loading: false });
+      return;
+    }
+    const sb = getSupabase();
+    let alive = true;
+    let requestId = 0;
+    const sync = async (user: User | null) => {
+      const id = ++requestId;
+      if (!user) {
+        if (alive) setAccount({ user: null, destination: "/meus-pedidos", loading: false });
+        return;
+      }
+      if (alive) setAccount((prev) => ({ ...prev, user, loading: true }));
+      let destination: AccountDestination = "/meus-pedidos";
+      try {
+        const [reseller, affiliate] = await Promise.all([
+          sb.rpc("has_role", { _role: "revendedor" }),
+          sb.rpc("has_role", { _role: "afiliado" }),
+        ]);
+        if (reseller.data === true) destination = "/revendedor";
+        else if (affiliate.data === true) destination = "/afiliado";
+      } catch {
+        // Sem confirmação de função, mantém o acesso comum à conta.
+      }
+      if (alive && id === requestId) setAccount({ user, destination, loading: false });
+    };
+    void sb.auth.getSession().then(({ data }) => sync(data.session?.user ?? null));
+    const { data: listener } = sb.auth.onAuthStateChange((_event, session) => {
+      void sync(session?.user ?? null);
+    });
+    return () => {
+      alive = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const accountLabel = account.loading ? "Carregando" : account.user ? "Minha conta" : "Entrar";
+  const accountIcon = account.loading ? <Loader2 className="size-4 animate-spin" /> : account.user ? <LayoutDashboard className="size-4" /> : <UserRound className="size-4" />;
+  const accountTo = account.user ? account.destination : "/entrar";
+  const signOut = async () => {
+    if (!isSupabaseConfigured()) return;
+    await getSupabase().auth.signOut();
+    setOpen(false);
+    window.location.assign("/");
+  };
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -43,9 +97,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <Link to="/entrar" className="hidden h-10 items-center gap-2 rounded-md bg-graphite px-4 text-sm font-semibold text-graphite-foreground transition hover:bg-brand hover:text-brand-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex">
-              <UserRound className="size-4" /> Entrar
+            <Link to={accountTo} className="hidden h-10 items-center gap-2 rounded-md bg-graphite px-4 text-sm font-semibold text-graphite-foreground transition hover:bg-brand hover:text-brand-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex">
+              {accountIcon} {accountLabel}
             </Link>
+            {account.user && !account.loading && <button type="button" onClick={() => void signOut()} className="hidden h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-semibold text-foreground transition hover:bg-secondary sm:inline-flex" aria-label="Sair da conta"><LogOut className="size-4" /><span className="hidden lg:inline">Sair</span></button>}
             <Link to="/carrinho" className="relative grid size-10 place-items-center rounded-md text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" aria-label={count > 0 ? `Carrinho, ${count} ${count === 1 ? "item" : "itens"}` : "Carrinho"}>
               <ShoppingBag className="size-5" strokeWidth={1.75} />
               {count > 0 && (
@@ -62,9 +117,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
             {nav.map((n) => (
               <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-md px-3 text-base font-semibold text-foreground/80 hover:bg-secondary" activeProps={{ className: "flex min-h-12 items-center rounded-md border-l-2 border-brand bg-secondary px-3 text-base font-semibold text-foreground" }}>{n.label}</Link>
             ))}
-            <Link to="/entrar" onClick={() => setOpen(false)} className="mt-3 flex h-12 items-center justify-center gap-2 rounded-md bg-graphite text-base font-semibold text-graphite-foreground">
-              <UserRound className="size-4" /> Entrar
+            <Link to={accountTo} onClick={() => setOpen(false)} className="mt-3 flex h-12 items-center justify-center gap-2 rounded-md bg-graphite text-base font-semibold text-graphite-foreground">
+              {accountIcon} {accountLabel}
             </Link>
+            {account.user && !account.loading && <button type="button" onClick={() => void signOut()} className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-md border border-border text-base font-semibold" aria-label="Sair da conta"><LogOut className="size-4" /> Sair da conta</button>}
           </nav>
         )}
       </header>
