@@ -93,7 +93,7 @@ export const authService = {
       metadata["phone"] = data["Telefone"]?.trim() ?? "";
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -104,11 +104,23 @@ export const authService = {
     if (error) {
       throw new ApiError(
         error.message.includes("already registered")
-          ? "Este e-mail já está cadastrado."
+          ? "Este e-mail já está cadastrado. Entre na sua conta ou recupere sua senha para continuar."
           : role === "revendedor" && error.message.includes("Database error")
             ? "Cadastro recusado: este CNPJ já está cadastrado ou os dados não passaram na validação."
             : "Não foi possível criar a conta. Confira os dados e tente novamente.",
         400,
+      );
+    }
+
+    // Supabase may return an obfuscated success response for an existing email
+    // when email confirmation is enabled. An empty identities array indicates
+    // that no new identity was created; do not show the registration success screen.
+    if (signUpData.user && Array.isArray(signUpData.user.identities) && signUpData.user.identities.length === 0) {
+      throw new ApiError(
+        role === "revendedor"
+          ? "Este e-mail já possui uma conta. Entre ou recupere sua senha; depois será possível concluir o cadastro de revendedor."
+          : "Este e-mail já está cadastrado. Entre na sua conta ou recupere sua senha.",
+        409,
       );
     }
   },
