@@ -17,9 +17,8 @@ export const portals = {
     sections: [
       { slug: "catalogo", label: "Catálogo de revenda", icon: Store, description: "Produtos disponíveis com a sua tabela de revenda." },
       { slug: "pedidos", label: "Pedidos", icon: ShoppingCart, description: "Acompanhe seus pedidos." },
-      { slug: "empresa", label: "Dados da empresa", icon: Building2, description: "Informações cadastrais da empresa." },
       { slug: "aprovacao", label: "Status de aprovação", icon: CheckCircle2, description: "Situação da análise do seu cadastro." },
-      { slug: "conta", label: "Configurações da conta", icon: UserRoundCog, description: "Foto de perfil, contato e dados da empresa." },
+      { slug: "conta", label: "Configurações da conta", icon: UserRoundCog, description: "Foto de perfil, contato e dados cadastrais da empresa." },
     ],
   },
   afiliado: {
