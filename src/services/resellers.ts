@@ -65,6 +65,31 @@ export const resellerService = {
     return (data ?? []) as ResellerApplication[];
   },
 
+  async updateApplication(id: string, patch: Pick<ResellerApplication, "company_name" | "trade_name" | "cnpj" | "state_registration" | "uf" | "responsible_name" | "email" | "phone">): Promise<void> {
+    if (!(await session())) throw new ApiError("Entre com uma conta administradora.", 401);
+    const clean = {
+      company_name: patch.company_name.trim(),
+      trade_name: patch.trade_name?.trim() || null,
+      cnpj: patch.cnpj.replace(/\\D/g, ""),
+      state_registration: patch.state_registration.trim(),
+      uf: patch.uf.trim().toUpperCase(),
+      responsible_name: patch.responsible_name.trim(),
+      email: patch.email.trim().toLowerCase(),
+      phone: patch.phone.trim(),
+    };
+    if (!clean.company_name || clean.cnpj.length !== 14 || !clean.state_registration || !/^[A-Z]{2}$/.test(clean.uf) || !clean.responsible_name || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(clean.email) || !clean.phone) {
+      throw new ApiError("Revise os campos obrigatórios. O CNPJ deve conter 14 dígitos e a UF duas letras.", 422);
+    }
+    const { error } = await getSupabase().from("reseller_applications").update(clean).eq("id", id);
+    if (error) fail(error);
+  },
+
+  async deleteApplication(id: string): Promise<void> {
+    if (!(await session())) throw new ApiError("Entre com uma conta administradora.", 401);
+    const { error } = await getSupabase().from("reseller_applications").delete().eq("id", id);
+    if (error) fail(error);
+  },
+
   async review(id: string, action: ReviewAction, note: string, documentsConfirmed: boolean): Promise<ResellerStatus> {
     const msg = checkReview(action, note, documentsConfirmed);
     if (msg) throw new ApiError(msg, 422);
