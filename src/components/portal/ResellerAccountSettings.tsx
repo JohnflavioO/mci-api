@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Camera, CheckCircle2, Loader2, Save, UserRound } from "lucide-react";
+import { Building2, Camera, CheckCircle2, Loader2, Save, UserRound, FilePenLine, LockKeyhole } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 
 type Profile = {
   userId: string; email: string; fullName: string; avatarUrl: string;
@@ -29,6 +30,10 @@ export function ResellerAccountSettings() {
   const [photoSaving, setPhotoSaving] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState("");
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestFields, setRequestFields] = useState<string[]>(["company_name"]);
+  const [requestValues, setRequestValues] = useState({ company_name: "", trade_name: "", cnpj: "", state_registration: "", uf: "", responsible_name: "" });
+  const [requestReason, setRequestReason] = useState("");
   const query = useQuery({
     queryKey: ["reseller", "account-settings"],
     queryFn: async () => {
@@ -87,6 +92,29 @@ export function ResellerAccountSettings() {
     finally { setPhotoSaving(false); }
   };
 
+  const submitChangeRequest = useMutation({
+    mutationFn: async () => {
+      const sb = getSupabase();
+      const { data: auth, error: authError } = await sb.auth.getUser();
+      if (authError || !auth.user || auth.user.id !== form.userId) throw new Error("Sua sessão expirou. Entre novamente.");
+      if (requestFields.length === 0) throw new Error("Selecione pelo menos um dado para solicitar alteração.");
+      if (requestReason.trim().length < 10) throw new Error("Explique o motivo da solicitação (mínimo 10 caracteres).");
+      const proposed: Record<string, string> = {};
+      for (const key of requestFields) proposed[key] = requestValues[key as keyof typeof requestValues].trim();
+      const { error } = await sb.rpc("submit_reseller_change_request", {
+        p_requested_fields: requestFields,
+        p_proposed_values: proposed,
+        p_reason: requestReason.trim(),
+      });
+      if (error) throw new Error("Não foi possível enviar a solicitação: " + error.message);
+    },
+    onSuccess: async () => {
+      setRequestOpen(false); setRequestReason("");
+      setNotice("Solicitação enviada ao Super Admin para análise.");
+      await qc.invalidateQueries({ queryKey: ["reseller", "change-requests"] });
+    },
+  });
+
   const save = useMutation({
     mutationFn: async () => {
       const sb = getSupabase();
@@ -137,15 +165,42 @@ export function ResellerAccountSettings() {
         </div>
       </section>
       <section className="rounded-2xl border bg-card p-6 sm:p-8">
-        <div className="mb-6 flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-secondary"><Building2 className="size-5" /></span><div><h3 className="text-lg font-semibold">Telefone de contato</h3><p className="mt-1 text-sm text-muted-foreground">CNPJ, inscrição estadual e endereço fiscal não podem ser alterados pelo revendedor.</p></div></div>
+        <div className="mb-6 flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-secondary"><Building2 className="size-5" /></span><div><h3 className="text-lg font-semibold">Dados oficiais da empresa</h3><p className="mt-1 text-sm text-muted-foreground">Os dados abaixo são somente para consulta. Para corrigir informações oficiais, envie uma solicitação ao Super Admin.</p></div></div>
         <div className="grid gap-5 sm:grid-cols-2">
-          {fields.map((f) => <div key={f.key}><Label htmlFor={f.key}>{f.label}</Label><Input id={f.key} value={String(form[f.key] ?? "")} onChange={(e) => set(f.key, e.target.value)} required={f.required} className={inputClass} /></div>)}
+          {([
+            ["companyName", "Razão social"], ["tradeName", "Nome fantasia"], ["cnpj", "CNPJ"], ["stateRegistration", "Inscrição estadual"], ["uf", "UF fiscal"], ["responsibleName", "Responsável legal/comercial"]
+          ] as const).map(([key, label]) => <div key={key}><Label htmlFor={"readonly-" + key}>{label}</Label><div className="relative"><Input id={"readonly-" + key} value={form[key] || "Não informado"} readOnly aria-readonly className={inputClass + " bg-muted pr-10 text-muted-foreground"} /><LockKeyhole className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /></div></div>)}
         </div>
         <div className="mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div aria-live="polite" className="text-sm">{notice ? <span>{notice}</span> : save.isError ? <span className="text-destructive">{save.error.message}</span> : <span className="text-muted-foreground">A foto é salva separadamente. CNPJ e inscrição exigem solicitação ao Super Admin.</span>}</div>
+          <p className="text-sm text-muted-foreground">CNPJ, inscrição estadual e demais dados oficiais não podem ser alterados diretamente pelo revendedor.</p>
+          <Button type="button" variant="outline" className="gap-2" onClick={() => { setRequestValues({ company_name: form.companyName, trade_name: form.tradeName, cnpj: form.cnpj, state_registration: form.stateRegistration, uf: form.uf, responsible_name: form.responsibleName }); setRequestOpen(true); }}><FilePenLine className="size-4" /> Solicitar alteração cadastral</Button>
+        </div>
+      </section>
+      <section className="rounded-2xl border bg-card p-6 sm:p-8">
+        <div className="mb-6 flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-secondary"><Building2 className="size-5" /></span><div><h3 className="text-lg font-semibold">Contato</h3><p className="mt-1 text-sm text-muted-foreground">Telefone e WhatsApp podem ser atualizados diretamente.</p></div></div>
+        <div className="grid gap-5 sm:grid-cols-2"><div><Label htmlFor="profile-phone">Telefone / WhatsApp</Label><Input id="profile-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} required className={inputClass} /></div></div>
+        <div className="mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div aria-live="polite" className="text-sm">{notice ? <span>{notice}</span> : save.isError ? <span className="text-destructive">{save.error.message}</span> : <span className="text-muted-foreground">A foto é salva separadamente. Dados oficiais exigem aprovação do Super Admin.</span>}</div>
           <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-2">{save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Salvar telefone e dados pessoais</Button>
         </div>
       </section>
+      <Dialog open={requestOpen} onOpenChange={(open) => !submitChangeRequest.isPending && setRequestOpen(open)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Solicitar alteração cadastral</DialogTitle><DialogDescription>Selecione os dados que precisam de correção e informe os valores desejados. Nada será alterado até a aprovação do Super Admin.</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            {([
+              ["company_name", "Razão social"], ["trade_name", "Nome fantasia"], ["cnpj", "CNPJ"], ["state_registration", "Inscrição estadual"], ["uf", "UF fiscal"], ["responsible_name", "Responsável legal/comercial"]
+            ] as const).map(([key, label]) => <div key={key} className="rounded-lg border p-3">
+              <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={requestFields.includes(key)} onChange={(e) => setRequestFields((current) => e.target.checked ? [...current, key] : current.filter((item) => item !== key))} />{label}</label>
+              {requestFields.includes(key) && <Input className="mt-2" value={requestValues[key]} onChange={(e) => setRequestValues((current) => ({ ...current, [key]: e.target.value }))} placeholder={"Novo valor para " + label.toLowerCase()} />}
+            </div>)}
+            <div><Label htmlFor="request-reason">Motivo da solicitação</Label><Textarea id="request-reason" value={requestReason} onChange={(e) => setRequestReason(e.target.value)} rows={3} maxLength={1000} placeholder="Explique por que os dados precisam ser alterados." /></div>
+            <p className="text-xs text-muted-foreground">Se necessário, o Super Admin poderá solicitar documentos comprobatórios antes de decidir.</p>
+          </div>
+          <DialogFooter><Button variant="outline" disabled={submitChangeRequest.isPending} onClick={() => setRequestOpen(false)}>Cancelar</Button><Button disabled={submitChangeRequest.isPending} onClick={() => submitChangeRequest.mutate()}>{submitChangeRequest.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <FilePenLine className="mr-2 size-4" />} Enviar para aprovação</Button></DialogFooter>
+          {submitChangeRequest.isError && <p role="alert" className="text-sm text-destructive">{submitChangeRequest.error.message}</p>}
+        </DialogContent>
+      </Dialog>
       <Dialog open={photoDialogOpen} onOpenChange={(open) => { if (!open && !photoSaving) { setPhotoDialogOpen(false); setPhoto(null); setPhotoPreview(""); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Ajustar foto do perfil</DialogTitle><DialogDescription>Pré-visualize e ajuste o enquadramento antes de salvar. A foto será salva separadamente dos demais dados.</DialogDescription></DialogHeader>
