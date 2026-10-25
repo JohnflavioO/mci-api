@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Save, Trash2 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { AdminGate } from "@/components/portal/AdminGate";
 
 export const Route = createFileRoute("/admin/banners")({
   head: () => ({ meta: [{ title: "Banners da home | MCI Xpress" }] }),
-  component: HomepageBannersPage,
+  component: () => <AdminGate><HomepageBannersPage /></AdminGate>,
 });
 
 type Slide = {
