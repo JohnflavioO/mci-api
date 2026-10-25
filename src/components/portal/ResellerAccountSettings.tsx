@@ -57,7 +57,20 @@ export function ResellerAccountSettings() {
         if (photo.size > 3 * 1024 * 1024) throw new Error("A foto deve ter no máximo 3 MB.");
         const path = `${form.userId}/profile-${Date.now()}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
         const { error: uploadError } = await sb.storage.from("profile-photos").upload(path, photo, { upsert: true, contentType: photo.type });
-        if (uploadError) throw new Error("Não foi possível enviar a foto. Verifique a configuração de armazenamento e tente novamente.");
+        if (uploadError) {
+          const detail = uploadError.message || "Erro desconhecido do Supabase Storage";
+          const lower = detail.toLowerCase();
+          if (lower.includes("bucket") && (lower.includes("not found") || lower.includes("does not exist"))) {
+            throw new Error("O bucket profile-photos não existe no projeto Supabase conectado a este site. Confirme o projeto e execute a migration de armazenamento.");
+          }
+          if (lower.includes("row-level security") || lower.includes("permission denied") || lower.includes("unauthorized") || lower.includes("not allowed")) {
+            throw new Error(`O Supabase bloqueou o envio da foto por permissão. Confira as políticas de Storage para profile-photos. Detalhe: ${detail}`);
+          }
+          if (lower.includes("payload too large") || lower.includes("exceeded the maximum allowed size")) {
+            throw new Error("A imagem excede o limite permitido pelo armazenamento. Escolha uma imagem menor que 3 MB.");
+          }
+          throw new Error(`Falha no upload da foto (Supabase Storage): ${detail}`);
+        }
         const { data } = sb.storage.from("profile-photos").getPublicUrl(path);
         avatarUrl = data.publicUrl;
       }
