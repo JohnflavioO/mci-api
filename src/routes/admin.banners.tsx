@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ImagePlus, Loader2, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Loader2, Save, Trash2, Upload, X } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { AdminGate } from "@/components/portal/AdminGate";
@@ -28,6 +29,7 @@ function HomepageBannersPage() {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<SlideDraft>(emptySlide());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<"desktop" | "mobile" | null>(null);
   const slides = useQuery({
     queryKey: ["admin", "homepage-hero-slides"],
     queryFn: async () => {
@@ -37,6 +39,45 @@ function HomepageBannersPage() {
     },
     retry: false,
   });
+  const uploadImage = async (kind: "desktop" | "mobile", event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    input.value = "";
+    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem."); return; }
+    if (file.size > 8 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 8 MB."); return; }
+    setUploading(kind);
+    try {
+      const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${kind}/${crypto.randomUUID()}.${extension}`;
+      const { data, error } = await getSupabase().storage.from("homepage-banners").upload(path, file, {
+        cacheControl: "31536000", upsert: false, contentType: file.type,
+      });
+      if (error) throw error;
+      const { data: publicData } = getSupabase().storage.from("homepage-banners").getPublicUrl(data.path);
+      setDraft(current => ({ ...current, [kind === "desktop" ? "image_url" : "mobile_image_url"]: publicData.publicUrl }));
+      toast.success(kind === "desktop" ? "Imagem desktop enviada." : "Imagem mobile enviada.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível enviar a imagem.";
+      toast.error(message.includes("Bucket not found") ? "O armazenamento de banners ainda não foi configurado. Aplique a migration atualizada do projeto." : message);
+    } finally {
+      setUploading(null);
+    }
+  };
+  const ImageUploadField = ({ kind, label, url, hint }: { kind: "desktop" | "mobile"; label: string; url: string; hint: string }) => (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium">{label}</label>
+      <div className="rounded-lg border border-dashed p-3">
+        {url ? <div className="mb-3 overflow-hidden rounded-md bg-muted"><img src={url} alt={`Prévia da imagem ${kind}`} className={kind === "desktop" ? "h-36 w-full object-cover" : "mx-auto h-40 max-w-full object-contain"} /></div> : <div className="mb-3 flex h-24 items-center justify-center rounded-md bg-muted/60 text-sm text-muted-foreground">Nenhuma imagem selecionada</div>}
+        <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading !== null} onChange={event => void uploadImage(kind, event)} className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-background" />
+        <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
+        {url && <div className="mt-2 flex items-center justify-between gap-2"><span className="truncate text-xs text-muted-foreground">{url}</span><Button type="button" size="sm" variant="ghost" onClick={() => setDraft(current => ({ ...current, [kind === "desktop" ? "image_url" : "mobile_image_url"]: "" }))}><X className="mr-1 size-3" />Remover</Button></div>}
+      </div>
+      <label className="block text-xs text-muted-foreground">Ou cole uma URL HTTPS existente
+        <input className={field} value={url} onChange={event => setDraft(current => ({ ...current, [kind === "desktop" ? "image_url" : "mobile_image_url"]: event.target.value }))} placeholder="https://..." />
+      </label>
+    </div>
+  );
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: ["admin", "homepage-hero-slides"] });
     await qc.invalidateQueries({ queryKey: ["homepage-hero-slides"] });
@@ -87,14 +128,16 @@ function HomepageBannersPage() {
         <label className="text-sm font-medium">Título *<input className={field} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} placeholder="Ex.: Conheça a linha Astera"/></label>
         <label className="text-sm font-medium">Texto de apoio<input className={field} value={draft.description ?? ""} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Frase curta da campanha"/></label>
         <label className="text-sm font-medium">Etiqueta superior<input className={field} value={draft.eyebrow} onChange={e=>setDraft({...draft,eyebrow:e.target.value})} placeholder="Lançamento, marca ou categoria"/></label>
-        <label className="text-sm font-medium">URL da imagem desktop *<input className={field} value={draft.image_url} onChange={e=>setDraft({...draft,image_url:e.target.value})} placeholder="https://..."/></label>
-        <label className="text-sm font-medium">URL da imagem mobile<input className={field} value={draft.mobile_image_url ?? ""} onChange={e=>setDraft({...draft,mobile_image_url:e.target.value})} placeholder="Opcional — https://..."/></label>
+        <div className="sm:col-span-2 grid gap-4 lg:grid-cols-2">
+          <ImageUploadField kind="desktop" label="Imagem desktop *" url={draft.image_url} hint="Recomendado: 1600 × 1000 px (proporção 16:10). JPG, PNG, WebP ou AVIF; até 8 MB." />
+          <ImageUploadField kind="mobile" label="Imagem mobile (opcional)" url={draft.mobile_image_url ?? ""} hint="Recomendado: 900 × 1200 px (proporção 3:4). A área visível é vertical em celulares; até 8 MB." />
+        </div>
         <label className="text-sm font-medium">Texto do botão<input className={field} value={draft.button_label} onChange={e=>setDraft({...draft,button_label:e.target.value})} placeholder="Ver produtos"/></label>
         <label className="text-sm font-medium">Destino do botão<input className={field} value={draft.button_url} onChange={e=>setDraft({...draft,button_url:e.target.value})} placeholder="/catalogo ou URL HTTPS"/></label>
         <label className="text-sm font-medium">Ordem de exibição<input type="number" min={0} className={field} value={draft.sort_order} onChange={e=>setDraft({...draft,sort_order:Number(e.target.value)||0})}/></label>
         <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2"><input type="checkbox" checked={draft.is_active} onChange={e=>setDraft({...draft,is_active:e.target.checked})}/> Publicar na home</label>
       </div>
-      <div className="mt-5 flex flex-wrap gap-2"><Button onClick={()=>save.mutate()} disabled={save.isPending}>{save.isPending ? <Loader2 className="mr-2 size-4 animate-spin"/> : <Save className="mr-2 size-4"/>}{editingId ? "Salvar alterações" : "Cadastrar banner"}</Button>{editingId && <Button variant="outline" onClick={()=>{setDraft(emptySlide());setEditingId(null);}}>Cancelar edição</Button>}</div>
+      <div className="mt-5 flex flex-wrap gap-2"><Button onClick={()=>save.mutate()} disabled={save.isPending || uploading !== null}>{save.isPending || uploading !== null ? <Loader2 className="mr-2 size-4 animate-spin"/> : <Save className="mr-2 size-4"/>}{editingId ? "Salvar alterações" : "Cadastrar banner"}</Button>{editingId && <Button variant="outline" onClick={()=>{setDraft(emptySlide());setEditingId(null);}}>Cancelar edição</Button>}</div>
     </section>
     <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="font-semibold">Slides cadastrados</h3><span className="text-xs text-muted-foreground">{slides.data?.length ?? 0} banner(s)</span></div>
       {slides.isPending ? <p className="text-sm text-muted-foreground">Carregando banners…</p> : slides.isError ? <p className="rounded-lg border border-destructive/30 p-4 text-sm text-destructive">Não foi possível carregar. Verifique se a migration foi aplicada e se sua conta tem permissão administrativa.</p> : slides.data?.length ? slides.data.map((slide,index)=><article key={slide.id} className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center">
