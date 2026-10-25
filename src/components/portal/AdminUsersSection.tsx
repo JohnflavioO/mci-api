@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, Clock3, RefreshCw, Search, ShieldCheck, Users, UserRoundX } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, Ban, CheckCircle2, Clock3, RefreshCw, Search, ShieldCheck, Users, UserRoundX } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 type AdminUser = {
   id: string;
@@ -12,6 +13,7 @@ type AdminUser = {
   emailConfirmedAt: string | null;
   bannedUntil: string | null;
   role: string | null;
+  roles?: string[];
 };
 type UserStatus = "active" | "pending" | "blocked";
 
@@ -20,9 +22,9 @@ const dateTime = (value: string | null) => value
   : "—";
 const dateOnly = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 const roleLabel = (role: string | null) => {
-  if (!role) return "Não identificado";
-  const labels: Record<string, string> = { admin: "Super Admin", gestor: "Gestor", vendedor: "Vendedor", reseller: "Revendedor", affiliate: "Afiliado" };
-  return labels[role] ?? role;
+  if (!role) return "Cliente";
+  const labels: Record<string, string> = { admin: "Administrador", super_admin: "Super Admin", gestor: "Gestor", vendedor: "Vendedor", reseller: "Revendedor", revendedor: "Revendedor", affiliate: "Afiliado", afiliado: "Afiliado", cliente: "Cliente" };
+  return labels[role] ?? "Perfil não reconhecido";
 };
 const statusFor = (user: AdminUser): UserStatus => {
   if (user.bannedUntil && new Date(user.bannedUntil).getTime() > Date.now()) return "blocked";
@@ -39,6 +41,26 @@ const statusClass: Record<UserStatus, string> = {
 export function AdminUsersSection() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | UserStatus>("all");
+  const queryClient = useQueryClient();
+  const accessMutation = useMutation({
+    mutationFn: async ({ user, action, reason }: { user: AdminUser; action: "suspend" | "reactivate"; reason: string }) => {
+      const session = await getSupabase().auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error("Sua sessão expirou. Entre novamente na Central Administrativa.");
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, action, reason }),
+      });
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(body.error || "Não foi possível alterar o acesso.");
+    },
+    onSuccess: async (_, variables) => {
+      toast.success(variables.action === "suspend" ? "Acesso suspenso." : "Acesso reativado.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "auth-users"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
   const query = useQuery({
     queryKey: ["admin", "auth-users"],
     queryFn: async () => {
@@ -121,7 +143,7 @@ export function AdminUsersSection() {
           <div className="p-10 text-center"><Users className="mx-auto size-8 text-muted-foreground/60" /><h3 className="mt-3 font-semibold">Nenhum usuário encontrado</h3><p className="mt-1 text-sm text-muted-foreground">{users.length ? "Tente ajustar a busca ou o filtro." : "Não há contas nesta página do Supabase Auth."}</p></div>
         ) : (
           <div className="overflow-x-auto"><table className="w-full min-w-[780px] text-left text-sm">
-            <thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-5 py-3 font-medium">Usuário</th><th className="px-5 py-3 font-medium">Perfil</th><th className="px-5 py-3 font-medium">Situação</th><th className="px-5 py-3 font-medium">Último acesso</th><th className="px-5 py-3 font-medium">Cadastro</th></tr></thead>
+            <thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-5 py-3 font-medium">Usuário</th><th className="px-5 py-3 font-medium">Perfil</th><th className="px-5 py-3 font-medium">Situação</th><th className="px-5 py-3 font-medium">Último acesso</th><th className="px-5 py-3 font-medium">Cadastro</th><th className="px-5 py-3 text-right font-medium">Ações</th></tr></thead>
             <tbody className="divide-y">{filtered.map((user) => {
               const state = statusFor(user);
               return <tr key={user.id} className="transition-colors hover:bg-secondary/30">
@@ -129,11 +151,29 @@ export function AdminUsersSection() {
                 <td className="px-5 py-4"><span className="inline-flex items-center gap-1.5 text-muted-foreground"><ShieldCheck className="size-4" />{roleLabel(user.role)}</span></td>
                 <td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusClass[state]}`}>{statusLabel[state]}</span></td>
                 <td className="px-5 py-4 text-muted-foreground">{dateTime(user.lastSignInAt)}</td><td className="px-5 py-4 text-muted-foreground">{dateOnly(user.createdAt)}</td>
+                <td className="px-5 py-4 text-right">
+                  <button type="button"
+                    disabled={accessMutation.isPending || user.role === "admin" || user.role === "super_admin"}
+                    title={user.role === "admin" || user.role === "super_admin" ? "Contas administrativas estão protegidas contra suspensão por esta tela" : state === "blocked" ? "Reativar acesso" : "Suspender acesso"}
+                    onClick={() => {
+                      const action = state === "blocked" ? "reactivate" : "suspend";
+                      const label = action === "suspend" ? "suspender" : "reativar";
+                      if (!window.confirm(`Confirma ${label} o acesso de ${user.email || user.id}?`)) return;
+                      const reason = window.prompt("Informe o motivo (mínimo 5 caracteres):");
+                      if (reason === null) return;
+                      if (reason.trim().length < 5) { toast.error("Informe um motivo com pelo menos 5 caracteres."); return; }
+                      accessMutation.mutate({ user, action, reason: reason.trim() });
+                    }}
+                    className="inline-flex size-9 items-center justify-center rounded-md border hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={state === "blocked" ? "Reativar acesso" : "Suspender acesso"}>
+                    {state === "blocked" ? <CheckCircle2 className="size-4" /> : <Ban className="size-4" />}
+                  </button>
+                </td>
               </tr>;
             })}</tbody>
           </table></div>
         )}
-        <div className="flex flex-col gap-2 border-t px-5 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>Exibindo {filtered.length} de {users.length} contas carregadas.</span><span>O painel não altera contas nesta etapa.</span></div>
+        <div className="flex flex-col gap-2 border-t px-5 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>Exibindo {filtered.length} de {users.length} contas carregadas.</span><span>Suspensão e reativação exigem motivo e são registradas para auditoria.</span></div>
       </section>
     </div>
   );
