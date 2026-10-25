@@ -151,7 +151,7 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       }
       return String(data);
     },
-    /** Substitui a galeria do produto e envia os novos arquivos ao Storage. */
+    /** Atualiza a galeria sem deixar um produto publicado temporariamente sem imagens. */
     saveProductImages: async (productId: string, existingUrls: string[], files: File[]): Promise<void> => {
       const client = sb();
       const uploadedUrls: string[] = [];
@@ -174,14 +174,57 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
         if (uploadError) throw new Error(`Falha ao enviar a imagem "${file.name}": ${uploadError.message}`);
         uploadedUrls.push(client.storage.from("product-images").getPublicUrl(path).data.publicUrl);
       }
+
       const urls = [...existingUrls, ...uploadedUrls].slice(0, 10);
-      const { error: deleteError } = await client.from("product_images").delete().eq("product_id", productId);
-      if (deleteError) throw new Error(`Não foi possível atualizar a galeria: ${deleteError.message}`);
-      if (urls.length) {
-        const { error: insertError } = await client.from("product_images").insert(
-          urls.map((url, position) => ({ product_id: productId, url, position })),
-        );
-        if (insertError) throw new Error(`Não foi possível salvar as imagens: ${insertError.message}`);
+      const { data: currentRows, error: readError } = await client
+        .from("product_images")
+        .select("id,url,position")
+        .eq("product_id", productId)
+        .order("position", { ascending: true });
+      if (readError) throw new Error(`Não foi possível carregar a galeria atual: ${readError.message}`);
+
+      const current = (currentRows ?? []) as { id: number; url: string; position: number }[];
+      // Primeiro desloca posições para evitar colisões com a restrição UNIQUE(product_id, position)
+      // ao reordenar fotos. Nenhuma linha é removida nesta etapa, evitando violar a regra
+      // que exige imagens para produtos publicados.
+      if (current.length) {
+        const { error: shiftError } = await client
+          .from("product_images")
+          .update({ position: 1000 })
+          .eq("product_id", productId);
+        if (shiftError) throw new Error(`Não foi possível preparar a ordem das imagens: ${shiftError.message}`);
+      }
+
+      // Atualiza as linhas existentes e insere as imagens adicionais antes de excluir qualquer
+      // sobra; assim o produto publicado mantém imagens durante todo o processo.
+      const sharedCount = Math.min(current.length, urls.length);
+      for (let i = 0; i < sharedCount; i++) {
+        const { error } = await client
+          .from("product_images")
+          .update({ url: urls[i], position: i })
+          .eq("id", current[i].id)
+          .eq("product_id", productId);
+        if (error) throw new Error(`Não foi possível atualizar a foto ${i + 1}: ${error.message}`);
+      }
+
+      if (urls.length > current.length) {
+        const additions = urls.slice(current.length).map((url, offset) => ({
+          product_id: productId,
+          url,
+          position: current.length + offset,
+        }));
+        const { error } = await client.from("product_images").insert(additions);
+        if (error) throw new Error(`Não foi possível salvar as imagens adicionais: ${error.message}`);
+      }
+
+      if (current.length > urls.length) {
+        const idsToRemove = current.slice(urls.length).map((row) => row.id);
+        const { error } = await client
+          .from("product_images")
+          .delete()
+          .eq("product_id", productId)
+          .in("id", idsToRemove);
+        if (error) throw new Error(`Não foi possível remover as fotos excedentes: ${error.message}`);
       }
     },
     /** Requer proposta 0004. null = estoque não informado. */
