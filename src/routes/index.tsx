@@ -73,8 +73,8 @@ function Index() {
                 <Sparkles className="size-3.5" /> MCI Comercial
               </p>
               <h1 className="mt-3 max-w-2xl text-3xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-4xl lg:text-5xl">
-                Seja um revendedor,
-                <span className="mt-1 block text-[#ff762f]">cresça com a gente!</span>
+                Seu próximo equipamento,
+                <span className="mt-1 block text-[#ff762f]">sua próxima grande produção.</span>
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base sm:leading-7">
                 Encontre equipamentos profissionais de áudio, vídeo e iluminação com suporte especializado para escolher melhor e tirar seu projeto do papel.
