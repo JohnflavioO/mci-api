@@ -43,7 +43,7 @@ function Index() {
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: catalogService.list });
   const products = catalog.data && !catalog.data.isDemo ? catalog.data.products : [];
   const categories = categoriesOf(products);
-  const featured = products.slice(0, 4);
+  const featured = products.slice(0, 8);
 
   const searchCatalog = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -67,20 +67,20 @@ function Index() {
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 bg-cover bg-center opacity-35" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?auto=format&fit=crop&w=2200&q=85)" }} />
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#111419] via-[#171a1f]/95 to-[#171a1f]/75" />
           <div className="pointer-events-none absolute -right-32 -top-24 -z-10 size-[34rem] rounded-full bg-[#ff681f]/10 blur-3xl" />
-          <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-10 sm:py-12 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:py-14">
+          <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-7 sm:py-9 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:py-10">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-[#ff681f]/40 bg-[#ff681f]/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#ff8a50]">
                 <Sparkles className="size-3.5" /> MCI Comercial
               </p>
-              <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.045em] sm:text-5xl lg:text-[3.75rem]">
+              <h1 className="mt-3 max-w-2xl text-3xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-4xl lg:text-5xl">
                 Seja um revendedor,
                 <span className="mt-1 block text-[#ff762f]">cresça com a gente!</span>
               </h1>
-              <p className="mt-4 max-w-xl text-base leading-7 text-white/65 sm:text-lg">
+              <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base sm:leading-7">
                 Tenha acesso a equipamentos profissionais de áudio, vídeo e iluminação e conte com a MCI para levar seus negócios e suas produções mais longe.
               </p>
 
-              <form onSubmit={searchCatalog} className="mt-6 flex max-w-xl items-center rounded-xl border border-white/15 bg-white p-1.5 shadow-2xl shadow-black/20 focus-within:border-[#ff762f]">
+              <form onSubmit={searchCatalog} className="mt-4 flex max-w-xl items-center rounded-xl border border-white/15 bg-white p-1.5 shadow-2xl shadow-black/20 focus-within:border-[#ff762f]">
                 <Search className="ml-3 size-5 shrink-0 text-slate-500" />
                 <input
                   value={term}
@@ -94,7 +94,7 @@ function Index() {
                 </button>
               </form>
 
-              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/55">
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/55">
                 <span>Explore por categoria</span>
                 <ArrowDownRight className="size-4 text-[#ff762f]" />
                 {categories.slice(0, 3).map((category) => (
@@ -145,7 +145,7 @@ function Index() {
       </section>
 
       <section className="bg-[#f1f2f4]">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e95b19]">Seleção MCI</p>
@@ -155,13 +155,13 @@ function Index() {
             <Link to="/catalogo" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-[#e95b19]">Explorar produtos <ArrowRight className="size-4" /></Link>
           </div>
           {catalog.isPending ? (
-            <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
           ) : featured.length > 0 ? (
-            <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-4 lg:gap-6">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {featured.map((product) => <div key={product.slug} className="rounded-2xl border border-slate-200/80 bg-white p-3 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5 sm:p-4"><ProductCard product={product} /></div>)}
             </div>
           ) : (
-            <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
               <Package className="mx-auto size-8 text-slate-400" />
               <p className="mt-3 font-semibold">Novidades em breve</p>
               <p className="mt-1 text-sm text-muted-foreground">Estamos organizando os produtos para apresentar informações confiáveis.</p>
