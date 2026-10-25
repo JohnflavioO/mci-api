@@ -151,7 +151,7 @@ function ApplicationCard({ a }: { a: ResellerApplication }) {
           </>
         )}
       </section>
-      {a.review_note && <p className="mt-3 text-sm"><span className="font-medium">Observação:</span> {a.review_note}</p>
+      {a.review_note && <p className="mt-3 text-sm"><span className="font-medium">Observação:</span> {a.review_note}</p>}
       {!editing && <div className="mt-4 grid gap-3 border-t pt-4 text-sm sm:grid-cols-3">
         <div className="flex items-start gap-2"><Building2 className="mt-0.5 size-4 text-muted-foreground" /><span><span className="block text-xs text-muted-foreground">Empresa / CNPJ</span>{a.company_name}<span className="block text-muted-foreground">{fmtCnpj(a.cnpj)}</span></span></div>
         <div><span className="block text-xs text-muted-foreground">Responsável</span>{a.responsible_name}<span className="block text-muted-foreground">{a.email}</span></div>
