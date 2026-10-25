@@ -22,7 +22,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
 
 const linkBase = "relative rounded-md px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand";
 
-type AccountDestination = "/revendedor" | "/afiliado" | "/meus-pedidos";
+type AccountDestination = "/admin" | "/revendedor" | "/afiliado" | "/meus-pedidos";
 type AccountState = { user: User | null; destination: AccountDestination; loading: boolean };
 
 export function SiteShell({ children }: { children: ReactNode }) {
@@ -47,11 +47,15 @@ export function SiteShell({ children }: { children: ReactNode }) {
       if (alive) setAccount((prev) => ({ ...prev, user, loading: true }));
       let destination: AccountDestination = "/meus-pedidos";
       try {
-        const [reseller, affiliate] = await Promise.all([
+        // Prioridade para a Central Administrativa: administradores que visitam a loja
+        // devem retornar ao painel, não à página comum de pedidos.
+        const [admin, reseller, affiliate] = await Promise.all([
+          sb.rpc("has_role", { _role: "admin" }),
           sb.rpc("has_role", { _role: "revendedor" }),
           sb.rpc("has_role", { _role: "afiliado" }),
         ]);
-        if (reseller.data === true) destination = "/revendedor";
+        if (admin.data === true) destination = "/admin";
+        else if (reseller.data === true) destination = "/revendedor";
         else if (affiliate.data === true) destination = "/afiliado";
       } catch {
         // Sem confirmação de função, mantém o acesso comum à conta.
