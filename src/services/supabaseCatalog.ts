@@ -188,11 +188,16 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       // ao reordenar fotos. Nenhuma linha é removida nesta etapa, evitando violar a regra
       // que exige imagens para produtos publicados.
       if (current.length) {
-        const { error: shiftError } = await client
-          .from("product_images")
-          .update({ position: 1000 })
-          .eq("product_id", productId);
-        if (shiftError) throw new Error(`Não foi possível preparar a ordem das imagens: ${shiftError.message}`);
+        const offset = Math.max(...current.map((row) => row.position), 0) + current.length + 1;
+        // Desloca da maior posição para a menor para não colidir com a restrição UNIQUE.
+        for (const row of [...current].sort((a, b) => b.position - a.position)) {
+          const { error: shiftError } = await client
+            .from("product_images")
+            .update({ position: row.position + offset })
+            .eq("id", row.id)
+            .eq("product_id", productId);
+          if (shiftError) throw new Error(`Não foi possível preparar a ordem das imagens: ${shiftError.message}`);
+        }
       }
 
       // Atualiza as linhas existentes e insere as imagens adicionais antes de excluir qualquer
