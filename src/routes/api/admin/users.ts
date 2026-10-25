@@ -109,7 +109,7 @@ export const Route = createFileRoute("/api/admin/users")({
         if (targetError || !target.user) return Response.json({ error: "Usuário não encontrado." }, { status: 404 });
         const { data: targetRoles, error: targetRoleError } = await auth.adminClient.from("user_roles").select("role").eq("user_id", userId);
         if (targetRoleError) return Response.json({ error: "Não foi possível validar o perfil da conta de destino." }, { status: 502 });
-        const isAdmin = (targetRoles ?? []).some((item) => String(item.role) === "admin");
+        const isAdmin = (targetRoles ?? []).some((item) => ["admin", "super_admin"].includes(String(item.role)));
         // Protege todas as contas administrativas até existir uma regra explícita para delegação e recuperação.
         if (action === "suspend" && isAdmin) {
           return Response.json({ error: "Contas administrativas não podem ser suspensas por esta tela. Use o fluxo de recuperação administrativa." }, { status: 409 });
