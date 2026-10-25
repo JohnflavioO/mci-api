@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownRight,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   AudioLines,
   Camera,
   Cable,
@@ -15,7 +17,8 @@ import {
   Truck,
   Package,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSupabase } from "@/lib/supabase";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { catalogService } from "@/services";
@@ -37,8 +40,16 @@ export const Route = createFileRoute("/")({
 
 const categoryIcons = [Camera, AudioLines, Lightbulb, Package, Cable, Headphones];
 
+type HeroSlide = { id: string; eyebrow: string; title: string; description: string | null; image_url: string; mobile_image_url: string | null; button_label: string; button_url: string; sort_order: number };
+
 function Index() {
   const [term, setTerm] = useState("");
+  const [slideIndex, setSlideIndex] = useState(0);
+  const heroSlides = useQuery({ queryKey: ["homepage-hero-slides"], queryFn: async () => { const { data, error } = await getSupabase().from("homepage_hero_slides").select("id,eyebrow,title,description,image_url,mobile_image_url,button_label,button_url,sort_order").eq("is_active", true).order("sort_order").order("created_at"); if (error) throw error; return (data ?? []) as HeroSlide[]; }, retry: false });
+  const slides = heroSlides.data ?? [];
+  const activeSlide = slides.length ? slides[Math.min(slideIndex, slides.length - 1)] : undefined;
+  useEffect(() => { setSlideIndex(0); }, [slides.length]);
+  useEffect(() => { if (slides.length < 2) return; const timer = window.setInterval(() => setSlideIndex((index) => (index + 1) % slides.length), 6000); return () => window.clearInterval(timer); }, [slides.length]);
   const navigate = useNavigate();
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: catalogService.list });
   const products = catalog.data && !catalog.data.isDemo ? catalog.data.products : [];
@@ -112,15 +123,23 @@ function Index() {
 
             <div className="relative mx-auto w-full max-w-xl lg:pl-4">
               <div className="relative min-h-[300px] overflow-hidden rounded-2xl border border-white/10 bg-[#20242a] sm:min-h-[360px]">
-                <div aria-hidden="true" className="absolute inset-0 bg-cover bg-center opacity-80" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1400&q=85)" }} />
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#111419] via-[#111419]/35 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">Áudio · Vídeo · Iluminação</p>
-                  <p className="mt-2 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">Equipamentos profissionais para ir mais longe.</p>
-                  <Link to="/catalogo" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white transition hover:text-[#ff8a50]">
-                    Explore o catálogo <ArrowRight className="size-4" />
-                  </Link>
-                </div>
+                {activeSlide ? (
+                  <>
+                    <picture>
+                      {activeSlide.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeSlide.mobile_image_url} />}
+                      <img src={activeSlide.image_url} alt={activeSlide.title} className="absolute inset-0 h-full w-full object-cover" />
+                    </picture>
+                    <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#111419]/95 via-[#111419]/35 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                      {activeSlide.eyebrow && <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">{activeSlide.eyebrow}</p>}
+                      <h2 className="mt-2 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">{activeSlide.title}</h2>
+                      {activeSlide.description && <p className="mt-2 max-w-sm text-sm leading-6 text-white/75">{activeSlide.description}</p>}
+                      {activeSlide.button_url.startsWith("https://") ? <a href={activeSlide.button_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">{activeSlide.button_label} <ArrowRight className="size-4" /></a> : <Link to={activeSlide.button_url as "/catalogo"} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">{activeSlide.button_label} <ArrowRight className="size-4" /></Link>}
+                    </div>
+                    {slides.length > 1 && <div className="absolute right-3 top-3 flex items-center gap-2"><button type="button" aria-label="Banner anterior" onClick={() => setSlideIndex((i) => (i - 1 + slides.length) % slides.length)} className="grid size-9 place-items-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:bg-black/60"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Próximo banner" onClick={() => setSlideIndex((i) => (i + 1) % slides.length)} className="grid size-9 place-items-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:bg-black/60"><ChevronRight className="size-4" /></button></div>}
+                    {slides.length > 1 && <div className="absolute bottom-3 right-4 flex gap-1.5">{slides.map((slide, index) => <button key={slide.id} type="button" aria-label={`Mostrar banner ${index + 1}`} onClick={() => setSlideIndex(index)} className={`h-1.5 rounded-full transition-all ${index === slideIndex ? "w-6 bg-[#ff681f]" : "w-2 bg-white/60 hover:bg-white"}`} />)}</div>}
+                  </>
+                ) : <div className="absolute inset-0 flex flex-col justify-end bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#3a2b24] via-[#20242a] to-[#111419] p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">MCI Xpress · Equipamentos profissionais</p><h2 className="mt-3 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">Encontre equipamentos para sua próxima produção.</h2><p className="mt-2 max-w-sm text-sm leading-6 text-white/70">Marcas, produtos e soluções profissionais para áudio, vídeo e iluminação.</p><Link to="/catalogo" className="mt-4 inline-flex w-fit items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">Explorar catálogo <ArrowRight className="size-4" /></Link></div>}
               </div>
             </div>
           </div>
