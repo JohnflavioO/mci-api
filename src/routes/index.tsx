@@ -110,33 +110,17 @@ function Index() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-xl">
-              <div className="absolute inset-6 rounded-[2rem] bg-[#ff681f]/20 blur-3xl" />
-              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#272c33] via-[#20242a] to-[#121417] p-6 sm:p-8">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff8a50]">EQUIPAMENTOS PARA SUA PRODUÇÃO</p>
-                    <p className="mt-2 max-w-xs text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">Tudo para produzir em alto nível.</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><AudioLines className="size-6 text-[#ff8a50]" /></div>
+            <div className="relative mx-auto w-full max-w-xl lg:pl-4">
+              <div className="relative min-h-[300px] overflow-hidden rounded-2xl border border-white/10 bg-[#20242a] sm:min-h-[360px]">
+                <div aria-hidden="true" className="absolute inset-0 bg-cover bg-center opacity-80" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1400&q=85)" }} />
+                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#111419] via-[#111419]/35 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">Áudio · Vídeo · Iluminação</p>
+                  <p className="mt-2 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">Equipamentos profissionais para ir mais longe.</p>
+                  <Link to="/catalogo" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white transition hover:text-[#ff8a50]">
+                    Explore o catálogo <ArrowRight className="size-4" />
+                  </Link>
                 </div>
-                <div className="relative mt-8 flex min-h-52 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#343a42] via-[#20242a] to-[#171a1f]">
-                  <div className="absolute size-48 rounded-full border border-white/10" />
-                  <div className="absolute size-36 rounded-full border border-white/10" />
-                  <div className="absolute size-24 rounded-full border border-[#ff681f]/40 bg-[#ff681f]/10 shadow-[0_0_70px_rgba(255,104,31,0.18)]" />
-                  <div className="relative flex size-16 items-center justify-center rounded-2xl bg-[#ff681f] shadow-xl shadow-orange-950/30"><Camera className="size-8 text-white" /></div>
-                  <span className="absolute bottom-4 left-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Áudio · Vídeo · Iluminação</span>
-                  <span className="absolute right-4 top-4 size-2 rounded-full bg-[#ff681f] shadow-[0_0_16px_rgba(255,104,31,0.8)]" />
-                </div>
-                <div className="mt-5 grid grid-cols-3 divide-x divide-white/10">
-                  <div className="px-3 first:pl-0"><Camera className="size-4 text-[#ff8a50]" /><p className="mt-2 text-xs font-medium text-white/85">Imagem</p><p className="mt-1 text-[11px] text-white/45">Captação</p></div>
-                  <div className="px-4"><AudioLines className="size-4 text-[#ff8a50]" /><p className="mt-2 text-xs font-medium text-white/85">Áudio</p><p className="mt-1 text-[11px] text-white/45">Produção</p></div>
-                  <div className="px-4"><Lightbulb className="size-4 text-[#ff8a50]" /><p className="mt-2 text-xs font-medium text-white/85">Luz</p><p className="mt-1 text-[11px] text-white/45">Iluminação</p></div>
-                </div>
-              </div>
-              <div className="absolute -bottom-4 -left-3 hidden rounded-xl border border-white/10 bg-[#252a31] px-4 py-3 shadow-xl sm:block">
-                <p className="text-xs font-semibold text-white">Encontre seu próximo equipamento</p>
-                <p className="mt-1 text-[11px] text-white/50">Explore o catálogo MCI</p>
               </div>
             </div>
           </div>
