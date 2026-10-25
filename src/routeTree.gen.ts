@@ -172,7 +172,6 @@ export interface FileRoutesByFullPath {
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/pedidos': typeof AdminPedidosRoute
-  '/admin/pedidos': typeof AdminPedidosRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -184,6 +183,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
   '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/catalogo': typeof CatalogoRoute
@@ -195,6 +195,7 @@ export interface FileRoutesByTo {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -248,6 +249,7 @@ export interface FileRouteTypes {
     | '/admin/produtos'
     | '/admin/revendedores'
     | '/admin/banners'
+    | '/admin/pedidos'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
@@ -270,6 +272,7 @@ export interface FileRouteTypes {
     | '/admin/produtos'
     | '/admin/revendedores'
     | '/admin/banners'
+    | '/admin/pedidos'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
