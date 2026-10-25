@@ -94,7 +94,7 @@ export function ResellerAccountSettings() {
       if (authError || !auth.user || auth.user.id !== form.userId) throw new Error("Sua sessão expirou. Entre novamente.");
       const phone = form.phone.replace(/\\D/g, "");
       if (phone && !/^\\d{10,11}$/.test(phone)) throw new Error("Informe telefone com DDD (10 ou 11 dígitos).");
-      const { error: userError } = await sb.auth.updateUser({ data: { full_name: form.fullName.trim(), phone } });
+      const { error: userError } = await sb.auth.updateUser({ data: { full_name: form.fullName.trim(), phone }, ...(form.email.trim() && form.email.trim() !== auth.user.email ? { email: form.email.trim() } : {}) });
       if (userError) throw new Error("Não foi possível salvar os dados pessoais: " + userError.message);
       const { data: app, error: appError } = await sb.from("reseller_applications").select("id,status").eq("user_id", form.userId).maybeSingle();
       if (appError) throw appError;
@@ -103,7 +103,7 @@ export function ResellerAccountSettings() {
         if (error) throw new Error("Dados pessoais salvos, mas o telefone comercial não foi atualizado: " + error.message);
       }
     },
-    onSuccess: async () => { setNotice("Dados pessoais e telefone salvos com sucesso."); await Promise.all([qc.invalidateQueries({ queryKey: ["reseller", "account-settings"] }), qc.invalidateQueries({ queryKey: ["reseller", "access"] })]); },
+    onSuccess: async () => { setNotice(form.email.trim() !== query.data.email ? "Dados salvos. Verifique a caixa de entrada para confirmar o novo e-mail." : "Dados pessoais e telefone salvos com sucesso."); await Promise.all([qc.invalidateQueries({ queryKey: ["reseller", "account-settings"] }), qc.invalidateQueries({ queryKey: ["reseller", "access"] })]); },
   });
   if (query.isPending) return <LoadingState />;
   if (query.isError) return <ErrorState message={query.error.message} onRetry={() => void query.refetch()} />;
@@ -131,7 +131,7 @@ export function ResellerAccountSettings() {
             {photo && <p className="max-w-full truncate text-xs">{photo.name}</p>}
           </div>
           <div className="grid content-start gap-5 sm:grid-cols-2">
-            <div className="sm:col-span-2"><Label htmlFor="profile-email">E-mail da conta</Label><Input id="profile-email" value={form.email} disabled className={inputClass} /><p className="mt-1 text-xs text-muted-foreground">A troca de e-mail será feita pelo fluxo seguro de confirmação do Supabase.</p></div>
+            <div className="sm:col-span-2"><Label htmlFor="profile-email">E-mail da conta</Label><Input id="profile-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={inputClass} /><p className="mt-1 text-xs text-muted-foreground">A troca de e-mail será feita pelo fluxo seguro de confirmação do Supabase.</p></div>
             <div className="sm:col-span-2"><Label htmlFor="profile-name">Nome completo</Label><Input id="profile-name" value={form.fullName} onChange={(e) => set("fullName", e.target.value)} required className={inputClass} /></div>
           </div>
         </div>
