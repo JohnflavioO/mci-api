@@ -75,7 +75,7 @@ function Index() {
         </div>
 
         <section className="relative isolate overflow-hidden">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 bg-cover bg-center opacity-35" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?auto=format&fit=crop&w=2200&q=85)" }} />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,104,31,0.12),_transparent_42%),linear-gradient(115deg,#111419_0%,#171a1f_58%,#20242a_100%)]" />
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#111419] via-[#171a1f]/95 to-[#171a1f]/75" />
           <div className="pointer-events-none absolute -right-32 -top-24 -z-10 size-[34rem] rounded-full bg-[#ff681f]/10 blur-3xl" />
           <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-7 sm:py-9 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:py-10">
@@ -122,12 +122,12 @@ function Index() {
             </div>
 
             <div className="relative mx-auto w-full max-w-xl lg:pl-4">
-              <div className="relative min-h-[300px] overflow-hidden rounded-2xl border border-white/10 bg-[#20242a] sm:min-h-[360px]">
+              <div key={activeSlide?.id ?? "mci-hero-fallback"} className="relative min-h-[300px] overflow-hidden rounded-2xl border border-white/10 bg-[#20242a] shadow-2xl shadow-black/30 sm:min-h-[360px]">
                 {activeSlide ? (
                   <>
                     <picture>
                       {activeSlide.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeSlide.mobile_image_url} />}
-                      <img src={activeSlide.image_url} alt={activeSlide.title} className="absolute inset-0 h-full w-full object-cover" />
+                      <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.02]" />
                     </picture>
                     <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#111419]/95 via-[#111419]/35 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
