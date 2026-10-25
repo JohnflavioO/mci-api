@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownRight,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   AudioLines,
   Camera,
   Cable,
@@ -15,7 +17,8 @@ import {
   Truck,
   Package,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSupabase } from "@/lib/supabase";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { catalogService } from "@/services";
@@ -37,13 +40,21 @@ export const Route = createFileRoute("/")({
 
 const categoryIcons = [Camera, AudioLines, Lightbulb, Package, Cable, Headphones];
 
+type HeroSlide = { id: string; eyebrow: string; title: string; description: string | null; image_url: string; mobile_image_url: string | null; button_label: string; button_url: string; sort_order: number };
+
 function Index() {
   const [term, setTerm] = useState("");
+  const [slideIndex, setSlideIndex] = useState(0);
+  const heroSlides = useQuery({ queryKey: ["homepage-hero-slides"], queryFn: async () => { const { data, error } = await getSupabase().from("homepage_hero_slides").select("id,eyebrow,title,description,image_url,mobile_image_url,button_label,button_url,sort_order").eq("is_active", true).order("sort_order").order("created_at"); if (error) throw error; return (data ?? []) as HeroSlide[]; }, retry: false });
+  const slides = heroSlides.data ?? [];
+  const activeSlide = slides.length ? slides[Math.min(slideIndex, slides.length - 1)] : undefined;
+  useEffect(() => { setSlideIndex(0); }, [slides.length]);
+  useEffect(() => { if (slides.length < 2) return; const timer = window.setInterval(() => setSlideIndex((index) => (index + 1) % slides.length), 6000); return () => window.clearInterval(timer); }, [slides.length]);
   const navigate = useNavigate();
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: catalogService.list });
   const products = catalog.data && !catalog.data.isDemo ? catalog.data.products : [];
   const categories = categoriesOf(products);
-  const featured = products.slice(0, 4);
+  const featured = products.slice(0, 8);
 
   const searchCatalog = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,28 +75,28 @@ function Index() {
         </div>
 
         <section className="relative isolate overflow-hidden">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 bg-cover bg-center opacity-35" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?auto=format&fit=crop&w=2200&q=85)" }} />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,104,31,0.12),_transparent_42%),linear-gradient(115deg,#111419_0%,#171a1f_58%,#20242a_100%)]" />
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#111419] via-[#171a1f]/95 to-[#171a1f]/75" />
           <div className="pointer-events-none absolute -right-32 -top-24 -z-10 size-[34rem] rounded-full bg-[#ff681f]/10 blur-3xl" />
-          <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-10 sm:py-12 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:py-14">
+          <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-7 sm:py-9 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:py-10">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-[#ff681f]/40 bg-[#ff681f]/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#ff8a50]">
                 <Sparkles className="size-3.5" /> MCI Comercial
               </p>
-              <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.045em] sm:text-5xl lg:text-[3.75rem]">
-                Seja um revendedor,
-                <span className="mt-1 block text-[#ff762f]">cresça com a gente!</span>
+              <h1 className="mt-3 max-w-2xl text-3xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-4xl lg:text-5xl">
+                Seu próximo equipamento,
+                <span className="mt-1 block text-[#ff762f]">sua próxima grande produção.</span>
               </h1>
-              <p className="mt-4 max-w-xl text-base leading-7 text-white/65 sm:text-lg">
-                Tenha acesso a equipamentos profissionais de áudio, vídeo e iluminação e conte com a MCI para levar seus negócios e suas produções mais longe.
+              <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base sm:leading-7">
+                Encontre equipamentos profissionais de áudio, vídeo e iluminação com suporte especializado para escolher melhor e tirar seu projeto do papel.
               </p>
 
-              <form onSubmit={searchCatalog} className="mt-6 flex max-w-xl items-center rounded-xl border border-white/15 bg-white p-1.5 shadow-2xl shadow-black/20 focus-within:border-[#ff762f]">
+              <form onSubmit={searchCatalog} className="mt-4 flex max-w-xl items-center rounded-xl border border-white/15 bg-white p-1.5 shadow-2xl shadow-black/20 focus-within:border-[#ff762f]">
                 <Search className="ml-3 size-5 shrink-0 text-slate-500" />
                 <input
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
-                  placeholder="Busque por produto, marca ou modelo"
+                  placeholder="O que você procura? Produto, marca ou modelo"
                   aria-label="Buscar produtos"
                   className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm text-slate-900 outline-none placeholder:text-slate-500"
                 />
@@ -94,42 +105,41 @@ function Index() {
                 </button>
               </form>
 
-              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/55">
-                <span>Explore por categoria</span>
-                <ArrowDownRight className="size-4 text-[#ff762f]" />
-                {categories.slice(0, 3).map((category) => (
-                  <Link key={category} to="/catalogo" search={{ categoria: category }} className="border-b border-white/20 pb-0.5 transition hover:border-[#ff762f] hover:text-white">{category}</Link>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Link to="/catalogo" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff681f] px-5 text-sm font-bold text-white shadow-lg shadow-orange-950/20 transition hover:bg-[#e95712]">
+                  Comprar equipamentos <ArrowRight className="size-4" />
+                </Link>
+                <Link to="/revendedor" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/20 px-4 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/5">
+                  Sou revendedor
+                </Link>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-white/55">
+                <span className="font-semibold text-white/75">Acesso rápido:</span>
+                {categories.slice(0, 4).map((category) => (
+                  <Link key={category} to="/catalogo" search={{ categoria: category }} className="rounded-full border border-white/15 px-3 py-1.5 transition hover:border-[#ff762f]/70 hover:text-white">{category}</Link>
                 ))}
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-xl">
-              <div className="absolute inset-6 rounded-[2rem] bg-[#ff681f]/20 blur-3xl" />
-              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#272c33] via-[#20242a] to-[#121417] p-6 sm:p-8">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff8a50]">Feito para profissionais</p>
-                    <p className="mt-2 max-w-xs text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">Seu próximo projeto começa aqui.</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><AudioLines className="size-6 text-[#ff8a50]" /></div>
-                </div>
-                <div className="relative mt-8 flex min-h-52 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#343a42] via-[#20242a] to-[#171a1f]">
-                  <div className="absolute size-48 rounded-full border border-white/10" />
-                  <div className="absolute size-36 rounded-full border border-white/10" />
-                  <div className="absolute size-24 rounded-full border border-[#ff681f]/40 bg-[#ff681f]/10 shadow-[0_0_70px_rgba(255,104,31,0.18)]" />
-                  <div className="relative flex size-16 items-center justify-center rounded-2xl bg-[#ff681f] shadow-xl shadow-orange-950/30"><Camera className="size-8 text-white" /></div>
-                  <span className="absolute bottom-4 left-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Áudio · Vídeo · Iluminação</span>
-                  <span className="absolute right-4 top-4 size-2 rounded-full bg-[#ff681f] shadow-[0_0_16px_rgba(255,104,31,0.8)]" />
-                </div>
-                <div className="mt-5 grid grid-cols-3 divide-x divide-white/10">
-                  <div className="px-3 first:pl-0"><Camera className="size-4 text-[#ff8a50]" /><p className="mt-2 text-xs font-medium text-white/85">Imagem</p><p className="mt-1 text-[11px] text-white/45">Captação</p></div>
-                  <div className="px-4"><AudioLines className="size-4 text-[#ff8a50]" /><p className="mt-2 text-xs font-medium text-white/85">Áudio</p><p className="mt-1 text-[11px] text-white/45">Produção</p></div>
-                  <div className="px-4"><Lightbulb className="size-4 text-[#ff8a50]" /><p className="mt-2 text-xs font-medium text-white/85">Luz</p><p className="mt-1 text-[11px] text-white/45">Iluminação</p></div>
-                </div>
-              </div>
-              <div className="absolute -bottom-4 -left-3 hidden rounded-xl border border-white/10 bg-[#252a31] px-4 py-3 shadow-xl sm:block">
-                <p className="text-xs font-semibold text-white">Uma operação, várias oportunidades</p>
-                <p className="mt-1 text-[11px] text-white/50">Clientes · Revendedores · Afiliados</p>
+            <div className="relative mx-auto w-full max-w-xl lg:pl-4">
+              <div key={activeSlide?.id ?? "mci-hero-fallback"} className="relative min-h-[300px] overflow-hidden rounded-2xl border border-white/10 bg-[#20242a] shadow-2xl shadow-black/30 sm:min-h-[360px]">
+                {activeSlide ? (
+                  <>
+                    <picture>
+                      {activeSlide.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeSlide.mobile_image_url} />}
+                      <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.02]" />
+                    </picture>
+                    <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#111419]/95 via-[#111419]/35 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                      {activeSlide.eyebrow && <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">{activeSlide.eyebrow}</p>}
+                      <h2 className="mt-2 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">{activeSlide.title}</h2>
+                      {activeSlide.description && <p className="mt-2 max-w-sm text-sm leading-6 text-white/75">{activeSlide.description}</p>}
+                      {activeSlide.button_url.startsWith("https://") ? <a href={activeSlide.button_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">{activeSlide.button_label} <ArrowRight className="size-4" /></a> : <Link to={activeSlide.button_url as "/catalogo"} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">{activeSlide.button_label} <ArrowRight className="size-4" /></Link>}
+                    </div>
+                    {slides.length > 1 && <div className="absolute right-3 top-3 flex items-center gap-2"><button type="button" aria-label="Banner anterior" onClick={() => setSlideIndex((i) => (i - 1 + slides.length) % slides.length)} className="grid size-9 place-items-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:bg-black/60"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Próximo banner" onClick={() => setSlideIndex((i) => (i + 1) % slides.length)} className="grid size-9 place-items-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:bg-black/60"><ChevronRight className="size-4" /></button></div>}
+                    {slides.length > 1 && <div className="absolute bottom-3 right-4 flex gap-1.5">{slides.map((slide, index) => <button key={slide.id} type="button" aria-label={`Mostrar banner ${index + 1}`} onClick={() => setSlideIndex(index)} className={`h-1.5 rounded-full transition-all ${index === slideIndex ? "w-6 bg-[#ff681f]" : "w-2 bg-white/60 hover:bg-white"}`} />)}</div>}
+                  </>
+                ) : <div className="absolute inset-0 flex flex-col justify-end bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#3a2b24] via-[#20242a] to-[#111419] p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">MCI Xpress · Equipamentos profissionais</p><h2 className="mt-3 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">Encontre equipamentos para sua próxima produção.</h2><p className="mt-2 max-w-sm text-sm leading-6 text-white/70">Marcas, produtos e soluções profissionais para áudio, vídeo e iluminação.</p><Link to="/catalogo" className="mt-4 inline-flex w-fit items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">Explorar catálogo <ArrowRight className="size-4" /></Link></div>}
               </div>
             </div>
           </div>
@@ -145,7 +155,7 @@ function Index() {
       </section>
 
       <section className="bg-[#f1f2f4]">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e95b19]">Seleção MCI</p>
@@ -155,13 +165,13 @@ function Index() {
             <Link to="/catalogo" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-[#e95b19]">Explorar produtos <ArrowRight className="size-4" /></Link>
           </div>
           {catalog.isPending ? (
-            <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
           ) : featured.length > 0 ? (
-            <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-4 lg:gap-6">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {featured.map((product) => <div key={product.slug} className="rounded-2xl border border-slate-200/80 bg-white p-3 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5 sm:p-4"><ProductCard product={product} /></div>)}
             </div>
           ) : (
-            <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
               <Package className="mx-auto size-8 text-slate-400" />
               <p className="mt-3 font-semibold">Novidades em breve</p>
               <p className="mt-1 text-sm text-muted-foreground">Estamos organizando os produtos para apresentar informações confiáveis.</p>

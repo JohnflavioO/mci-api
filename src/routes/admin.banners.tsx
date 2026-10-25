@@ -1,0 +1,107 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+import { ArrowDown, ArrowUp, ImagePlus, Loader2, Save, Trash2 } from "lucide-react";
+import { getSupabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { AdminGate } from "@/components/portal/AdminGate";
+
+export const Route = createFileRoute("/admin/banners")({
+  head: () => ({ meta: [{ title: "Banners da home | MCI Xpress" }] }),
+  component: () => <AdminGate><HomepageBannersPage /></AdminGate>,
+});
+
+type Slide = {
+  id: string; eyebrow: string; title: string; description: string | null;
+  image_url: string; mobile_image_url: string | null; button_label: string;
+  button_url: string; sort_order: number; is_active: boolean;
+};
+type SlideDraft = Omit<Slide, "id">;
+const emptySlide = (): SlideDraft => ({
+  eyebrow: "MCI Xpress", title: "", description: "", image_url: "",
+  mobile_image_url: "", button_label: "Ver produtos", button_url: "/catalogo",
+  sort_order: 0, is_active: false,
+});
+
+function HomepageBannersPage() {
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState<SlideDraft>(emptySlide());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const slides = useQuery({
+    queryKey: ["admin", "homepage-hero-slides"],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().from("homepage_hero_slides").select("*").order("sort_order").order("created_at");
+      if (error) throw error;
+      return (data ?? []) as Slide[];
+    },
+    retry: false,
+  });
+  const refresh = async () => {
+    await qc.invalidateQueries({ queryKey: ["admin", "homepage-hero-slides"] });
+    await qc.invalidateQueries({ queryKey: ["homepage-hero-slides"] });
+  };
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!draft.title.trim() || !draft.image_url.trim()) throw new Error("Informe o título e a URL HTTPS da imagem.");
+      if (!draft.image_url.startsWith("https://")) throw new Error("A imagem precisa usar HTTPS.");
+      if (draft.mobile_image_url && !draft.mobile_image_url.startsWith("https://")) throw new Error("A imagem mobile precisa usar HTTPS.");
+      if (!(draft.button_url.startsWith("/") || draft.button_url.startsWith("https://"))) throw new Error("O destino deve ser uma rota interna ou URL HTTPS.");
+      const payload = { ...draft, title: draft.title.trim(), description: draft.description?.trim() || null, mobile_image_url: draft.mobile_image_url?.trim() || null, updated_at: new Date().toISOString() };
+      const request = editingId ? getSupabase().from("homepage_hero_slides").update(payload).eq("id", editingId) : getSupabase().from("homepage_hero_slides").insert(payload);
+      const { error } = await request;
+      if (error) throw error;
+    },
+    onSuccess: async () => { toast.success("Banner salvo."); setDraft(emptySlide()); setEditingId(null); await refresh(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: async (id: string) => { const { error } = await getSupabase().from("homepage_hero_slides").delete().eq("id", id); if (error) throw error; },
+    onSuccess: async () => { toast.success("Banner removido."); await refresh(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const edit = (slide: Slide) => { setEditingId(slide.id); setDraft({ ...slide }); };
+  const toggle = async (slide: Slide) => {
+    const { error } = await getSupabase().from("homepage_hero_slides").update({ is_active: !slide.is_active, updated_at: new Date().toISOString() }).eq("id", slide.id);
+    if (error) toast.error(error.message);
+    else { toast.success(slide.is_active ? "Banner desativado." : "Banner publicado."); await refresh(); }
+  };
+  const move = async (slide: Slide, delta: number) => {
+    const ordered = [...(slides.data ?? [])].sort((a,b) => a.sort_order-b.sort_order);
+    const i = ordered.findIndex(s => s.id === slide.id), j = i + delta;
+    if (j < 0 || j >= ordered.length) return;
+    const other = ordered[j]!;
+    const { error } = await getSupabase().from("homepage_hero_slides").update({ sort_order: other.sort_order, updated_at: new Date().toISOString() }).eq("id", slide.id);
+    if (error) { toast.error(error.message); return; }
+    const { error: secondError } = await getSupabase().from("homepage_hero_slides").update({ sort_order: slide.sort_order, updated_at: new Date().toISOString() }).eq("id", other.id);
+    if (secondError) { toast.error(secondError.message); return; }
+    await refresh();
+  };
+  const field = "mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
+
+  return <div className="mx-auto max-w-5xl space-y-6">
+    <header><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Vitrine da loja</p><h2 className="mt-1 text-2xl font-bold">Banners da página inicial</h2><p className="mt-2 max-w-2xl text-sm text-muted-foreground">Gerencie os slides da home. Use imagens reais de produtos, marcas e campanhas autorizadas da MCI. As imagens devem estar hospedadas em URLs HTTPS.</p></header>
+    <section className="rounded-xl border bg-card p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-2"><ImagePlus className="size-5 text-brand"/><h3 className="font-semibold">{editingId ? "Editar banner" : "Adicionar banner"}</h3></div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="text-sm font-medium">Título *<input className={field} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} placeholder="Ex.: Conheça a linha Astera"/></label>
+        <label className="text-sm font-medium">Texto de apoio<input className={field} value={draft.description ?? ""} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Frase curta da campanha"/></label>
+        <label className="text-sm font-medium">Etiqueta superior<input className={field} value={draft.eyebrow} onChange={e=>setDraft({...draft,eyebrow:e.target.value})} placeholder="Lançamento, marca ou categoria"/></label>
+        <label className="text-sm font-medium">URL da imagem desktop *<input className={field} value={draft.image_url} onChange={e=>setDraft({...draft,image_url:e.target.value})} placeholder="https://..."/></label>
+        <label className="text-sm font-medium">URL da imagem mobile<input className={field} value={draft.mobile_image_url ?? ""} onChange={e=>setDraft({...draft,mobile_image_url:e.target.value})} placeholder="Opcional — https://..."/></label>
+        <label className="text-sm font-medium">Texto do botão<input className={field} value={draft.button_label} onChange={e=>setDraft({...draft,button_label:e.target.value})} placeholder="Ver produtos"/></label>
+        <label className="text-sm font-medium">Destino do botão<input className={field} value={draft.button_url} onChange={e=>setDraft({...draft,button_url:e.target.value})} placeholder="/catalogo ou URL HTTPS"/></label>
+        <label className="text-sm font-medium">Ordem de exibição<input type="number" min={0} className={field} value={draft.sort_order} onChange={e=>setDraft({...draft,sort_order:Number(e.target.value)||0})}/></label>
+        <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2"><input type="checkbox" checked={draft.is_active} onChange={e=>setDraft({...draft,is_active:e.target.checked})}/> Publicar na home</label>
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2"><Button onClick={()=>save.mutate()} disabled={save.isPending}>{save.isPending ? <Loader2 className="mr-2 size-4 animate-spin"/> : <Save className="mr-2 size-4"/>}{editingId ? "Salvar alterações" : "Cadastrar banner"}</Button>{editingId && <Button variant="outline" onClick={()=>{setDraft(emptySlide());setEditingId(null);}}>Cancelar edição</Button>}</div>
+    </section>
+    <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="font-semibold">Slides cadastrados</h3><span className="text-xs text-muted-foreground">{slides.data?.length ?? 0} banner(s)</span></div>
+      {slides.isPending ? <p className="text-sm text-muted-foreground">Carregando banners…</p> : slides.isError ? <p className="rounded-lg border border-destructive/30 p-4 text-sm text-destructive">Não foi possível carregar. Verifique se a migration foi aplicada e se sua conta tem permissão administrativa.</p> : slides.data?.length ? slides.data.map((slide,index)=><article key={slide.id} className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center">
+        <div className="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-muted sm:w-40"><img src={slide.image_url} alt="" className="h-full w-full object-cover"/></div>
+        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-semibold">{slide.title}</h4><span className={slide.is_active ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800" : "rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"}>{slide.is_active ? "Publicado" : "Rascunho"}</span></div><p className="mt-1 text-sm text-muted-foreground">{slide.eyebrow} · {slide.button_label} · Ordem {slide.sort_order}</p><p className="mt-1 truncate text-xs text-muted-foreground">{slide.image_url}</p></div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" size="icon" aria-label="Mover para cima" disabled={index===0} onClick={()=>void move(slide,-1)}><ArrowUp className="size-4"/></Button><Button variant="outline" size="icon" aria-label="Mover para baixo" disabled={index===slides.data!.length-1} onClick={()=>void move(slide,1)}><ArrowDown className="size-4"/></Button><Button variant="outline" onClick={()=>void toggle(slide)}>{slide.is_active ? "Desativar" : "Publicar"}</Button><Button variant="outline" onClick={()=>edit(slide)}>Editar</Button><Button variant="outline" size="icon" aria-label="Excluir banner" onClick={()=>{if(confirm("Excluir este banner permanentemente?")) remove.mutate(slide.id);}}><Trash2 className="size-4"/></Button></div>
+      </article>) : <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum banner cadastrado. Cadastre o primeiro slide para ativar o carrossel da home.</p>}
+    </section>
+  </div>;
+}
