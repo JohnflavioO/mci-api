@@ -12,7 +12,7 @@ function getServerConfig() {
 }
 
 async function authorize(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "") ?? "";
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const { url, publishableKey, serviceRoleKey } = getServerConfig();
   if (!url || !publishableKey) return { response: Response.json({ error: "Servidor Supabase não configurado." }, { status: 503 }) } as const;
   if (!token) return { response: Response.json({ error: "Autenticação necessária." }, { status: 401 }) } as const;
