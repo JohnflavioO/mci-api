@@ -23,7 +23,7 @@ const dateTime = (value: string | null) => value
 const dateOnly = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 const roleLabel = (role: string | null) => {
   if (!role) return "Cliente";
-  const labels: Record<string, string> = { admin: "Super Admin", gestor: "Gestor", vendedor: "Vendedor", reseller: "Revendedor", revendedor: "Revendedor", affiliate: "Afiliado", afiliado: "Afiliado", cliente: "Cliente" };
+  const labels: Record<string, string> = { admin: "Administrador", super_admin: "Super Admin", gestor: "Gestor", vendedor: "Vendedor", reseller: "Revendedor", revendedor: "Revendedor", affiliate: "Afiliado", afiliado: "Afiliado", cliente: "Cliente" };
   return labels[role] ?? "Perfil não reconhecido";
 };
 const statusFor = (user: AdminUser): UserStatus => {
