@@ -151,6 +151,39 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       }
       return String(data);
     },
+    /** Substitui a galeria do produto e envia os novos arquivos ao Storage. */
+    saveProductImages: async (productId: string, existingUrls: string[], files: File[]): Promise<void> => {
+      const client = sb();
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const extByType: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+          "image/avif": "avif",
+        };
+        const ext = extByType[file.type];
+        if (!ext) throw new Error("Formato de imagem não permitido.");
+        if (file.size > 8 * 1024 * 1024) throw new Error("Cada imagem deve ter no máximo 8 MB.");
+        const path = `${productId}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await client.storage.from("product-images").upload(path, file, {
+          cacheControl: "31536000",
+          contentType: file.type,
+          upsert: false,
+        });
+        if (uploadError) throw new Error(`Falha ao enviar a imagem "${file.name}": ${uploadError.message}`);
+        uploadedUrls.push(client.storage.from("product-images").getPublicUrl(path).data.publicUrl);
+      }
+      const urls = [...existingUrls, ...uploadedUrls].slice(0, 10);
+      const { error: deleteError } = await client.from("product_images").delete().eq("product_id", productId);
+      if (deleteError) throw new Error(`Não foi possível atualizar a galeria: ${deleteError.message}`);
+      if (urls.length) {
+        const { error: insertError } = await client.from("product_images").insert(
+          urls.map((url, position) => ({ product_id: productId, url, position })),
+        );
+        if (insertError) throw new Error(`Não foi possível salvar as imagens: ${insertError.message}`);
+      }
+    },
     /** Requer proposta 0004. null = estoque não informado. */
     setStock: async (id: string, stock: number | null, confirmed = false): Promise<void> => {
       const { error } = await sb().rpc("set_product_stock", { p_id: id, p_stock: stock, p_confirmed: confirmed });
