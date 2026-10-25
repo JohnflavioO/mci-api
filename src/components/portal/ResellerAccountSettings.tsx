@@ -55,7 +55,12 @@ export function ResellerAccountSettings() {
       if (photo) {
         if (!photo.type.startsWith("image/")) throw new Error("Selecione um arquivo de imagem.");
         if (photo.size > 3 * 1024 * 1024) throw new Error("A foto deve ter no máximo 3 MB.");
-        const path = `${form.userId}/profile-${Date.now()}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const { data: currentAuth, error: currentAuthError } = await sb.auth.getUser();
+        if (currentAuthError) throw new Error(`Não foi possível validar sua sessão antes do upload: ${currentAuthError.message}`);
+        const currentUserId = currentAuth.user?.id;
+        if (!currentUserId) throw new Error("Sua sessão expirou. Entre novamente antes de enviar a foto.");
+        if (currentUserId !== form.userId) throw new Error("A conta ativa mudou desde que esta tela foi aberta. Atualize a página e tente novamente.");
+        const path = `${currentUserId}/profile-${Date.now()}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
         const { error: uploadError } = await sb.storage.from("profile-photos").upload(path, photo, { upsert: true, contentType: photo.type });
         if (uploadError) {
           const detail = uploadError.message || "Erro desconhecido do Supabase Storage";
