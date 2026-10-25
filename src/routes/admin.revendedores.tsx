@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Building2, ExternalLink, Pencil, Search, Trash2, X, FilePenLine } from "lucide-react";
+import { Building2, ExternalLink, Pencil, Search, Trash2, X, FilePenLine, ShoppingCart, RefreshCw } from "lucide-react";
 import { resellerService, statusLabel, type ResellerApplication, type ResellerStatus, type ReviewAction } from "@/services/resellers";
 import { EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,25 @@ function ApplicationCard({ a }: { a: ResellerApplication }) {
   const [note, setNote] = useState("");
   const [docs, setDocs] = useState(false);
   const [editing, setEditing] = useState(false);
+  const purchases = useQuery({
+    queryKey: ["admin", "reseller-purchases", a.user_id],
+    queryFn: async () => {
+      const { data, error } = await getSupabase()
+        .from("orders")
+        .select("id,status,total,created_at")
+        .eq("user_id", a.user_id)
+        .order("created_at", { ascending: false })
+        .limit(250);
+      if (error) throw error;
+      return data ?? [];
+    },
+    retry: false,
+    staleTime: 30_000,
+  });
+  const purchaseOrders = purchases.data ?? [];
+  const paidOrders = purchaseOrders.filter((order) => order.status === "paid");
+  const paidRevenue = paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const latestOrder = purchaseOrders[0];
   const [form, setForm] = useState({
     company_name: a.company_name, trade_name: a.trade_name ?? "", cnpj: a.cnpj,
     state_registration: a.state_registration, uf: a.uf, responsible_name: a.responsible_name,
@@ -103,6 +122,35 @@ function ApplicationCard({ a }: { a: ResellerApplication }) {
         </div>
         <div className="mt-4 flex flex-wrap gap-2"><Button disabled={editMutation.isPending} onClick={() => editMutation.mutate()}>{editMutation.isPending ? "Salvando..." : "Salvar alterações"}</Button><Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button></div>
       </div>}
+      <section className="mt-4 rounded-lg border bg-muted/20 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><ShoppingCart className="size-4" /> Histórico comercial</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Pedidos associados à conta deste revendedor.</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => void purchases.refetch()} disabled={purchases.isFetching}>
+            <RefreshCw className={`mr-1.5 size-3.5 ${purchases.isFetching ? "animate-spin" : ""}`} /> Atualizar
+          </Button>
+        </div>
+        {purchases.isPending ? <p className="mt-3 text-sm text-muted-foreground">Carregando histórico de pedidos…</p> : purchases.isError ? (
+          <div className="mt-3 text-sm text-muted-foreground">
+            <p>Não foi possível consultar os pedidos desta conta.</p>
+            <p className="mt-1 text-xs">Confirme se a tabela de pedidos está disponível e se a sessão administrativa tem permissão de leitura.</p>
+          </div>
+        ) : (
+          <>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="rounded-md bg-background p-3"><span className="block text-xs text-muted-foreground">Pedidos registrados</span><strong className="mt-1 block text-lg">{purchaseOrders.length}</strong></div>
+              <div className="rounded-md bg-background p-3"><span className="block text-xs text-muted-foreground">Compras pagas</span><strong className="mt-1 block text-lg">{paidOrders.length}</strong></div>
+              <div className="rounded-md bg-background p-3"><span className="block text-xs text-muted-foreground">Total pago confirmado</span><strong className="mt-1 block text-lg">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(paidRevenue)}</strong></div>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {latestOrder ? `Último pedido: ${new Date(latestOrder.created_at).toLocaleDateString("pt-BR")} · status: ${latestOrder.status}` : "Este usuário ainda não possui pedidos registrados."}
+              {purchaseOrders.length === 250 ? " · Exibindo no máximo os 250 pedidos mais recentes." : ""}
+            </p>
+          </>
+        )}
+      </section>
       {a.review_note && <p className="mt-3 text-sm"><span className="font-medium">Observação:</span> {a.review_note}</p>}
       {!editing && <div className="mt-4 grid gap-3 border-t pt-4 text-sm sm:grid-cols-3">
         <div className="flex items-start gap-2"><Building2 className="mt-0.5 size-4 text-muted-foreground" /><span><span className="block text-xs text-muted-foreground">Empresa / CNPJ</span>{a.company_name}<span className="block text-muted-foreground">{fmtCnpj(a.cnpj)}</span></span></div>
