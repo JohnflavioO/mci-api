@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, ArrowDownUp, CalendarDays, CheckCircle2, Clock3, CreditCard, Package, RefreshCw, Search, ShoppingCart, WalletCards } from "lucide-react";
+import { AlertCircle, CalendarDays, CheckCircle2, Clock3, CreditCard, Package, RefreshCw, Search, ShoppingCart, WalletCards } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ const dateTime = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle
 
 function isOrdersSchemaMissing(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  return /relation .*orders.* does not exist|could not find the table .*orders|schema cache|PGRST205|42P01/i.test(message);
+  return /relation .*orders.* does not exist|could not find the table .*orders|PGRST205|42P01/i.test(message);
 }
 
 function OrdersPage() {
@@ -101,9 +101,9 @@ function OrdersPage() {
           <div className="flex items-start gap-3">
             <WalletCards className="mt-0.5 size-5 shrink-0" />
             <div className="space-y-2">
-              <h3 className="font-semibold">A estrutura de pedidos ainda não está ativada no banco</h3>
-              <p className="text-sm leading-relaxed">Esta tela já está preparada para listar e acompanhar pedidos, mas a tabela <code>orders</code> ainda não está disponível neste ambiente. A migration de pedidos e pagamentos permanece separada e não foi executada por esta alteração.</p>
-              <p className="text-sm leading-relaxed">Antes de receber pedidos reais, precisamos revisar e aplicar a migration aprovada, validar as permissões e definir o fluxo de checkout. Até conectar um provedor, nenhum pedido deve ser marcado manualmente como pago nem deve haver baixa de estoque por confirmação financeira simulada.</p>
+              <h3 className="font-semibold">A tabela de pedidos não está acessível neste ambiente</h3>
+              <p className="text-sm leading-relaxed">A aplicação não conseguiu localizar a tabela <code>public.orders</code>. Confirme que a migration de pedidos foi aplicada no mesmo projeto Supabase usado por esta loja e que o schema cache está atualizado.</p>
+              <p className="text-sm leading-relaxed">Se a tabela já existe, verifique as permissões e as políticas RLS da sessão administrativa. A tela permanece somente leitura: não marca pedidos como pagos nem executa cancelamentos ou estornos.</p>
               <Button variant="outline" className="mt-1 border-amber-400 bg-white" onClick={() => void ordersQuery.refetch()}>Verificar novamente</Button>
             </div>
           </div>
