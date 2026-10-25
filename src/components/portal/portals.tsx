@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign, ImagePlus,
@@ -214,6 +215,8 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   const p = portals[portal];
   const section = p.sections.find((s) => s.slug === slug);
   const label = section?.label ?? slug;
+
+  if (portal === "admin" && slug === "usuarios") return <AdminUsersSection />;
 
   if (portal === "revendedor" && slug === "aprovacao") {
     return <ResellerApprovalStatus />;
