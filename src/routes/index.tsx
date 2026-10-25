@@ -77,7 +77,7 @@ function Index() {
                 <span className="mt-1 block text-[#ff762f]">cresça com a gente!</span>
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base sm:leading-7">
-                Tenha acesso a equipamentos profissionais de áudio, vídeo e iluminação e conte com a MCI para levar seus negócios e suas produções mais longe.
+                Encontre equipamentos profissionais de áudio, vídeo e iluminação com suporte especializado para escolher melhor e tirar seu projeto do papel.
               </p>
 
               <form onSubmit={searchCatalog} className="mt-4 flex max-w-xl items-center rounded-xl border border-white/15 bg-white p-1.5 shadow-2xl shadow-black/20 focus-within:border-[#ff762f]">
@@ -85,7 +85,7 @@ function Index() {
                 <input
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
-                  placeholder="Busque por produto, marca ou modelo"
+                  placeholder="O que você procura? Produto, marca ou modelo"
                   aria-label="Buscar produtos"
                   className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm text-slate-900 outline-none placeholder:text-slate-500"
                 />
@@ -94,11 +94,18 @@ function Index() {
                 </button>
               </form>
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/55">
-                <span>Explore por categoria</span>
-                <ArrowDownRight className="size-4 text-[#ff762f]" />
-                {categories.slice(0, 3).map((category) => (
-                  <Link key={category} to="/catalogo" search={{ categoria: category }} className="border-b border-white/20 pb-0.5 transition hover:border-[#ff762f] hover:text-white">{category}</Link>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Link to="/catalogo" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff681f] px-5 text-sm font-bold text-white shadow-lg shadow-orange-950/20 transition hover:bg-[#e95712]">
+                  Comprar equipamentos <ArrowRight className="size-4" />
+                </Link>
+                <Link to="/revendedor" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/20 px-4 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/5">
+                  Sou revendedor
+                </Link>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-white/55">
+                <span className="font-semibold text-white/75">Acesso rápido:</span>
+                {categories.slice(0, 4).map((category) => (
+                  <Link key={category} to="/catalogo" search={{ categoria: category }} className="rounded-full border border-white/15 px-3 py-1.5 transition hover:border-[#ff762f]/70 hover:text-white">{category}</Link>
                 ))}
               </div>
             </div>
@@ -108,8 +115,8 @@ function Index() {
               <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#272c33] via-[#20242a] to-[#121417] p-6 sm:p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff8a50]">Feito para profissionais</p>
-                    <p className="mt-2 max-w-xs text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">Seu próximo projeto começa aqui.</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff8a50]">EQUIPAMENTOS PARA SUA PRODUÇÃO</p>
+                    <p className="mt-2 max-w-xs text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">Tudo para produzir em alto nível.</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><AudioLines className="size-6 text-[#ff8a50]" /></div>
                 </div>
@@ -128,8 +135,8 @@ function Index() {
                 </div>
               </div>
               <div className="absolute -bottom-4 -left-3 hidden rounded-xl border border-white/10 bg-[#252a31] px-4 py-3 shadow-xl sm:block">
-                <p className="text-xs font-semibold text-white">Uma operação, várias oportunidades</p>
-                <p className="mt-1 text-[11px] text-white/50">Clientes · Revendedores · Afiliados</p>
+                <p className="text-xs font-semibold text-white">Encontre seu próximo equipamento</p>
+                <p className="mt-1 text-[11px] text-white/50">Explore o catálogo MCI</p>
               </div>
             </div>
           </div>
