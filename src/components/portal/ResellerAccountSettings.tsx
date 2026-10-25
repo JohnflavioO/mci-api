@@ -57,7 +57,16 @@ export function ResellerAccountSettings() {
         if (photo.size > 3 * 1024 * 1024) throw new Error("A foto deve ter no máximo 3 MB.");
         const path = `${form.userId}/profile-${Date.now()}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
         const { error: uploadError } = await sb.storage.from("profile-photos").upload(path, photo, { upsert: true, contentType: photo.type });
-        if (uploadError) throw new Error("Não foi possível enviar a foto. Verifique a configuração de armazenamento e tente novamente.");
+        if (uploadError) {
+          const message = uploadError.message.toLowerCase();
+          if (message.includes("bucket") && (message.includes("not found") || message.includes("does not exist"))) {
+            throw new Error("O armazenamento de fotos ainda não está configurado no Supabase. Aplique a migration de profile-photos e tente novamente.");
+          }
+          if (message.includes("row-level security") || message.includes("permission") || message.includes("unauthorized")) {
+            throw new Error("O Supabase bloqueou o envio da foto por permissão de armazenamento. Confira as políticas do bucket profile-photos.");
+          }
+          throw new Error(`Falha ao enviar a foto: ${uploadError.message}`);
+        }
         const { data } = sb.storage.from("profile-photos").getPublicUrl(path);
         avatarUrl = data.publicUrl;
       }
@@ -87,7 +96,11 @@ export function ResellerAccountSettings() {
       setForm((current) => ({ ...current, avatarUrl }));
       setPhoto(null);
       setNotice("Configurações salvas com sucesso.");
-      await Promise.all([qc.invalidateQueries({ queryKey: ["reseller", "account-settings"] }), qc.invalidateQueries({ queryKey: ["reseller", "access"] })]);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["reseller", "account-settings"] }),
+        qc.invalidateQueries({ queryKey: ["reseller", "access"] }),
+        qc.invalidateQueries({ queryKey: ["reseller", "portal-header-profile"] }),
+      ]);
     },
   });
   if (query.isPending) return <LoadingState />;
