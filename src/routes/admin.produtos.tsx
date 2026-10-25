@@ -76,9 +76,10 @@ function ProductsPage() {
       const id = await catalog.saveAdmin({
         ...(f.id ? { id: f.id } : {}), name: f.name, brand: f.brand, sku: f.sku, category: f.category,
         description: f.description, status: f.status, customerPrice: customer,
-        resellerPrice: reseller, imageUrl: f.imageUrl,
+        resellerPrice: reseller, imageUrl: f.images[0] ?? "",
       });
       await catalog.setStock(id, stock, f.stockConfirmed);
+      await catalog.saveProductImages(id, f.images, f.imageFiles);
       return id;
     },
     onSuccess: async () => {
