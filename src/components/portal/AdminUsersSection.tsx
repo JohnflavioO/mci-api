@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Ban, CheckCircle2, Clock3, RefreshCw, Search, ShieldCheck, Users, UserRoundX } from "lucide-react";
+import { AlertCircle, Ban, CheckCircle2, Clock3, RefreshCw, Search, ShieldCheck, Users, UserRoundX, CalendarClock, X } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type AdminUser = {
   id: string;
@@ -42,21 +43,27 @@ export function AdminUsersSection() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | UserStatus>("all");
   const queryClient = useQueryClient();
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [actionReason, setActionReason] = useState("");
+  const [suspensionDuration, setSuspensionDuration] = useState("7d");
+  const selectedAction = selectedUser && statusFor(selectedUser) === "blocked" ? "reactivate" : "suspend";
   const accessMutation = useMutation({
-    mutationFn: async ({ user, action, reason }: { user: AdminUser; action: "suspend" | "reactivate"; reason: string }) => {
+    mutationFn: async ({ user, action, reason, duration }: { user: AdminUser; action: "suspend" | "reactivate"; reason: string; duration?: string }) => {
       const session = await getSupabase().auth.getSession();
       const token = session.data.session?.access_token;
       if (!token) throw new Error("Sua sessão expirou. Entre novamente na Central Administrativa.");
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, action, reason }),
+        body: JSON.stringify({ userId: user.id, action, reason, duration: action === "suspend" ? duration : undefined }),
       });
       const body = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(body.error || "Não foi possível alterar o acesso.");
     },
     onSuccess: async (_, variables) => {
       toast.success(variables.action === "suspend" ? "Acesso suspenso." : "Acesso reativado.");
+      setSelectedUser(null);
+      setActionReason("");
       await queryClient.invalidateQueries({ queryKey: ["admin", "auth-users"] });
     },
     onError: (error: Error) => toast.error(error.message),
@@ -155,15 +162,7 @@ export function AdminUsersSection() {
                   <button type="button"
                     disabled={accessMutation.isPending || user.role === "admin" || user.role === "super_admin"}
                     title={user.role === "admin" || user.role === "super_admin" ? "Contas administrativas estão protegidas contra suspensão por esta tela" : state === "blocked" ? "Reativar acesso" : "Suspender acesso"}
-                    onClick={() => {
-                      const action = state === "blocked" ? "reactivate" : "suspend";
-                      const label = action === "suspend" ? "suspender" : "reativar";
-                      if (!window.confirm(`Confirma ${label} o acesso de ${user.email || user.id}?`)) return;
-                      const reason = window.prompt("Informe o motivo (mínimo 5 caracteres):");
-                      if (reason === null) return;
-                      if (reason.trim().length < 5) { toast.error("Informe um motivo com pelo menos 5 caracteres."); return; }
-                      accessMutation.mutate({ user, action, reason: reason.trim() });
-                    }}
+                    onClick={() => { setSelectedUser(user); setActionReason(""); setSuspensionDuration("7d"); }}
                     className="inline-flex size-9 items-center justify-center rounded-md border hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={state === "blocked" ? "Reativar acesso" : "Suspender acesso"}>
                     {state === "blocked" ? <CheckCircle2 className="size-4" /> : <Ban className="size-4" />}
@@ -175,6 +174,50 @@ export function AdminUsersSection() {
         )}
         <div className="flex flex-col gap-2 border-t px-5 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>Exibindo {filtered.length} de {users.length} contas carregadas.</span><span>Suspensão e reativação exigem motivo e são registradas para auditoria.</span></div>
       </section>
+
+      <Dialog open={!!selectedUser} onOpenChange={(open) => { if (!open && !accessMutation.isPending) setSelectedUser(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{selectedAction === "suspend" ? "Suspender acesso do usuário" : "Reativar acesso do usuário"}</DialogTitle>
+            <DialogDescription>
+              {selectedUser?.email || "Conta selecionada"}. {selectedAction === "suspend"
+                ? "A pessoa não poderá iniciar novas sessões enquanto a suspensão estiver ativa."
+                : "A conta voltará a poder acessar a plataforma."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAction === "suspend" && (
+            <div className="space-y-2">
+              <label htmlFor="suspension-duration" className="text-sm font-medium">Período da suspensão</label>
+              <select id="suspension-duration" value={suspensionDuration} onChange={(event) => setSuspensionDuration(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring">
+                <option value="1h">1 hora</option>
+                <option value="24h">24 horas</option>
+                <option value="7d">7 dias</option>
+                <option value="30d">30 dias</option>
+                <option value="permanent">Até reativação manual</option>
+              </select>
+              <p className="text-xs text-muted-foreground"><CalendarClock className="mr-1 inline size-3.5" />{suspensionDuration === "permanent" ? "O acesso permanecerá suspenso até você reativá-lo manualmente." : "O acesso será liberado automaticamente ao fim do período selecionado."}</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label htmlFor="access-action-reason" className="text-sm font-medium">Motivo {selectedAction === "reactivate" ? "da reativação" : "da suspensão"}</label>
+            <textarea id="access-action-reason" value={actionReason} onChange={(event) => setActionReason(event.target.value)} maxLength={1000} rows={4} placeholder={selectedAction === "suspend" ? "Descreva por que o acesso será suspenso…" : "Descreva por que o acesso está sendo liberado…"} className="w-full resize-y rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+            <p className="text-xs text-muted-foreground">Mínimo de 5 caracteres. O motivo e a ação serão registrados na auditoria.</p>
+          </div>
+
+          <DialogFooter>
+            <button type="button" disabled={accessMutation.isPending} onClick={() => setSelectedUser(null)} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border px-4 text-sm font-medium hover:bg-secondary disabled:opacity-50"><X className="size-4" /> Cancelar</button>
+            <button type="button" disabled={accessMutation.isPending || actionReason.trim().length < 5 || !selectedUser} onClick={() => {
+              if (!selectedUser) return;
+              accessMutation.mutate({ user: selectedUser, action: selectedAction, reason: actionReason.trim(), duration: suspensionDuration });
+            }} className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${selectedAction === "suspend" ? "bg-destructive hover:bg-destructive/90" : "bg-emerald-600 hover:bg-emerald-700"}`}>
+              {accessMutation.isPending ? <RefreshCw className="size-4 animate-spin" /> : selectedAction === "suspend" ? <Ban className="size-4" /> : <CheckCircle2 className="size-4" />}
+              {accessMutation.isPending ? "Processando…" : selectedAction === "suspend" ? "Confirmar suspensão" : "Confirmar reativação"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
