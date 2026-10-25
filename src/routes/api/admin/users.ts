@@ -115,7 +115,7 @@ export const Route = createFileRoute("/api/admin/users")({
           return Response.json({ error: "Contas administrativas não podem ser suspensas por esta tela. Use o fluxo de recuperação administrativa." }, { status: 409 });
         }
 
-        const { error: updateError } = await auth.adminClient.auth.admin.updateUserById(userId, {
+        const { error: auditTableError } = await auth.adminClient.from("admin_user_access_audit").select("id").limit(1);\n        if (auditTableError) return Response.json({ error: "A auditoria ainda não está preparada. Aplique a migração supabase/migrations/20261025130000_admin_user_access_audit.sql antes de habilitar ações de acesso." }, { status: 503 });\n\n        const { error: updateError } = await auth.adminClient.auth.admin.updateUserById(userId, {
           ban_duration: action === "suspend" ? "876000h" : "none",
         });
         if (updateError) return Response.json({ error: "Não foi possível alterar o acesso desta conta." }, { status: 502 });
