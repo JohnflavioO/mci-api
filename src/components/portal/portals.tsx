@@ -213,12 +213,84 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   const p = portals[portal];
   const section = p.sections.find((s) => s.slug === slug);
   const label = section?.label ?? slug;
+
+  if (portal === "revendedor" && slug === "aprovacao") {
+    return <ResellerApprovalStatus />;
+  }
+
   const q = useQuery({ queryKey: ["portal", portal, slug], queryFn: () => portalService.section(p.title, label), retry: false });
   return (
     <div className="rounded-lg border bg-card p-6">
       {q.isPending ? <LoadingState /> : q.isError ? (
         <div className="space-y-3"><ErrorState message={q.error.message} onRetry={() => void q.refetch()} /></div>
       ) : null}
+    </div>
+  );
+}
+
+function ResellerApprovalStatus() {
+  const statusQuery = useQuery({
+    queryKey: ["reseller", "approval-status"],
+    queryFn: () => resellerService.myAccess(),
+    retry: false,
+  });
+
+  if (statusQuery.isPending) return <LoadingState />;
+  if (statusQuery.isError) return <ErrorState message={statusQuery.error.message} onRetry={() => void statusQuery.refetch()} />;
+
+  const { application, signedIn } = statusQuery.data;
+  if (!signedIn) return <ErrorState message="Sua sessão expirou. Entre novamente para consultar o cadastro." onRetry={() => void statusQuery.refetch()} />;
+
+  if (!application) {
+    return (
+      <section className="rounded-xl border bg-card p-6 sm:p-8">
+        <h2 className="text-lg font-semibold">Cadastro de revendedor não localizado</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">Não encontramos uma solicitação comercial vinculada a esta conta. Entre em contato com o suporte para conferir o cadastro.</p>
+      </section>
+    );
+  }
+
+  const descriptions: Record<string, string> = {
+    pendente: "Recebemos seu cadastro. A equipe comercial ainda precisa concluir a análise.",
+    documentacao_solicitada: "A equipe solicitou informações ou documentos adicionais. Consulte a observação abaixo e fale com o atendimento para regularizar os dados.",
+    aprovado: "Seu cadastro está aprovado. O acesso aos preços e às condições de revenda depende das permissões ativas da sua conta.",
+    rejeitado: "Sua solicitação não foi aprovada. Consulte a justificativa abaixo e fale com o atendimento se precisar de orientação.",
+  };
+  const statuses: Record<string, { label: string; className: string }> = {
+    pendente: { label: "Pendente", className: "border-amber-300 bg-amber-50 text-amber-900" },
+    documentacao_solicitada: { label: "Documentação solicitada", className: "border-blue-300 bg-blue-50 text-blue-900" },
+    aprovado: { label: "Aprovado", className: "border-emerald-300 bg-emerald-50 text-emerald-900" },
+    rejeitado: { label: "Rejeitado", className: "border-red-300 bg-red-50 text-red-900" },
+  };
+  const current = statuses[application.status] ?? statuses.pendente;
+  const createdAt = new Date(application.created_at).toLocaleDateString("pt-BR");
+  const reviewedAt = application.reviewed_at ? new Date(application.reviewed_at).toLocaleDateString("pt-BR") : null;
+
+  return (
+    <div className="space-y-5">
+      <section className="rounded-xl border bg-card p-6 sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Análise do cadastro</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Acompanhe a situação atual da sua solicitação de revenda.</p>
+          </div>
+          <span className={"inline-flex rounded-full border px-3 py-1.5 text-sm font-semibold " + current.className}>{current.label}</span>
+        </div>
+        <p className="mt-5 text-sm leading-6">{descriptions[application.status] ?? "Consulte o atendimento para obter informações sobre sua solicitação."}</p>
+        <div className="mt-6 grid gap-4 border-t pt-5 sm:grid-cols-2">
+          <div><p className="text-xs text-muted-foreground">Empresa</p><p className="mt-1 font-medium">{application.trade_name || application.company_name}</p></div>
+          <div><p className="text-xs text-muted-foreground">CNPJ</p><p className="mt-1 font-medium">{application.cnpj}</p></div>
+          <div><p className="text-xs text-muted-foreground">Data da solicitação</p><p className="mt-1 font-medium">{createdAt}</p></div>
+          <div><p className="text-xs text-muted-foreground">Última análise</p><p className="mt-1 font-medium">{reviewedAt ?? "Ainda não analisado"}</p></div>
+        </div>
+        {application.review_note && <div className="mt-5 rounded-lg border bg-secondary/50 p-4"><p className="text-sm font-semibold">Observação da equipe</p><p className="mt-1 whitespace-pre-wrap text-sm leading-6">{application.review_note}</p></div>}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
+          <p className="text-xs text-muted-foreground">As informações são carregadas do cadastro vinculado à sua conta.</p>
+          <button type="button" onClick={() => void statusQuery.refetch()} disabled={statusQuery.isFetching} className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50">
+            Atualizar status
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
