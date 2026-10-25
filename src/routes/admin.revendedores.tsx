@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Building2, ExternalLink, Pencil, Search, Trash2, X } from "lucide-react";
+import { Building2, ExternalLink, Pencil, Search, Trash2, X, FilePenLine } from "lucide-react";
 import { resellerService, statusLabel, type ResellerApplication, type ResellerStatus, type ReviewAction } from "@/services/resellers";
 import { EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
+import { getSupabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/revendedores")({
   head: () => ({
@@ -26,8 +27,10 @@ function ResellersPage() {
   const [status, setStatus] = useState<ResellerStatus | "">("pendente");
   const [search, setSearch] = useState("");
   const q = useQuery({ queryKey: ["admin", "resellers", status], queryFn: () => resellerService.list(status || undefined), retry: false });
+  const changeRequests = useQuery({ queryKey: ["admin", "reseller-change-requests"], queryFn: async () => { const { data, error } = await getSupabase().from("reseller_change_requests").select("id,user_id,reseller_application_id,requested_fields,current_values,proposed_values,reason,status,admin_note,created_at").order("created_at", { ascending: false }).limit(100); if (error) throw error; return data ?? []; }, retry: false });
   return (
     <div className="space-y-6">
+      <section className="space-y-4 rounded-xl border bg-card p-5"><div><h2 className="flex items-center gap-2 font-semibold"><FilePenLine className="size-5" /> Solicitações de alteração cadastral</h2><p className="mt-1 text-sm text-muted-foreground">Revise os valores atuais e propostos. A aprovação altera os dados oficiais.</p></div>{changeRequests.isPending ? <LoadingState /> : changeRequests.isError ? <ErrorState message={changeRequests.error.message} onRetry={() => void changeRequests.refetch()} /> : changeRequests.data.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma solicitação enviada.</p> : <div className="space-y-3">{changeRequests.data.map((r) => <article key={r.id} className="rounded-lg border p-4"><div className="flex flex-wrap items-center justify-between gap-2"><strong>Solicitação {r.id.slice(0,8)}</strong><span className="rounded-full border px-3 py-1 text-xs">{r.status}</span></div><p className="mt-2 text-sm"><strong>Motivo:</strong> {r.reason}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{r.requested_fields.map((key: string) => <div key={key} className="rounded-md bg-muted/40 p-3 text-sm"><strong>{({company_name:"Razão social",trade_name:"Nome fantasia",cnpj:"CNPJ",state_registration:"Inscrição estadual",uf:"UF fiscal",responsible_name:"Responsável"} as Record<string,string>)[key] ?? key}</strong><p className="mt-1 text-muted-foreground">Atual: {String(r.current_values[key] ?? "—")}</p><p>Proposto: {String(r.proposed_values[key] ?? "—")}</p></div>)}</div><ChangeRequestDecision id={r.id} status={r.status} /></article>)}</div>}</section>
       <div className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-[1fr_auto] sm:items-center">
         <div><h2 className="font-semibold">Gestão de revendedores</h2><p className="mt-1 text-sm text-muted-foreground">Consulte, edite os dados cadastrais e remova registros quando necessário.</p></div>
         <div className="relative w-full sm:w-80"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar empresa, CNPJ, responsável..." className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring" /></div>
@@ -128,3 +131,5 @@ function ApplicationCard({ a }: { a: ResellerApplication }) {
     </div>
   );
 }
+
+function ChangeRequestDecision({ id, status }: { id: string; status: string }) { const qc = useQueryClient(); const [note, setNote] = useState(""); const m = useMutation({ mutationFn: async (action: "aprovar" | "rejeitar") => { if (action === "rejeitar" && note.trim().length < 5) throw new Error("Informe a justificativa da rejeição (mínimo 5 caracteres)."); const { error } = await getSupabase().rpc("review_reseller_change_request", { p_request_id: id, p_action: action, p_admin_note: note.trim() || null }); if (error) throw new Error(error.message); }, onSuccess: async (_, action) => { toast.success(action === "aprovar" ? "Alteração aprovada." : "Solicitação rejeitada."); await Promise.all([qc.invalidateQueries({ queryKey: ["admin", "reseller-change-requests"] }), qc.invalidateQueries({ queryKey: ["admin", "resellers"] })]); }, onError: (e: Error) => toast.error(e.message) }); if (status !== "pendente") return null; return <div className="mt-4 space-y-3 border-t pt-4"><label className="block space-y-1 text-sm"><span>Observação (obrigatória ao rejeitar)</span><textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} className="min-h-20 w-full rounded-md border bg-background p-3" /></label><div className="flex gap-2"><Button disabled={m.isPending} onClick={() => m.mutate("aprovar")}>Aprovar alteração</Button><Button variant="destructive" disabled={m.isPending || note.trim().length < 5} onClick={() => m.mutate("rejeitar")}>Rejeitar</Button></div></div>; }
