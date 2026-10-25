@@ -22,9 +22,9 @@ const dateTime = (value: string | null) => value
   : "—";
 const dateOnly = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 const roleLabel = (role: string | null) => {
-  if (!role) return "Não identificado";
-  const labels: Record<string, string> = { admin: "Super Admin", gestor: "Gestor", vendedor: "Vendedor", reseller: "Revendedor", affiliate: "Afiliado" };
-  return labels[role] ?? role;
+  if (!role) return "Cliente";
+  const labels: Record<string, string> = { admin: "Super Admin", gestor: "Gestor", vendedor: "Vendedor", reseller: "Revendedor", revendedor: "Revendedor", affiliate: "Afiliado", afiliado: "Afiliado", cliente: "Cliente" };
+  return labels[role] ?? "Perfil não reconhecido";
 };
 const statusFor = (user: AdminUser): UserStatus => {
   if (user.bannedUntil && new Date(user.bannedUntil).getTime() > Date.now()) return "blocked";
