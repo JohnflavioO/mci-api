@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ImageOff, PackagePlus, Pencil, Plus, Search, X } from "lucide-react";
+import { ImageOff, Images, PackagePlus, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { createSupabaseCatalog, type SupabaseCatalogProduct } from "@/services/supabaseCatalog";
 import { categoriesOf, filterCatalog, formatPrice } from "@/services/catalog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
@@ -31,7 +31,8 @@ type ProductForm = {
   description: string;
   customerPrice: string;
   resellerPrice: string;
-  imageUrl: string;
+  images: string[];
+  imageFiles: File[];
   stock: string;
   stockConfirmed: boolean;
   status: "draft" | "published";
@@ -39,7 +40,7 @@ type ProductForm = {
 
 const emptyForm: ProductForm = {
   name: "", brand: "", sku: "", category: "", description: "",
-  customerPrice: "", resellerPrice: "", imageUrl: "", stock: "", stockConfirmed: false, status: "draft",
+  customerPrice: "", resellerPrice: "", images: [], imageFiles: [], stock: "", stockConfirmed: false, status: "draft",
 };
 
 const priceNumber = (v: string): number | null => {
@@ -64,7 +65,12 @@ function ProductsPage() {
       const customer = priceNumber(f.customerPrice);
       const reseller = priceNumber(f.resellerPrice);
       if (customer !== null && reseller !== null && reseller > customer) throw new Error("O preço de revenda não pode ser maior que o preço ao cliente.");
-      if (f.imageUrl.trim() && !/^https:\/\//i.test(f.imageUrl.trim())) throw new Error("A imagem precisa usar uma URL HTTPS.");
+      if (f.images.some((url) => !/^https:\/\//i.test(url.trim()))) throw new Error("Todas as URLs de imagens precisam usar HTTPS.");
+      if (f.images.length + f.imageFiles.length > 10) throw new Error("Cada produto pode ter no máximo 10 imagens.");
+      for (const file of f.imageFiles) {
+        if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) throw new Error("Use imagens JPG, PNG, WebP ou AVIF.");
+        if (file.size > 8 * 1024 * 1024) throw new Error("Cada imagem deve ter no máximo 8 MB.");
+      }
       const stock = f.stock.trim() === "" ? null : Number(f.stock);
       if (stock !== null && (!Number.isInteger(stock) || stock < 0)) throw new Error("Estoque disponível deve ser um número inteiro maior ou igual a zero.");
       const id = await catalog.saveAdmin({
@@ -93,7 +99,7 @@ function ProductsPage() {
     category: p.category ?? "", description: p.description ?? "",
     customerPrice: p.customerPrice == null ? "" : String(p.customerPrice),
     resellerPrice: p.resellerPrice == null ? "" : String(p.resellerPrice),
-    imageUrl: p.images[0] ?? "", stock: p.stock == null ? "" : String(p.stock), stockConfirmed: p.stockConfirmed, status: p.status,
+    images: [...p.images], imageFiles: [], stock: p.stock == null ? "" : String(p.stock), stockConfirmed: p.stockConfirmed, status: p.status,
   });
 
   const field = (key: Exclude<keyof ProductForm, "id" | "status">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
@@ -140,7 +146,39 @@ function ProductsPage() {
             <div className="space-y-1.5"><Label htmlFor="product-reseller-price">Preço de revenda (R$)</Label><Input id="product-reseller-price" inputMode="decimal" value={form.resellerPrice} onChange={(e) => field("resellerPrice", e.target.value)} placeholder="0,00" /></div>
             <div className="space-y-1.5"><Label htmlFor="product-stock">Quantidade em estoque</Label><Input id="product-stock" type="number" min={0} step={1} inputMode="numeric" value={form.stock} onChange={(e) => field("stock", e.target.value)} placeholder="Não informado" /></div>
             <label className="flex items-center gap-2 rounded-md border p-3 text-sm md:col-span-2"><input type="checkbox" checked={form.stockConfirmed} onChange={(e) => setForm((old) => old ? { ...old, stockConfirmed: e.target.checked } : old)} disabled={form.stock.trim() === "" || Number(form.stock) <= 0} /><span><span className="font-medium">Estoque confirmado pela MCI</span><span className="mt-0.5 block text-xs text-muted-foreground">Marque somente após confirmar a quantidade real. Importar produto nunca confirma o estoque automaticamente.</span></span></label>
-            <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-image">URL da imagem (HTTPS)</Label><Input id="product-image" type="url" value={form.imageUrl} onChange={(e) => field("imageUrl", e.target.value)} placeholder="https://..." /></div>
+            <div className="space-y-3 md:col-span-2 rounded-lg border p-4">
+              <div className="flex items-start gap-3">
+                <Images className="mt-0.5 size-5 text-brand" />
+                <div><Label htmlFor="product-images">Galeria de imagens do produto</Label><p className="mt-1 text-xs text-muted-foreground">Adicione até 10 fotos. A primeira será a imagem principal exibida no catálogo. Recomendado: imagens quadradas de 1200 × 1200 px, JPG, PNG, WebP ou AVIF, até 8 MB por arquivo.</p></div>
+              </div>
+              <label htmlFor="product-images" className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition hover:border-brand hover:bg-muted/40">
+                <Upload className="size-6 text-brand" /><span className="text-sm font-semibold">Selecionar fotos do computador</span><span className="text-xs text-muted-foreground">Você pode selecionar várias imagens de uma vez</span>
+                <input id="product-images" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple className="sr-only" onChange={(e) => {
+                  const files = Array.from(e.currentTarget.files ?? []);
+                  setForm((old) => {
+                    if (!old) return old;
+                    const combined = [...old.imageFiles, ...files];
+                    if (old.images.length + combined.length > 10) { toast.error("Cada produto pode ter no máximo 10 imagens."); return old; }
+                    if (files.some((f) => f.size > 8 * 1024 * 1024)) { toast.error("Cada imagem deve ter no máximo 8 MB."); return old; }
+                    if (files.some((f) => !["image/jpeg", "image/png", "image/webp", "image/avif"].includes(f.type))) { toast.error("Use imagens JPG, PNG, WebP ou AVIF."); return old; }
+                    return { ...old, imageFiles: combined };
+                  });
+                  e.currentTarget.value = "";
+                }} />
+              </label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {form.images.map((url, index) => <div key={url} className="relative overflow-hidden rounded-lg border bg-muted">
+                  <img src={url} alt={`Foto ${index + 1}`} className="aspect-square w-full object-contain" />
+                  <div className="flex items-center justify-between gap-1 p-2 text-xs"><span className="truncate">{index === 0 ? "Principal" : `Foto ${index + 1}`}</span><button type="button" aria-label="Remover foto" className="rounded p-1 hover:bg-background" onClick={() => setForm((old) => old ? { ...old, images: old.images.filter((_, i) => i !== index) } : old)}><Trash2 className="size-3.5" /></button></div>
+                  {index > 0 && <button type="button" className="w-full border-t p-1.5 text-xs hover:bg-background" onClick={() => setForm((old) => { if (!old) return old; const images=[...old.images]; const [selected]=images.splice(index,1); images.unshift(selected); return {...old,images}; })}>Definir como principal</button>}
+                </div>)}
+                {form.imageFiles.map((file, index) => <div key={`${file.name}-${index}-${file.size}`} className="relative overflow-hidden rounded-lg border bg-muted">
+                  <img src={URL.createObjectURL(file)} alt={file.name} className="aspect-square w-full object-contain" />
+                  <div className="flex items-center justify-between gap-1 p-2 text-xs"><span className="truncate">{form.images.length + index === 0 ? "Principal (nova)" : file.name}</span><button type="button" aria-label="Remover foto selecionada" className="rounded p-1 hover:bg-background" onClick={() => setForm((old) => old ? { ...old, imageFiles: old.imageFiles.filter((_, i) => i !== index) } : old)}><Trash2 className="size-3.5" /></button></div>
+                </div>)}
+              </div>
+              {form.images.length + form.imageFiles.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma foto adicionada. Você poderá salvar o produto sem imagens e adicioná-las depois.</p>}
+            </div>
             <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-description">Descrição</Label><textarea id="product-description" rows={4} maxLength={20000} value={form.description} onChange={(e) => field("description", e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" /></div>
             <div className="space-y-1.5"><Label htmlFor="product-status">Status</Label><select id="product-status" value={form.status} onChange={(e) => setForm((old) => old ? { ...old, status: e.target.value as ProductForm["status"] } : old)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="draft">Rascunho</option><option value="published">Publicado</option></select></div>
             <div className="flex items-end justify-end gap-2 md:col-span-2">
