@@ -92,7 +92,7 @@ export const Route = createFileRoute("/api/admin/users")({
         const auth = await authorize(request);
         if ("response" in auth) return auth.response;
 
-        const body = await request.json().catch(() => null) as { userId?: unknown; action?: unknown; reason?: unknown } | null;
+        const body = await request.json().catch(() => null) as { userId?: unknown; action?: unknown; reason?: unknown; duration?: unknown } | null;
         const userId = typeof body?.userId === "string" ? body.userId.trim() : "";
         const action = body?.action;
         const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
@@ -101,6 +101,11 @@ export const Route = createFileRoute("/api/admin/users")({
         }
         if (action !== "suspend" && action !== "reactivate") return Response.json({ error: "Ação inválida." }, { status: 400 });
         if (reason.length < 5 || reason.length > 1000) return Response.json({ error: "Informe um motivo entre 5 e 1000 caracteres." }, { status: 400 });
+        const allowedDurations = ["1h", "24h", "7d", "30d", "permanent"] as const;
+        const duration = body?.duration;
+        if (action === "suspend" && !allowedDurations.includes(duration as typeof allowedDurations[number])) {
+          return Response.json({ error: "Selecione um período de suspensão válido." }, { status: 400 });
+        }
         if (action === "suspend" && userId === auth.actorId) {
           return Response.json({ error: "Você não pode suspender a própria conta administrativa." }, { status: 409 });
         }
@@ -118,8 +123,10 @@ export const Route = createFileRoute("/api/admin/users")({
         const { error: auditTableError } = await auth.adminClient.from("admin_user_access_audit").select("id").limit(1);
         if (auditTableError) return Response.json({ error: "A auditoria ainda não está preparada. Aplique a migração supabase/migrations/20261025130000_admin_user_access_audit.sql antes de habilitar ações de acesso." }, { status: 503 });
 
+        const banDuration = duration === "permanent" ? "876000h" : String(duration ?? "7d");
+        const auditReason = action === "suspend" ? `${reason} [Duração: ${duration === "permanent" ? "até reativação manual" : duration}]` : reason;
         const { error: updateError } = await auth.adminClient.auth.admin.updateUserById(userId, {
-          ban_duration: action === "suspend" ? "876000h" : "none",
+          ban_duration: action === "suspend" ? banDuration : "none",
         });
         if (updateError) return Response.json({ error: "Não foi possível alterar o acesso desta conta." }, { status: 502 });
 
@@ -127,7 +134,7 @@ export const Route = createFileRoute("/api/admin/users")({
           actor_user_id: auth.actorId,
           target_user_id: userId,
           action,
-          reason,
+          reason: auditReason,
         });
         if (auditError) {
           // Não desfaz o bloqueio se a auditoria falhar; sinaliza explicitamente para correção operacional.
