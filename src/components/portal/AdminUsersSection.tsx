@@ -151,6 +151,24 @@ export function AdminUsersSection() {
                 <td className="px-5 py-4"><span className="inline-flex items-center gap-1.5 text-muted-foreground"><ShieldCheck className="size-4" />{roleLabel(user.role)}</span></td>
                 <td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusClass[state]}`}>{statusLabel[state]}</span></td>
                 <td className="px-5 py-4 text-muted-foreground">{dateTime(user.lastSignInAt)}</td><td className="px-5 py-4 text-muted-foreground">{dateOnly(user.createdAt)}</td>
+                <td className="px-5 py-4 text-right">
+                  <button type="button"
+                    disabled={accessMutation.isPending || user.role === "admin" || user.role === "super_admin"}
+                    title={user.role === "admin" || user.role === "super_admin" ? "Contas administrativas estão protegidas contra suspensão por esta tela" : state === "blocked" ? "Reativar acesso" : "Suspender acesso"}
+                    onClick={() => {
+                      const action = state === "blocked" ? "reactivate" : "suspend";
+                      const label = action === "suspend" ? "suspender" : "reativar";
+                      if (!window.confirm(`Confirma ${label} o acesso de ${user.email || user.id}?`)) return;
+                      const reason = window.prompt("Informe o motivo (mínimo 5 caracteres):");
+                      if (reason === null) return;
+                      if (reason.trim().length < 5) { toast.error("Informe um motivo com pelo menos 5 caracteres."); return; }
+                      accessMutation.mutate({ user, action, reason: reason.trim() });
+                    }}
+                    className="inline-flex size-9 items-center justify-center rounded-md border hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={state === "blocked" ? "Reativar acesso" : "Suspender acesso"}>
+                    {state === "blocked" ? <CheckCircle2 className="size-4" /> : <Ban className="size-4" />}
+                  </button>
+                </td>
               </tr>;
             })}</tbody>
           </table></div>
