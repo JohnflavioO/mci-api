@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Building2, CheckCircle2, ChevronRight, Globe, Info, Mail,
-  MapPin, PackageCheck, Phone, Save, Settings2, ShieldCheck, Store,
+  AlertTriangle, Building2, CheckCircle2, ChevronRight, Info,
+  MapPin, PackageCheck, Save, Settings2, ShieldCheck, Store,
 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
@@ -103,7 +103,8 @@ function StockSettingsPage() {
   });
   const companyConfigured = companyQuery.data !== undefined && !companyQuery.isError;
   const companyChanged = companyConfigured && companyFields.some((key) => company[key] !== companyQuery.data?.[key]);
-\n  const query = useQuery({
+
+  const query = useQuery({
     queryKey: ["admin", "stock-confirmation-mode"],
     queryFn: catalog.getStockConfirmationMode,
     retry: false,
