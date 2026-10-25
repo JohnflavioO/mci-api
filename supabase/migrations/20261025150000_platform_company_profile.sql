@@ -41,28 +41,13 @@ grant all on public.platform_company_profile to service_role;
 drop policy if exists "Super admins read company profile" on public.platform_company_profile;
 create policy "Super admins read company profile"
 on public.platform_company_profile for select to authenticated
-using (
-  exists (
-    select 1 from public.user_roles ur
-    where ur.user_id = auth.uid() and ur.role::text = 'super_admin'
-  )
-);
+using (public.has_role('admin'::public.app_role));
 
 drop policy if exists "Super admins update company profile" on public.platform_company_profile;
 create policy "Super admins update company profile"
 on public.platform_company_profile for update to authenticated
-using (
-  exists (
-    select 1 from public.user_roles ur
-    where ur.user_id = auth.uid() and ur.role::text = 'super_admin'
-  )
-)
-with check (
-  exists (
-    select 1 from public.user_roles ur
-    where ur.user_id = auth.uid() and ur.role::text = 'super_admin'
-  )
-);
+using (public.has_role('admin'::public.app_role))
+with check (public.has_role('admin'::public.app_role));
 
 create or replace function public.touch_platform_company_profile()
 returns trigger language plpgsql set search_path = pg_catalog, public as $$
