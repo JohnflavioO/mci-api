@@ -165,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/banners': typeof AdminBannersRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -186,6 +187,7 @@ export interface FileRoutesByTo {
   '/admin/importar': typeof AdminImportarRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
+  '/admin/banners': typeof AdminBannersRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -211,6 +213,7 @@ export interface FileRoutesById {
   '/admin/importar': typeof AdminImportarRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
+  '/admin/banners': typeof AdminBannersRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
@@ -237,6 +240,7 @@ export interface FileRouteTypes {
     | '/admin/importar'
     | '/admin/produtos'
     | '/admin/revendedores'
+    | '/admin/banners'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
@@ -258,6 +262,7 @@ export interface FileRouteTypes {
     | '/admin/importar'
     | '/admin/produtos'
     | '/admin/revendedores'
+    | '/admin/banners'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
@@ -282,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/importar'
     | '/admin/produtos'
     | '/admin/revendedores'
+    | '/admin/banners'
     | '/afiliado/$secao'
     | '/produto/$slug'
     | '/revendedor/$secao'
@@ -413,6 +419,13 @@ declare module '@tanstack/react-router' {
       path: '/revendedores'
       fullPath: '/admin/revendedores'
       preLoaderRoute: typeof AdminRevendedoresRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/banners': {
+      id: '/admin/banners'
+      path: '/banners'
+      fullPath: '/admin/banners'
+      preLoaderRoute: typeof AdminBannersRouteImport
       parentRoute: typeof AdminRoute
     }
     '/afiliado/': {
