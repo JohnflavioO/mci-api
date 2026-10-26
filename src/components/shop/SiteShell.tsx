@@ -96,8 +96,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-8 px-4 sm:px-6">
           <Logo />
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-1 md:flex">
-            {nav.map((n) => (
-              <Link key={n.label} to={n.to} search={"search" in n ? n.search : undefined} className={`${linkBase} text-foreground/70 hover:text-foreground`} activeProps={{ className: `${linkBase} text-foreground after:absolute after:inset-x-3 after:-bottom-[17px] after:h-0.5 after:rounded-full after:bg-brand` }}>
+            {nav.map((n) => "search" in n ? (
+              <Link key={n.label} to="/catalogo" search={n.search} className={`${linkBase} text-foreground/70 hover:text-foreground`} activeProps={{ className: `${linkBase} text-foreground after:absolute after:inset-x-3 after:-bottom-[17px] after:h-0.5 after:rounded-full after:bg-brand` }}>
+                {n.label}
+              </Link>
+            ) : (
+              <Link key={n.label} to={n.to} className={`${linkBase} text-foreground/70 hover:text-foreground`} activeProps={{ className: `${linkBase} text-foreground after:absolute after:inset-x-3 after:-bottom-[17px] after:h-0.5 after:rounded-full after:bg-brand` }}>
                 {n.label}
               </Link>
             ))}
@@ -120,8 +124,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
         {open && (
           <nav id="menu-mobile" aria-label="Principal" className="border-t border-border bg-background px-4 pb-5 pt-2 md:hidden">
-            {nav.map((n) => (
-              <Link key={n.label} to={n.to} search={"search" in n ? n.search : undefined} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-md px-3 text-base font-semibold text-foreground/80 hover:bg-secondary" activeProps={{ className: "flex min-h-12 items-center rounded-md border-l-2 border-brand bg-secondary px-3 text-base font-semibold text-foreground" }}>{n.label}</Link>
+            {nav.map((n) => "search" in n ? (
+              <Link key={n.label} to="/catalogo" search={n.search} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-md px-3 text-base font-semibold text-foreground/80 hover:bg-secondary" activeProps={{ className: "flex min-h-12 items-center rounded-md border-l-2 border-brand bg-secondary px-3 text-base font-semibold text-foreground" }}>{n.label}</Link>
+            ) : (
+              <Link key={n.label} to={n.to} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-md px-3 text-base font-semibold text-foreground/80 hover:bg-secondary" activeProps={{ className: "flex min-h-12 items-center rounded-md border-l-2 border-brand bg-secondary px-3 text-base font-semibold text-foreground" }}>{n.label}</Link>
             ))}
             <Link to={accountTo} onClick={() => setOpen(false)} className="mt-3 flex h-12 items-center justify-center gap-2 rounded-md bg-graphite text-base font-semibold text-graphite-foreground">
               {accountIcon} {accountLabel}
