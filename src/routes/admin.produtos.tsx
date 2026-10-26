@@ -71,8 +71,11 @@ function ProductsPage() {
         throw new Error("Para publicar o produto, adicione pelo menos uma imagem à galeria.");
       }
       for (const file of f.imageFiles) {
-        if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) throw new Error("Use imagens JPG, PNG, WebP ou AVIF.");
-        if (file.size > 8 * 1024 * 1024) throw new Error("Cada imagem deve ter no máximo 8 MB.");
+        const extension = file.name.split(".").pop()?.toLowerCase();
+        const allowedByName = ["jpg", "jpeg", "png", "webp", "avif"].includes(extension ?? "");
+        const allowedByMime = ["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type);
+        if (!allowedByMime && !allowedByName) throw new Error(`Formato de imagem não permitido: "${file.name}" (tipo ${file.type || "não informado"}). Use JPG, PNG, WebP ou AVIF.`);
+        if (file.size > 8 * 1024 * 1024) throw new Error(`A imagem "${file.name}" ultrapassa o limite de 8 MB.`);
       }
       const stock = f.stock.trim() === "" ? null : Number(f.stock);
       if (stock !== null && (!Number.isInteger(stock) || stock < 0)) throw new Error("Estoque disponível deve ser um número inteiro maior ou igual a zero.");
@@ -100,7 +103,7 @@ function ProductsPage() {
       return id;
     },
     onSuccess: async () => {
-      toast.success("Produto salvo no Supabase.");
+      toast.success("Produto salvo no Supabase. Se você adicionou fotos, elas foram enviadas e a galeria foi conferida.");
       setForm(null);
       await qc.invalidateQueries({ queryKey: ["admin", "supabase-products"] });
       await qc.invalidateQueries({ queryKey: ["catalog"] });
