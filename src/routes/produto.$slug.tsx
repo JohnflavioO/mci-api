@@ -121,8 +121,8 @@ function ProductPage() {
     return () => { window.removeEventListener("keydown", onKeyDown); document.body.style.overflow = ""; };
   }, [lightboxOpen, images.length]);
   const rp = useQuery({
-    queryKey: ["reseller-price", resellerUserId, q.data?.product.id],
-    enabled: !!resellerUserId && !!q.data?.product.id && catalogSource() === "supabase",
+    queryKey: ["reseller-price", resellerUserId, q.data?.product.slug],
+    enabled: !!resellerUserId && !!q.data?.product.slug && catalogSource() === "supabase",
     retry: false,
     queryFn: async () => {
       const { getSupabase } = await import("@/lib/supabase");
@@ -131,7 +131,7 @@ function ProductPage() {
       if (!session.session) return null;
       const { data: isReseller, error } = await sb.rpc("has_role", { _role: "revendedor" });
       if (error || isReseller !== true) return null;
-      return (await import("@/services/supabaseCatalog")).createSupabaseCatalog().resellerPrice(q.data?.product.id ?? "");
+      return (await import("@/services/supabaseCatalog")).createSupabaseCatalog().resellerPrice(q.data?.product.slug ?? "");
     },
   });
   const isApprovedReseller = rp.data != null;
