@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import { SiteShell } from "@/components/shop/SiteShell";
+import { ProductComparison } from "@/components/shop/ProductComparison";
 import { availabilityLabel, priceLabel, ProductImage } from "@/components/shop/ProductCard";
 import { DemoBadge, EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
@@ -203,6 +204,7 @@ function ProductPage() {
               <Button className="mt-5 h-12 w-full bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:w-auto sm:px-10" size="lg" disabled={!canSell(p)} onClick={() => { if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock })) toast.success("Adicionado ao carrinho"); else toast.error("Quantidade máxima em estoque já está no carrinho."); }}>
                 Adicionar ao carrinho
               </Button>
+              <div className="mt-3"><ProductComparison product={p} /></div>
               <div className="mt-6 rounded-xl bg-muted/50 p-4 sm:p-5"><h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Descrição do produto</h2><p className="mt-2 whitespace-pre-line text-sm leading-7 text-foreground/80">{p.description || "Consulte nossa equipe para mais informações sobre este produto."}</p></div>
               </div>
               <div className="mt-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
