@@ -244,7 +244,7 @@ function ProductPage() {
                   <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Conheça o equipamento</p><h2 className="mt-1 text-xl font-bold">Descrição do produto</h2></div>
                 </div>
                 <div className="mt-5 space-y-4 text-sm leading-7 text-foreground/80">
-                  {(p.shortDescription || (p.description || "Consulte nossa equipe para mais informações sobre este produto.").split(/(?<=[.!?])\s+/).slice(0, 2).join(" "))
+                  {((p.description || "Consulte nossa equipe para mais informações sobre este produto.").split(/(?<=[.!?])\s+/).slice(0, 2).join(" "))
                     .split(/\n\s*\n/)
                     .map((paragraph, index) => paragraph.trim() ? <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p> : null)}
                 </div>
