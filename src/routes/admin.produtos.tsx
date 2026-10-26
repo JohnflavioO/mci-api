@@ -171,17 +171,31 @@ function ProductsPage() {
               </div>
               <label htmlFor="product-images" className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition hover:border-brand hover:bg-muted/40">
                 <Upload className="size-6 text-brand" /><span className="text-sm font-semibold">Selecionar fotos do computador</span><span className="text-xs text-muted-foreground">Você pode selecionar várias imagens de uma vez</span>
-                <input id="product-images" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple className="sr-only" onChange={(e) => {
-                  const files = Array.from(e.currentTarget.files ?? []);
+                <input id="product-images" type="file" accept=".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif" multiple className="sr-only" onChange={(e) => {
+                  const input = e.currentTarget;
+                  const files = Array.from(input.files ?? []);
+                  // Limpa o input para permitir selecionar novamente o mesmo arquivo.
+                  input.value = "";
+                  if (!files.length) return;
+                  const allowed = (file: File) => {
+                    const ext = file.name.split(".").pop()?.toLowerCase();
+                    return ["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type) ||
+                      (!file.type && ["jpg", "jpeg", "png", "webp", "avif"].includes(ext ?? ""));
+                  };
+                  const invalid = files.find((file) => !allowed(file));
+                  if (invalid) { toast.error(`Formato não aceito: ${invalid.name}. Use JPG, PNG, WebP ou AVIF.`); return; }
+                  const tooLarge = files.find((file) => file.size > 8 * 1024 * 1024);
+                  if (tooLarge) { toast.error(`A imagem "${tooLarge.name}" ultrapassa o limite de 8 MB.`); return; }
                   setForm((old) => {
                     if (!old) return old;
                     const combined = [...old.imageFiles, ...files];
-                    if (old.images.length + combined.length > 10) { toast.error("Cada produto pode ter no máximo 10 imagens."); return old; }
-                    if (files.some((f) => f.size > 8 * 1024 * 1024)) { toast.error("Cada imagem deve ter no máximo 8 MB."); return old; }
-                    if (files.some((f) => !["image/jpeg", "image/png", "image/webp", "image/avif"].includes(f.type))) { toast.error("Use imagens JPG, PNG, WebP ou AVIF."); return old; }
+                    if (old.images.length + combined.length > 10) {
+                      toast.error(`Limite de 10 imagens: já existem ${old.images.length} salvas e você tentou adicionar ${combined.length} novas.`);
+                      return old;
+                    }
+                    toast.success(`${files.length} ${files.length === 1 ? "imagem selecionada" : "imagens selecionadas"}. Clique em “Salvar produto” para enviar.`);
                     return { ...old, imageFiles: combined };
                   });
-                  e.currentTarget.value = "";
                 }} />
               </label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -194,6 +208,7 @@ function ProductsPage() {
                   <div className="flex items-center justify-between gap-1 p-2 text-xs"><span className="truncate">{form.images.length + index === 0 ? "Principal (nova)" : file.name}</span><div className="flex shrink-0 items-center gap-0.5"><button type="button" aria-label="Mover foto nova para cima" title="Mover para cima" disabled={index === 0} className="rounded p-1 hover:bg-background disabled:opacity-30" onClick={() => setForm((old) => { if (!old || index === 0) return old; const imageFiles=[...old.imageFiles]; [imageFiles[index - 1], imageFiles[index]] = [imageFiles[index], imageFiles[index - 1]]; return {...old,imageFiles}; })}><ChevronUp className="size-3.5" /></button><button type="button" aria-label="Mover foto nova para baixo" title="Mover para baixo" disabled={index === form.imageFiles.length - 1} className="rounded p-1 hover:bg-background disabled:opacity-30" onClick={() => setForm((old) => { if (!old || index >= old.imageFiles.length - 1) return old; const imageFiles=[...old.imageFiles]; [imageFiles[index], imageFiles[index + 1]] = [imageFiles[index + 1], imageFiles[index]]; return {...old,imageFiles}; })}><ChevronDown className="size-3.5" /></button><button type="button" aria-label="Remover foto selecionada" className="rounded p-1 hover:bg-background" onClick={() => setForm((old) => old ? { ...old, imageFiles: old.imageFiles.filter((_, i) => i !== index) } : old)}><Trash2 className="size-3.5" /></button></div></div>
                 </div>)}
               </div>
+              {form.imageFiles.length > 0 && <div role="status" className="rounded-md border border-brand/30 bg-brand/5 px-3 py-2 text-sm"><strong>{form.imageFiles.length} {form.imageFiles.length === 1 ? "nova imagem selecionada" : "novas imagens selecionadas"}</strong><span className="text-muted-foreground"> — ainda não salvas. Clique em “Salvar produto” para enviar e gravar a galeria.</span></div>}
               {form.images.length + form.imageFiles.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma foto adicionada. Você poderá salvar o produto sem imagens e adicioná-las depois.</p>}
             </div>
             <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-description">Descrição</Label><textarea id="product-description" rows={4} maxLength={20000} value={form.description} onChange={(e) => field("description", e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" /></div>
