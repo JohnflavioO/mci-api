@@ -16,7 +16,7 @@ export const Route = createFileRoute("/admin/banners")({
 type Slide = {
   id: string; eyebrow: string; title: string; description: string | null;
   image_url: string; mobile_image_url: string | null; button_label: string;
-  button_url: string; sort_order: number; is_active: boolean;
+  button_url: string; open_in_new_tab: boolean; sort_order: number; is_active: boolean;
 };
 type SlideDraft = Omit<Slide, "id">;
 const emptySlide = (): SlideDraft => ({
@@ -134,7 +134,7 @@ function HomepageBannersPage() {
         </div>
         <label className="text-sm font-medium">Texto do botão<input className={field} value={draft.button_label} onChange={e=>setDraft({...draft,button_label:e.target.value})} placeholder="Ver produtos"/></label>
         <label className="min-w-0 text-sm font-medium xl:col-span-2">Link de destino do banner (página do produto)<input className={field} value={draft.button_url} onChange={e=>setDraft({...draft,button_url:e.target.value})} placeholder="/produto/slug-do-produto"/><span className="mt-1 block text-xs font-normal text-muted-foreground">Informe a URL legível do produto, por exemplo /produto/amaran-ray-360c. Os links dos produtos usam o nome do produto na URL. A imagem e o botão abrirão este destino. Também aceita /catalogo ou uma URL HTTPS.</span></label>
-        <label className="text-sm font-medium">Ordem de exibição<input type="number" min={0} className={field} value={draft.sort_order} onChange={e=>setDraft({...draft,sort_order:Number(e.target.value)||0})}/></label>
+        <label className="text-sm font-medium">Comportamento do link<select className={field} value={draft.open_in_new_tab ? "new" : "same"} onChange={e=>setDraft({...draft,open_in_new_tab:e.target.value === "new"})}><option value="same">Abrir na mesma aba</option><option value="new">Abrir em nova aba</option></select><span className="mt-1 block text-xs font-normal text-muted-foreground">Aplica-se ao clique na imagem do banner e no botão.</span></label>\n        <label className="text-sm font-medium">Ordem de exibição<input type="number" min={0} className={field} value={draft.sort_order} onChange={e=>setDraft({...draft,sort_order:Number(e.target.value)||0})}/></label>
         <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2"><input type="checkbox" checked={draft.is_active} onChange={e=>setDraft({...draft,is_active:e.target.checked})}/> Publicar na home</label>
       </div>
       <div className="mt-5 flex flex-wrap gap-2"><Button onClick={()=>save.mutate()} disabled={save.isPending || uploading !== null}>{save.isPending || uploading !== null ? <Loader2 className="mr-2 size-4 animate-spin"/> : <Save className="mr-2 size-4"/>}{editingId ? "Salvar alterações" : "Cadastrar banner"}</Button>{editingId && <Button variant="outline" onClick={()=>{setDraft(emptySlide());setEditingId(null);}}>Cancelar edição</Button>}</div>
