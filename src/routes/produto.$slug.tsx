@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
 import { canSell } from "@/lib/cart";
 import { catalogService } from "@/services";
+import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { catalogSource } from "@/lib/api";
 import { formatPrice, slugifyProductName } from "@/services/catalog";
 
@@ -33,12 +34,33 @@ function ProductPage() {
     queryKey: ["product", slug],
     queryFn: async () => {
       // URLs antigas com UUID continuam funcionando. Slugs legíveis são resolvidos pelo nome público.
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)) {
-        return catalogService.get(slug);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+      const listing = isUuid ? null : await catalogService.list();
+      const match = listing?.products.find((product) => slugifyProductName(product.name) === slug);
+      const current = isUuid
+        ? await catalogService.get(slug)
+        : match
+          ? await catalogService.get(match.slug)
+          : { product: null, isDemo: listing?.isDemo ?? false };
+
+      // O cadastro administrativo mantém a galeria no Supabase. Se a origem pública
+      // configurada devolver só a imagem principal, tenta recuperar a galeria completa
+      // do mesmo produto no Supabase, sem substituir preço, estoque ou outros dados públicos.
+      if (current.product && current.product.images.length <= 1) {
+        try {
+          const supabaseProducts = await createSupabaseCatalog().listPublished();
+          const sameProduct = supabaseProducts.find(
+            (product) => product.slug === current.product?.slug ||
+              slugifyProductName(product.name) === slugifyProductName(current.product?.name ?? "")
+          );
+          if (sameProduct && sameProduct.images.length > current.product.images.length) {
+            return { ...current, product: { ...current.product, images: sameProduct.images } };
+          }
+        } catch {
+          // A galeria pública principal continua disponível mesmo se a fonte suplementar falhar.
+        }
       }
-      const listing = await catalogService.list();
-      const match = listing.products.find((product) => slugifyProductName(product.name) === slug);
-      return match ? catalogService.get(match.slug) : { product: null, isDemo: listing.isDemo };
+      return current;
     },
   });
   const cart = useCart();
