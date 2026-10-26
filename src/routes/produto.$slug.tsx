@@ -131,7 +131,7 @@ function ProductPage() {
       if (!session.session) return null;
       const { data: isReseller, error } = await sb.rpc("has_role", { _role: "revendedor" });
       if (error || isReseller !== true) return null;
-      return (await import("@/services/supabaseCatalog")).createSupabaseCatalog().resellerPrice(slug);
+      return (await import("@/services/supabaseCatalog")).createSupabaseCatalog().resellerPrice(q.data?.product.id ?? "");
     },
   });
   const isApprovedReseller = rp.data != null;
