@@ -21,7 +21,7 @@ type Slide = {
 type SlideDraft = Omit<Slide, "id">;
 const emptySlide = (): SlideDraft => ({
   eyebrow: "MCI Xpress", title: "", description: "", image_url: "",
-  mobile_image_url: "", button_label: "Ver produtos", button_url: "/catalogo",
+  mobile_image_url: "", button_label: "Ver produtos", button_url: "/catalogo", open_in_new_tab: false,
   sort_order: 0, is_active: false,
 });
 
