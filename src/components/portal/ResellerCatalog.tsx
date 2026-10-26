@@ -67,20 +67,40 @@ export function ResellerCatalog() {
 
       {filtered.length > 0 ? (
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {filtered.map((product) => (
+          {filtered.map((product) => {
+            const hasBothPrices = product.resellerPrice != null && product.customerPrice != null && product.customerPrice > 0;
+            const discountPercent = hasBothPrices
+              ? Math.round(((product.customerPrice! - product.resellerPrice!) / product.customerPrice!) * 100)
+              : null;
+            return (
             <article key={product.slug} className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card transition-colors duration-200 hover:border-brand/50">
-              <Link to="/produto/$slug" params={{ slug: product.slug }} aria-label={`Ver ${product.name}`} className="relative flex h-48 items-center justify-center overflow-hidden border-b bg-muted/40 p-4">
-                <ProductImage src={product.images[0]} alt={product.name} className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
-                <span className="absolute left-3 top-3 rounded-md border bg-background/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{product.category || "Equipamento"}</span>
+              <Link to="/produto/$slug" params={{ slug: product.slug }} aria-label={`Ver ${product.name}`} className="relative flex h-56 items-center justify-center overflow-hidden border-b bg-white p-2 sm:h-60">
+                <ProductImage src={product.images[0]} alt={product.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]" />
+                <span className="absolute left-3 top-3 rounded-md border border-border/80 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{product.category || "Equipamento"}</span>
               </Link>
               <div className="flex flex-1 flex-col p-4">
                 <div className="min-h-[76px]">
                   <h3 className="line-clamp-2 text-[15px] font-semibold leading-5 tracking-tight">{product.name}</h3>
                   <p className="mt-1.5 truncate text-xs text-muted-foreground">{[product.brand, product.sku ? "SKU " + product.sku : null].filter(Boolean).join(" · ") || "Produto MCI Xpress"}</p>
                 </div>
-                <div className="mt-3 border-y py-3">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Preço para revendedor</p>
-                  <p className="mt-1 text-xl font-semibold tracking-tight">{product.resellerPrice != null ? formatPrice(product.resellerPrice, product.currency) : "Sob consulta"}</p>
+                <div className="mt-3 space-y-2 border-y py-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-brand">Seu preço de revenda</p>
+                    <p className="mt-0.5 text-xl font-bold leading-6 tracking-tight">{product.resellerPrice != null ? formatPrice(product.resellerPrice, product.currency) : "Sob consulta"}</p>
+                  </div>
+                  {hasBothPrices && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed pt-2">
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Preço para cliente final</p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">{formatPrice(product.customerPrice!, product.currency)}</p>
+                      </div>
+                      {discountPercent != null && discountPercent > 0 && (
+                        <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                          {discountPercent}% de diferença
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="mt-3 flex min-h-5 items-center gap-1.5 text-xs text-muted-foreground">
                   {product.stock != null && product.stock > 0 ? <CheckCircle2 className="size-3.5 text-emerald-600" /> : <span className="size-1.5 rounded-full bg-muted-foreground/60" />}
@@ -90,7 +110,8 @@ export function ResellerCatalog() {
                 <Link to="/produto/$slug" params={{ slug: product.slug }} className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-foreground/15 bg-foreground px-4 text-sm font-medium text-background transition-colors hover:border-brand hover:bg-brand hover:text-brand-foreground">Ver produto <ArrowUpRight className="size-4" /></Link>
               </div>
             </article>
-          ))}
+            );
+          })}
         </section>
       ) : (
         <section className="rounded-xl border border-dashed bg-card px-6 py-12 text-center">
