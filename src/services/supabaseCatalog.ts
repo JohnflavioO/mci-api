@@ -152,7 +152,7 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       return String(data);
     },
     /** Atualiza a galeria sem deixar um produto publicado temporariamente sem imagens. */
-    saveProductImages: async (productId: string, existingUrls: string[], files: File[]): Promise<void> => {
+    saveProductImages: async (productId: string, existingUrls: string[], files: File[]): Promise<string[]> => {
       const client = sb();
       const uploadedUrls: string[] = [];
       for (const file of files) {
@@ -231,6 +231,7 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
           .in("id", idsToRemove);
         if (error) throw new Error(`Não foi possível remover as fotos excedentes: ${error.message}`);
       }
+      return urls;
     },
     /** Requer proposta 0004. null = estoque não informado. */
     setStock: async (id: string, stock: number | null, confirmed = false): Promise<void> => {
