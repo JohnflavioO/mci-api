@@ -217,8 +217,8 @@ function Index() {
             ))}
             {miniBanner ? (
               <a href={miniBanner.button_url} target={miniBanner.open_in_new_tab ? "_blank" : undefined} rel={miniBanner.open_in_new_tab ? "noreferrer" : undefined} className="group relative isolate flex min-h-[220px] overflow-hidden rounded-2xl bg-[#171a1f] text-white lg:col-span-4 lg:min-h-[286px]">
-                <img src={miniBanner.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover opacity-55 transition-transform duration-500 group-hover:scale-[1.03]" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#111419]/95 via-[#171a1f]/70 to-transparent" />
+                <img src={miniBanner.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-[1.03]" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#111419]/70 via-[#171a1f]/30 to-transparent" />
                 <div className="relative z-10 flex max-w-[85%] flex-col items-start justify-end p-5 sm:p-6">
                   {miniBanner.eyebrow && <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff9a69]">{miniBanner.eyebrow}</span>}
                   <h3 className="mt-2 text-xl font-semibold leading-tight sm:text-2xl">{miniBanner.title}</h3>
