@@ -18,46 +18,59 @@ const importantSpecs = [
 ] as const;
 
 function specValue(product: CatalogProduct, matcher: RegExp) {
+  // Prioridade: especificação estruturada correspondente ao nome OU ao valor.
   const structured = product.specs.find((spec) => matcher.test(spec.label) || matcher.test(spec.value));
   if (structured?.value) return structured.value;
 
-  // Aproveita somente informações explícitas já presentes no nome/descrição.
-  // Não transforma números de modelo em especificações presumidas.
-  const text = [product.name, product.description ?? "", ...product.specs.flatMap((spec) => [spec.label, spec.value])]
-    .filter(Boolean).join(" ");
-  const normalized = text.replace(/\s+/g, " ");
+  // Fonte complementar: descrição e ficha técnica inteira, incluindo pares rótulo/valor.
+  // Só extraímos valores quando há unidade ou contexto técnico explícito.
+  const source = [
+    product.name,
+    product.description ?? "",
+    ...product.specs.flatMap((spec) => [`${spec.label}: ${spec.value}`, spec.label, spec.value]),
+  ].filter(Boolean).join(" | ");
+  const text = source.replace(/\s+/g, " ");
 
-  if (matcher.source.includes("pot") || matcher.source.includes("power|consumo")) {
-    const match = normalized.match(/(?:pot[eê]ncia|power|consumo(?:\s+nominal)?)[^.;,]{0,24}?\b(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
-    if (match) return `${match[1]} ${match[2].toUpperCase()}`;
-  }
-  if (matcher.source.includes("lux") || matcher.source.includes("ilumin")) {
-    const match = normalized.match(/\b(\d[\d.,]*)\s*(lux|lx)\b/i) ?? normalized.match(/(?:ilumin[aâ]ncia|illuminance)[^.;,]{0,24}?\b(\d[\d.,]*)\s*(lux|lx)\b/i);
-    if (match) return `${match[1]} lux`;
-  }
-  if (matcher.source.includes("rgb") || matcher.source.includes("bicolor")) {
-    const match = normalized.match(/\b(RGBWW?|RGBACL|RGBLAC|bi[ -]?color|bicolor|daylight|tungsten)\b/i);
-    if (match) return match[1].replace(/bi[ -]?color/i, "Bi-color").replace(/rgb/i, (v) => v.toUpperCase());
-  }
-  if (matcher.source.includes("temperatura") || matcher.source.includes("kelvin")) {
-    const match = normalized.match(/\b(\d{4,5})\s*K\b/i) ?? normalized.match(/\b(\d{4})\s*[-–]\s*(\d{4})\s*K\b/i);
-    if (match) return match[2] ? `${match[1]}–${match[2]} K` : `${match[1]} K`;
-  }
-  if (matcher.source.includes("ngulo") || matcher.source.includes("beam")) {
-    const match = normalized.match(/(?:beam angle|[aâ]ngulo(?:\s+de\s+abertura)?)[^.;,]{0,20}?\b(\d+(?:[.,]\d+)?)\s*°/i);
-    if (match) return `${match[1]}°`;
-  }
-  if (matcher.source.includes("cri") || matcher.source.includes("reprodu")) {
-    const match = normalized.match(/\b(CRI|Ra)\s*[:=]?\s*(\d{2,3})\+?\b/i);
-    if (match) return `${match[1].toUpperCase()} ${match[2]}`;
-  }
-  if (matcher.source.includes("alimenta") || matcher.source.includes("voltagem") || matcher.source.includes("tens")) {
-    const match = normalized.match(/\b(100\s*[-–]\s*240|110|120|127|220|230|240)\s*V\b/i) ?? normalized.match(/\b(bateria|battery)\b/i);
-    if (match) return match[0].replace(/\s+/g, " ");
+  const patterns: { test: RegExp; value: (match: RegExpMatchArray) => string }[] =
+    matcher.source.includes("pot") || matcher.source.includes("power|consumo")
+      ? [
+          { test: /(?:pot[eê]ncia(?:\s+(?:nominal|m[aá]xima|de sa[ií]da))?|consumo(?:\s+(?:nominal|m[aá]ximo))?|power(?:\s+(?:consumption|output|rating))?)\s*[:=\-]?\s*(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i, value: m => `${m[1]} ${m[2].toUpperCase()}` },
+          { test: /\b(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i, value: m => `${m[1]} ${m[2].toUpperCase()}` },
+        ]
+      : matcher.source.includes("lux") || matcher.source.includes("ilumin")
+        ? [
+            { test: /(?:ilumin[aâ]ncia|illuminance|lux(?:\s+(?:a|at|@))?)\s*[:=\-]?\s*(\d[\d.,]*)\s*(lux|lx)?(?:\s*(?:a|at|@)\s*(\d+(?:[.,]\d+)?)\s*m)?/i, value: m => `${m[1]} lux${m[3] ? ` a ${m[3]} m` : ""}` },
+            { test: /\b(\d[\d.,]*)\s*(lux|lx)\b(?:\s*(?:a|at|@)\s*(\d+(?:[.,]\d+)?)\s*m)?/i, value: m => `${m[1]} lux${m[3] ? ` a ${m[3]} m` : ""}` },
+          ]
+        : matcher.source.includes("rgb") || matcher.source.includes("bicolor")
+          ? [
+              { test: /\b(RGBWW?|RGBACL|RGBLAC|bi[ -]?color|bicolor|daylight|tungsten|双色|双色温)\b/i, value: m => m[1].replace(/bi[ -]?color/i, "Bi-color").replace(/rgb/i, v => v.toUpperCase()) },
+            ]
+          : matcher.source.includes("temperatura") || matcher.source.includes("kelvin")
+            ? [
+                { test: /(?:temperatura de cor|color temperature|CCT|faixa de cor)\s*[:=\-]?\s*(\d{4})\s*[-–—a]\s*(\d{4})\s*K?/i, value: m => `${m[1]}–${m[2]} K` },
+                { test: /\b(\d{4,5})\s*K\b/i, value: m => `${m[1]} K` },
+              ]
+            : matcher.source.includes("ngulo") || matcher.source.includes("beam")
+              ? [
+                  { test: /(?:beam angle|[aâ]ngulo(?:\s+de\s+abertura)?|beam)\s*[:=\-]?\s*(\d+(?:[.,]\d+)?)\s*°?/i, value: m => `${m[1]}°` },
+                ]
+              : matcher.source.includes("cri") || matcher.source.includes("reprodu")
+                ? [
+                    { test: /\b(CRI|Ra)\s*(?:[:=≥>])?\s*(\d{2,3})\+?\b/i, value: m => `${m[1].toUpperCase()} ${m[2]}` },
+                    { test: /\bTLCI\s*(?:[:=≥>])?\s*(\d{2,3})\+?\b/i, value: m => `TLCI ${m[1]}` },
+                  ]
+                : [
+                    { test: /(?:alimenta[cç][aã]o|voltagem|tens[aã]o|input voltage|AC input)\s*[:=\-]?\s*(100\s*[-–]\s*240|110|120|127|220|230|240)\s*V\b/i, value: m => m[1].replace(/\s+/g, "") + " V" },
+                    { test: /\b(bateria|battery|USB-C|USB type-c)\b/i, value: m => m[1] },
+                  ];
+
+  for (const pattern of patterns) {
+    const found = text.match(pattern.test);
+    if (found) return pattern.value(found);
   }
   return "Não informado";
 }
-
 function displayPrice(product: CatalogProduct) {
   return product.customerPrice == null ? "Sob consulta" : formatPrice(product.customerPrice, product.currency);
 }
