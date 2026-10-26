@@ -31,7 +31,7 @@ function specValue(product: CatalogProduct, matcher: RegExp) {
   const isLight = /rgb|bicolor|tipo de luz|light source|fonte de luz|cor da luz/i.test(matcher.source);
   const isCct = /temperatura de cor|kelvin|cct/i.test(matcher.source);
   const isBeam = /[aâ]ngulo|beam angle|abertura do feixe/i.test(matcher.source);
-  const isCri = /\bcri\b|\bra\b|reprodu[cç][aã]o de cor/i.test(matcher.source);
+  const isCri = /\bcri\b|\bra\b|\btlci\b|\bssi\b|tm.?30|reprodu[cç][aã]o de cor|color quality/i.test(matcher.source);
   const isSupply = /alimenta[cç][aã]o|voltagem|tens[aã]o|bateria|power supply/i.test(matcher.source);
   const isWeight = /peso|weight|net weight/i.test(matcher.source);
 
