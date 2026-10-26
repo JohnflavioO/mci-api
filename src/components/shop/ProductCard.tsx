@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { canSell } from "@/lib/cart";
-import { formatPrice, type CatalogProduct } from "@/services/catalog";
+import { formatPrice, slugifyProductName, type CatalogProduct } from "@/services/catalog";
 
 export function ProductImage({ src, alt = "", className = "" }: { src?: string | undefined; alt?: string; className?: string }) {
   const [failed, setFailed] = useState(false);
@@ -28,7 +28,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   const unavailable = !canSell(product);
   return (
     <div className="flex h-full flex-col">
-    <Link to="/produto/$slug" params={{ slug: product.slug }} className="group block">
+    <Link to="/produto/$slug" params={{ slug: slugifyProductName(product.name) }} className="group block">
       <ProductImage src={product.images[0]} alt={product.name} className="aspect-square w-full rounded-md transition group-hover:brightness-95" />
       <p className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">{product.category}</p>
       <p className="font-display font-semibold leading-tight">{product.name}</p>
