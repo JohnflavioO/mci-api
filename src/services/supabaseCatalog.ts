@@ -233,6 +233,19 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       }
       return urls;
     },
+    /** Lê a galeria diretamente da tabela, sem depender do relacionamento aninhado do catálogo. */
+    getProductImages: async (productId: string): Promise<string[]> => {
+      const { data, error } = await sb()
+        .from("product_images")
+        .select("url,position")
+        .eq("product_id", productId)
+        .order("position", { ascending: true });
+      if (error) throw new Error(`Não foi possível carregar a galeria do produto: ${error.message}`);
+      return ((data ?? []) as { url: string; position: number }[])
+        .sort((a, b) => a.position - b.position)
+        .map((row) => row.url)
+        .filter(isHttpsUrl);
+    },
     /** Requer proposta 0004. null = estoque não informado. */
     setStock: async (id: string, stock: number | null, confirmed = false): Promise<void> => {
       const { error } = await sb().rpc("set_product_stock", { p_id: id, p_stock: stock, p_confirmed: confirmed });
