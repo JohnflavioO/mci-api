@@ -114,6 +114,11 @@ export const catalogService = {
   get: (slug: string) => (catalogSource() === "supabase" ? supabaseCatalogService : oracleCatalogService).get(slug),
 };
 
+/** Gera um caminho legível para a página pública do produto. */
+export const slugifyProductName = (name: string) =>
+  name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
 /** Categorias derivadas dos produtos exibidos (sem lista fixa quando conectado). */
 export const categoriesOf = (list: CatalogProduct[]) =>
   [...new Set(list.map((p) => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
