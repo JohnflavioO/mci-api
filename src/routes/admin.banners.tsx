@@ -133,7 +133,7 @@ function HomepageBannersPage() {
           <ImageUploadField kind="mobile" label="Imagem mobile (opcional)" url={draft.mobile_image_url ?? ""} hint="Recomendado: 900 × 1200 px (proporção 3:4). A área visível é vertical em celulares; até 8 MB." />
         </div>
         <label className="text-sm font-medium">Texto do botão<input className={field} value={draft.button_label} onChange={e=>setDraft({...draft,button_label:e.target.value})} placeholder="Ver produtos"/></label>
-        <label className="text-sm font-medium">Destino do botão<input className={field} value={draft.button_url} onChange={e=>setDraft({...draft,button_url:e.target.value})} placeholder="/catalogo ou URL HTTPS"/></label>
+        <label className="text-sm font-medium">Link do banner e do botão<input className={field} value={draft.button_url} onChange={e=>setDraft({...draft,button_url:e.target.value})} placeholder="/produto/slug, /catalogo ou URL HTTPS"/><span className="mt-1 block text-xs font-normal text-muted-foreground">Ao clicar na imagem do banner ou no botão, o visitante será direcionado para este endereço.</span></label>
         <label className="text-sm font-medium">Ordem de exibição<input type="number" min={0} className={field} value={draft.sort_order} onChange={e=>setDraft({...draft,sort_order:Number(e.target.value)||0})}/></label>
         <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2"><input type="checkbox" checked={draft.is_active} onChange={e=>setDraft({...draft,is_active:e.target.checked})}/> Publicar na home</label>
       </div>
