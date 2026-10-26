@@ -80,9 +80,6 @@ function Index() {
           <div className="pointer-events-none absolute -right-32 -top-24 -z-10 size-[34rem] rounded-full bg-[#ff681f]/10 blur-3xl" />
           <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-7 sm:py-9 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:py-10">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-[#ff681f]/40 bg-[#ff681f]/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#ff8a50]">
-                <Sparkles className="size-3.5" /> MCI Comercial
-              </p>
               <h1 className="mt-3 max-w-2xl text-3xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-4xl lg:text-5xl">
                 Seu próximo equipamento,
                 <span className="mt-1 block text-[#ff762f]">sua próxima grande produção.</span>
