@@ -18,57 +18,81 @@ const importantSpecs = [
 ] as const;
 
 function specValue(product: CatalogProduct, matcher: RegExp) {
-  // Prioridade: especificação estruturada correspondente ao nome OU ao valor.
-  const structured = product.specs.find((spec) => matcher.test(spec.label) || matcher.test(spec.value));
-  if (structured?.value) return structured.value;
+  // Match structured fields by label only. A value such as USB-C must not be treated as the power source.
+  const structured = product.specs.find((spec) => matcher.test(spec.label) && Boolean(spec.value?.trim()));
+  if (structured?.value?.trim()) return structured.value.trim();
 
-  // Fonte complementar: descrição e ficha técnica inteira, incluindo pares rótulo/valor.
-  // Só extraímos valores quando há unidade ou contexto técnico explícito.
-  const source = [
-    product.name,
-    product.description ?? "",
-    ...product.specs.flatMap((spec) => [`${spec.label}: ${spec.value}`, spec.label, spec.value]),
-  ].filter(Boolean).join(" | ");
-  const text = source.replace(/\s+/g, " ");
+  const source = [product.description ?? "", ...product.specs.map((spec) => spec.label + ": " + spec.value)]
+    .filter(Boolean).join("\n").replace(/\r/g, "");
 
-  const patterns: { test: RegExp; value: (match: RegExpMatchArray) => string }[] =
-    matcher.source.includes("pot") || matcher.source.includes("power|consumo")
-      ? [
-          { test: /(?:pot[eê]ncia(?:\s+(?:nominal|m[aá]xima|de sa[ií]da))?|consumo(?:\s+(?:nominal|m[aá]ximo))?|power(?:\s+(?:consumption|output|rating))?)\s*[:=\-]?\s*(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i, value: m => `${m[1]} ${m[2].toUpperCase()}` },
-          { test: /\b(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i, value: m => `${m[1]} ${m[2].toUpperCase()}` },
-        ]
-      : matcher.source.includes("lux") || matcher.source.includes("ilumin")
-        ? [
-            { test: /(?:ilumin[aâ]ncia|illuminance|lux(?:\s+(?:a|at|@))?)\s*[:=\-]?\s*(\d[\d.,]*)\s*(lux|lx)?(?:\s*(?:a|at|@)\s*(\d+(?:[.,]\d+)?)\s*m)?/i, value: m => `${m[1]} lux${m[3] ? ` a ${m[3]} m` : ""}` },
-            { test: /\b(\d[\d.,]*)\s*(lux|lx)\b(?:\s*(?:a|at|@)\s*(\d+(?:[.,]\d+)?)\s*m)?/i, value: m => `${m[1]} lux${m[3] ? ` a ${m[3]} m` : ""}` },
-          ]
-        : matcher.source.includes("rgb") || matcher.source.includes("bicolor")
-          ? [
-              { test: /\b(RGBWW?|RGBACL|RGBLAC|bi[ -]?color|bicolor|daylight|tungsten|双色|双色温)\b/i, value: m => m[1].replace(/bi[ -]?color/i, "Bi-color").replace(/rgb/i, v => v.toUpperCase()) },
-            ]
-          : matcher.source.includes("temperatura") || matcher.source.includes("kelvin")
-            ? [
-                { test: /(?:temperatura de cor|color temperature|CCT|faixa de cor)\s*[:=\-]?\s*(\d{4})\s*[-–—a]\s*(\d{4})\s*K?/i, value: m => `${m[1]}–${m[2]} K` },
-                { test: /\b(\d{4,5})\s*K\b/i, value: m => `${m[1]} K` },
-              ]
-            : matcher.source.includes("ngulo") || matcher.source.includes("beam")
-              ? [
-                  { test: /(?:beam angle|[aâ]ngulo(?:\s+de\s+abertura)?|beam)\s*[:=\-]?\s*(\d+(?:[.,]\d+)?)\s*°?/i, value: m => `${m[1]}°` },
-                ]
-              : matcher.source.includes("cri") || matcher.source.includes("reprodu")
-                ? [
-                    { test: /\b(CRI|Ra)\s*(?:[:=≥>])?\s*(\d{2,3})\+?\b/i, value: m => `${m[1].toUpperCase()} ${m[2]}` },
-                    { test: /\bTLCI\s*(?:[:=≥>])?\s*(\d{2,3})\+?\b/i, value: m => `TLCI ${m[1]}` },
-                  ]
-                : [
-                    { test: /(?:alimenta[cç][aã]o|voltagem|tens[aã]o|input voltage|AC input)\s*[:=\-]?\s*(100\s*[-–]\s*240|110|120|127|220|230|240)\s*V\b/i, value: m => m[1].replace(/\s+/g, "") + " V" },
-                    { test: /\b(bateria|battery|USB-C|USB type-c)\b/i, value: m => m[1] },
-                  ];
+  const isPower = /pot[eê]ncia|power|consumo/i.test(matcher.source);
+  const isLux = /lux|ilumin/i.test(matcher.source);
+  const isLight = /rgb|bicolor|tipo de luz|light source|fonte de luz|cor da luz/i.test(matcher.source);
+  const isCct = /temperatura de cor|kelvin|cct/i.test(matcher.source);
+  const isBeam = /[aâ]ngulo|beam angle|abertura do feixe/i.test(matcher.source);
+  const isCri = /\bcri\b|\bra\b|reprodu[cç][aã]o de cor/i.test(matcher.source);
+  const isSupply = /alimenta[cç][aã]o|voltagem|tens[aã]o|bateria|power supply/i.test(matcher.source);
 
-  for (const pattern of patterns) {
-    const found = text.match(pattern.test);
-    if (found) return pattern.value(found);
+  if (isPower) {
+    const labeled = source.match(/(?:pot[eê]ncia(?:\s+(?:nominal|m[aá]xima|de sa[ií]da))?|consumo(?:\s+(?:nominal|m[aá]ximo|de energia))?|power(?:\s+(?:consumption|output|rating))?)\s*[:=–-]?\s*(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
+    if (labeled) return labeled[1] + " " + labeled[2].toUpperCase();
+    const productPower = source.match(/(?:monolight|LED|luz|light)[^.\n]{0,100}\b(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
+    if (productPower) return productPower[1] + " " + productPower[2].toUpperCase();
   }
+
+  if (isLux) {
+    // Only accept a number BEFORE lux/lx. "lux a 1 m" must never become "1 lux".
+    const matches = [...source.matchAll(/(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(?:lux|lx)\b([^.\n]{0,80})/gi)];
+    const values = matches.map((m) => {
+      const context = m[2] ?? "";
+      const distance = context.match(/\b(?:a|at|@)\s*(\d+(?:[.,]\d+)?)\s*m\b/i);
+      const condition = /com refletor|with reflector/i.test(context) ? "com refletor"
+        : /sem refletor|sem modifica[cç][oõ]es|n[aã]o modificado|without reflector|unmodified/i.test(context) ? "sem refletor" : "";
+      return m[1] + " lux" + (distance ? " a " + distance[1] + " m" : "") + (condition ? " (" + condition + ")" : "");
+    });
+    if (values.length) return [...new Set(values)].join("; ");
+  }
+
+  if (isLight) {
+    const labeledModes = source.match(/(?:modos? de cor|tipo de ilumina[cç][aã]o|fonte de luz|light source|color modes?)\s*[:=–-]?\s*([^\n.]+)/i);
+    if (labeledModes) return labeledModes[1].trim();
+    const explicit = source.match(/\b(RGB(?:WW?|ACL|LAC)?|Bi[ -]?color|Bicolor|luz do dia|daylight|tungst[eê]nio|tungsten)\b/gi);
+    if (explicit?.length) return [...new Set(explicit.map(v => v.replace(/bi[ -]?color/i, "Bi-color").replace(/rgb/i, v => v.toUpperCase())))].join(", ");
+  }
+
+  if (isCct) {
+    // Only accept values explicitly associated with CCT / colour-temperature labels.
+    const labeledRange = source.match(/(?:CCT(?:\+)?|temperatura de cor|color temperature|faixa de temperatura de cor)\s*[:=–-]?\s*(\d{3,5}(?:[.,]\d+)?)\s*(?:K)?\s*(?:a|até|[-–—])\s*(\d{3,5}(?:[.,]\d+)?)\s*K?/i);
+    if (labeledRange) return labeledRange[1] + "–" + labeledRange[2] + " K";
+    const labeledSingle = source.match(/(?:CCT(?:\+)?|temperatura de cor|color temperature)\s*[:=–-]?\s*(\d{3,5}(?:[.,]\d+)?)\s*K\b/i);
+    if (labeledSingle) return labeledSingle[1] + " K";
+  }
+
+  if (isBeam) {
+    const angles = [...source.matchAll(/(?:[aâ]ngulo do feixe|beam angle|[aâ]ngulo de abertura|beam)\s*[:=–-]?\s*(\d+(?:[.,]\d+)?)\s*°/gi)];
+    if (angles.length) return [...new Set(angles.map(m => m[1] + "°"))].join("; ");
+  }
+
+  if (isCri) {
+    const cri = source.match(/\bCRI\s*[:=≥>]?\s*(\d{2,3})\+?\b/i);
+    const tlci = source.match(/\bTLCI\s*[:=≥>]?\s*(\d{2,3})\+?\b/i);
+    const ra = source.match(/\bRa\s*[:=≥>]?\s*(\d{2,3})\+?\b/i);
+    const values = [cri ? "CRI " + cri[1] : "", ra ? "Ra " + ra[1] : "", tlci ? "TLCI " + tlci[1] : ""].filter(Boolean);
+    if (values.length) return [...new Set(values)].join("; ");
+  }
+
+  if (isSupply) {
+    const labeledSource = source.match(/(?:fonte de alimenta[cç][aã]o|alimenta[cç][aã]o|power supply|fonte de energia)\s*[:=–-]?\s*([^\n.]+)/i);
+    if (labeledSource) {
+      const value = labeledSource[1].trim();
+      if (value && !/USB-C|DMX|Bluetooth/i.test(value)) return value;
+    }
+    const voltage = source.match(/(?:pot[eê]ncia de entrada|tens[aã]o de entrada|voltagem|input voltage|AC input)\s*[:=–-]?\s*(100\s*[-–]\s*240|110|120|127|220|230|240)\s*V(?:CA|AC)?\b/i);
+    if (voltage) return voltage[1].replace(/\s+/g, "") + " V";
+    const ac = source.match(/\b(alimenta[cç][aã]o CA|AC power|bateria|battery)\b/i);
+    if (ac) return ac[1];
+  }
+
   return "Não informado";
 }
 function displayPrice(product: CatalogProduct) {
