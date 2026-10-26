@@ -10,6 +10,7 @@ import {
 import { portalService } from "@/services";
 import { resellerService, statusLabel } from "@/services/resellers";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
+import { getSupabase } from "@/lib/supabase";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import type { PortalSection } from "./PortalLayout";
 
@@ -59,7 +60,7 @@ function MetricCard({
   value: string | number;
   detail: string;
   icon: LucideIcon;
-  to: "/admin/produtos" | "/admin/revendedores";
+  to: "/admin/produtos" | "/admin/revendedores" | "/admin/pedidos";
   loading: boolean;
 }) {
   return (
@@ -112,6 +113,22 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
     staleTime: 30_000,
     retry: 1,
   });
+  const ordersQuery = useQuery({
+    queryKey: ["admin-dashboard", "orders-count"],
+    queryFn: async () => {
+      const supabase = getSupabase();
+      const [totalResult, pendingResult] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("id", { count: "exact", head: true }).in("status", ["pending_payment", "refund_required"]),
+      ]);
+      if (totalResult.error) throw totalResult.error;
+      if (pendingResult.error) throw pendingResult.error;
+      return { total: totalResult.count ?? 0, pending: pendingResult.count ?? 0 };
+    },
+    enabled: portal === "admin",
+    staleTime: 30_000,
+    retry: 1,
+  });
   const products = productsQuery.data ?? [];
   const published = products.filter((product) => product.status === "published").length;
   const drafts = products.filter((product) => product.status === "draft").length;
@@ -141,11 +158,27 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
             </div>
           ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard label="Total de produtos" value={products.length} detail="Itens no catálogo administrativo" icon={Package} to="/admin/produtos" loading={productsQuery.isPending} />
             <MetricCard label="Publicados" value={published} detail="Visíveis no catálogo público" icon={CheckCircle2} to="/admin/produtos" loading={productsQuery.isPending} />
             <MetricCard label="Rascunhos" value={drafts} detail="Ainda não exibidos ao público" icon={FileEdit} to="/admin/produtos" loading={productsQuery.isPending} />
             <MetricCard label="Categorias" value={categories} detail="Categorias utilizadas no catálogo" icon={Tags} to="/admin/produtos" loading={productsQuery.isPending} />
+            <Link to="/admin/pedidos" className="group rounded-xl border border-orange-300 bg-orange-50/70 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-md dark:border-orange-900 dark:bg-orange-950/20">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">Pedidos</p>
+                  <p className="mt-3 font-display text-3xl font-semibold tracking-tight text-foreground">
+                    {ordersQuery.isPending ? <span className="inline-block h-8 w-12 animate-pulse rounded bg-muted" /> : ordersQuery.isError ? "—" : ordersQuery.data.total}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">{ordersQuery.isError ? "Contagem indisponível" : ordersQuery.data?.pending ? `${ordersQuery.data.pending} aguardando ação` : "Total de pedidos registrados"}</p>
+                  {ordersQuery.isError ? <button onClick={(event) => { event.preventDefault(); event.stopPropagation(); void ordersQuery.refetch(); }} className="mt-2 text-xs font-semibold underline underline-offset-4">Tentar novamente</button> : null}
+                </div>
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"><ShoppingCart className="size-5" /></span>
+              </div>
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-orange-800 transition-colors group-hover:text-orange-950 dark:text-orange-300">
+                Ver pedidos <ArrowUpRight className="size-3.5" />
+              </div>
+            </Link>
           </div>
         </section>
 
@@ -167,7 +200,7 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
             <div>
               <h2 className="text-sm font-semibold">Status da plataforma</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                A gestão de produtos está conectada ao Supabase. Os módulos de pedidos, preços, afiliados e comissões ainda precisam de suas integrações funcionais; eles não são contabilizados como métricas até que existam dados confiáveis.
+                A gestão de produtos está conectada ao Supabase. A contagem de pedidos é consultada diretamente na tabela de pedidos. Os módulos de preços, afiliados e comissões ainda precisam de suas integrações funcionais.
               </p>
             </div>
           </div>
