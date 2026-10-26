@@ -16,13 +16,13 @@ export const Route = createFileRoute("/admin/banners")({
 type Slide = {
   id: string; eyebrow: string; title: string; description: string | null;
   image_url: string; mobile_image_url: string | null; button_label: string;
-  button_url: string; open_in_new_tab: boolean; sort_order: number; is_active: boolean;
+  button_url: string; open_in_new_tab: boolean; sort_order: number; is_active: boolean; is_mini_banner: boolean;
 };
 type SlideDraft = Omit<Slide, "id">;
 const emptySlide = (): SlideDraft => ({
   eyebrow: "MCI Xpress", title: "", description: "", image_url: "",
   mobile_image_url: "", button_label: "Ver produtos", button_url: "/catalogo", open_in_new_tab: false,
-  sort_order: 0, is_active: false,
+  sort_order: 0, is_active: false, is_mini_banner: false,
 });
 
 function HomepageBannersPage() {
@@ -135,14 +135,16 @@ function HomepageBannersPage() {
         <label className="text-sm font-medium">Texto do botão<input className={field} value={draft.button_label} onChange={e=>setDraft({...draft,button_label:e.target.value})} placeholder="Ver produtos"/></label>
         <label className="min-w-0 text-sm font-medium xl:col-span-2">Link de destino do banner (página do produto)<input className={field} value={draft.button_url} onChange={e=>setDraft({...draft,button_url:e.target.value})} placeholder="/produto/slug-do-produto"/><span className="mt-1 block text-xs font-normal text-muted-foreground">Informe a URL legível do produto, por exemplo /produto/amaran-ray-360c. Os links dos produtos usam o nome do produto na URL. A imagem e o botão abrirão este destino. Também aceita /catalogo ou uma URL HTTPS.</span></label>
         <label className="text-sm font-medium">Comportamento do link<select className={field} value={draft.open_in_new_tab ? "new" : "same"} onChange={e=>setDraft({...draft,open_in_new_tab:e.target.value === "new"})}><option value="same">Abrir na mesma aba</option><option value="new">Abrir em nova aba</option></select><span className="mt-1 block text-xs font-normal text-muted-foreground">Aplica-se ao clique na imagem do banner e no botão.</span></label>\n        <label className="text-sm font-medium">Ordem de exibição<input type="number" min={0} className={field} value={draft.sort_order} onChange={e=>setDraft({...draft,sort_order:Number(e.target.value)||0})}/></label>
-        <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2"><input type="checkbox" checked={draft.is_active} onChange={e=>setDraft({...draft,is_active:e.target.checked})}/> Publicar na home</label>
+        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={draft.is_active} onChange={e=>setDraft({...draft,is_active:e.target.checked})}/> Publicar na home</label>
+        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={draft.is_mini_banner} onChange={e=>setDraft({...draft,is_mini_banner:e.target.checked, sort_order: e.target.checked ? 999 : draft.sort_order})}/> Usar como mini banner na seção de categorias</label>
+        {draft.is_mini_banner && <p className="text-xs text-muted-foreground sm:col-span-2">Este banner será exibido ao lado de Iluminação e Acessórios. Não será exibido no carrossel principal. Mantenha apenas um banner marcado com esta opção.</p>}
       </div>
       <div className="mt-5 flex flex-wrap gap-2"><Button onClick={()=>save.mutate()} disabled={save.isPending || uploading !== null}>{save.isPending || uploading !== null ? <Loader2 className="mr-2 size-4 animate-spin"/> : <Save className="mr-2 size-4"/>}{editingId ? "Salvar alterações" : "Cadastrar banner"}</Button>{editingId && <Button variant="outline" onClick={()=>{setDraft(emptySlide());setEditingId(null);}}>Cancelar edição</Button>}</div>
     </section>
     <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="font-semibold">Slides cadastrados</h3><span className="text-xs text-muted-foreground">{slides.data?.length ?? 0} banner(s)</span></div>
       {slides.isPending ? <p className="text-sm text-muted-foreground">Carregando banners…</p> : slides.isError ? <p className="rounded-lg border border-destructive/30 p-4 text-sm text-destructive">Não foi possível carregar. Verifique se a migration foi aplicada e se sua conta tem permissão administrativa.</p> : slides.data?.length ? slides.data.map((slide,index)=><article key={slide.id} className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center">
         <div className="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-muted sm:w-40"><img src={slide.image_url} alt="" className="h-full w-full object-cover"/></div>
-        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-semibold">{slide.title}</h4><span className={slide.is_active ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800" : "rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"}>{slide.is_active ? "Publicado" : "Rascunho"}</span></div><p className="mt-1 text-sm text-muted-foreground">{slide.eyebrow} · {slide.button_label} · Ordem {slide.sort_order}</p><p className="mt-1 truncate text-xs text-muted-foreground">{slide.image_url}</p></div>
+        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-semibold">{slide.title}</h4><span className={slide.is_active ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800" : "rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"}>{slide.is_active ? "Publicado" : "Rascunho"}</span></div><p className="mt-1 text-sm text-muted-foreground">{slide.eyebrow} · {slide.button_label} · Ordem {slide.sort_order}{slide.is_mini_banner ? " · Mini banner" : ""}</p><p className="mt-1 truncate text-xs text-muted-foreground">{slide.image_url}</p></div>
         <div className="flex flex-wrap gap-2"><Button variant="outline" size="icon" aria-label="Mover para cima" disabled={index===0} onClick={()=>void move(slide,-1)}><ArrowUp className="size-4"/></Button><Button variant="outline" size="icon" aria-label="Mover para baixo" disabled={index===slides.data!.length-1} onClick={()=>void move(slide,1)}><ArrowDown className="size-4"/></Button><Button variant="outline" onClick={()=>void toggle(slide)}>{slide.is_active ? "Desativar" : "Publicar"}</Button><Button variant="outline" onClick={()=>edit(slide)}>Editar</Button><Button variant="outline" size="icon" aria-label="Excluir banner" onClick={()=>{if(confirm("Excluir este banner permanentemente?")) remove.mutate(slide.id);}}><Trash2 className="size-4"/></Button></div>
       </article>) : <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum banner cadastrado. Cadastre o primeiro slide para ativar o carrossel da home.</p>}
     </section>
