@@ -130,9 +130,9 @@ function Index() {
                       <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.02]" />
                     </picture>
                     {activeSlide.button_url.startsWith("https://") ? (
-                      <a href={activeSlide.button_url} target="_blank" rel="noreferrer" aria-label={`Abrir banner: ${activeSlide.title}`} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ff681f]" />
+                      <a href={activeSlide.button_url} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} aria-label={`Abrir banner: ${activeSlide.title}`} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ff681f]" />
                     ) : (
-                      <Link to={activeSlide.button_url as "/catalogo"} aria-label={`Abrir banner: ${activeSlide.title}`} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ff681f]" />
+                      <Link to={activeSlide.button_url as "/catalogo"} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} aria-label={`Abrir banner: ${activeSlide.title}`} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ff681f]" />
                     )}
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#111419]/95 via-[#111419]/35 to-transparent" />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-5 sm:p-7">
