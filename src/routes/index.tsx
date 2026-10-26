@@ -40,12 +40,12 @@ export const Route = createFileRoute("/")({
 
 const categoryIcons = [Camera, AudioLines, Lightbulb, Package, Cable, Headphones];
 
-type HeroSlide = { id: string; eyebrow: string; title: string; description: string | null; image_url: string; mobile_image_url: string | null; button_label: string; button_url: string; open_in_new_tab: boolean; sort_order: number; is_mini_banner: boolean };
+type HeroSlide = { id: string; eyebrow: string; title: string; description: string | null; image_url: string; mobile_image_url: string | null; button_label: string; button_url: string; open_in_new_tab: boolean; sort_order: number; is_mini_banner: boolean; is_active: boolean };
 
 function Index() {
   const [term, setTerm] = useState("");
   const [slideIndex, setSlideIndex] = useState(0);
-  const heroSlides = useQuery({ queryKey: ["homepage-hero-slides"], queryFn: async () => { const { data, error } = await getSupabase().from("homepage_hero_slides").select("id,eyebrow,title,description,image_url,mobile_image_url,button_label,button_url,open_in_new_tab,sort_order,is_mini_banner").eq("is_active", true).order("sort_order").order("created_at"); if (error) throw error; return (data ?? []) as HeroSlide[]; }, retry: false });
+  const heroSlides = useQuery({ queryKey: ["homepage-hero-slides"], queryFn: async () => { const { data, error } = await getSupabase().from("homepage_hero_slides").select("id,eyebrow,title,description,image_url,mobile_image_url,button_label,button_url,open_in_new_tab,sort_order,is_mini_banner,is_active").eq("is_active", true).order("sort_order").order("created_at"); if (error) throw error; return (data ?? []) as HeroSlide[]; }, retry: false });
   const allHomepageBanners = heroSlides.data ?? [];
   const slides = allHomepageBanners.filter((slide) => !slide.is_mini_banner);
   const miniBanner = allHomepageBanners.find((slide) => slide.is_mini_banner && slide.is_active !== false);
