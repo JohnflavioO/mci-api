@@ -18,7 +18,44 @@ const importantSpecs = [
 ] as const;
 
 function specValue(product: CatalogProduct, matcher: RegExp) {
-  return product.specs.find((spec) => matcher.test(spec.label))?.value ?? "Não informado";
+  const structured = product.specs.find((spec) => matcher.test(spec.label) || matcher.test(spec.value));
+  if (structured?.value) return structured.value;
+
+  // Aproveita somente informações explícitas já presentes no nome/descrição.
+  // Não transforma números de modelo em especificações presumidas.
+  const text = [product.name, product.description ?? "", ...product.specs.flatMap((spec) => [spec.label, spec.value])]
+    .filter(Boolean).join(" ");
+  const normalized = text.replace(/\s+/g, " ");
+
+  if (matcher.source.includes("pot") || matcher.source.includes("power|consumo")) {
+    const match = normalized.match(/(?:pot[eê]ncia|power|consumo(?:\s+nominal)?)[^.;,]{0,24}?\b(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
+    if (match) return `${match[1]} ${match[2].toUpperCase()}`;
+  }
+  if (matcher.source.includes("lux") || matcher.source.includes("ilumin")) {
+    const match = normalized.match(/\b(\d[\d.,]*)\s*(lux|lx)\b/i) ?? normalized.match(/(?:ilumin[aâ]ncia|illuminance)[^.;,]{0,24}?\b(\d[\d.,]*)\s*(lux|lx)\b/i);
+    if (match) return `${match[1]} lux`;
+  }
+  if (matcher.source.includes("rgb") || matcher.source.includes("bicolor")) {
+    const match = normalized.match(/\b(RGBWW?|RGBACL|RGBLAC|bi[ -]?color|bicolor|daylight|tungsten)\b/i);
+    if (match) return match[1].replace(/bi[ -]?color/i, "Bi-color").replace(/rgb/i, (v) => v.toUpperCase());
+  }
+  if (matcher.source.includes("temperatura") || matcher.source.includes("kelvin")) {
+    const match = normalized.match(/\b(\d{4,5})\s*K\b/i) ?? normalized.match(/\b(\d{4})\s*[-–]\s*(\d{4})\s*K\b/i);
+    if (match) return match[2] ? `${match[1]}–${match[2]} K` : `${match[1]} K`;
+  }
+  if (matcher.source.includes("ngulo") || matcher.source.includes("beam")) {
+    const match = normalized.match(/(?:beam angle|[aâ]ngulo(?:\s+de\s+abertura)?)[^.;,]{0,20}?\b(\d+(?:[.,]\d+)?)\s*°/i);
+    if (match) return `${match[1]}°`;
+  }
+  if (matcher.source.includes("cri") || matcher.source.includes("reprodu")) {
+    const match = normalized.match(/\b(CRI|Ra)\s*[:=]?\s*(\d{2,3})\+?\b/i);
+    if (match) return `${match[1].toUpperCase()} ${match[2]}`;
+  }
+  if (matcher.source.includes("alimenta") || matcher.source.includes("voltagem") || matcher.source.includes("tens")) {
+    const match = normalized.match(/\b(100\s*[-–]\s*240|110|120|127|220|230|240)\s*V\b/i) ?? normalized.match(/\b(bateria|battery)\b/i);
+    if (match) return match[0].replace(/\s+/g, " ");
+  }
+  return "Não informado";
 }
 
 function displayPrice(product: CatalogProduct) {
