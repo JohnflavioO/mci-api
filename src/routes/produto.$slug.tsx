@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductComparison } from "@/components/shop/ProductComparison";
@@ -118,6 +118,51 @@ function ProductPage() {
   });
   const isApprovedReseller = rp.data != null;
   const p = q.data?.product;
+  // Destaques usam primeiro especificações cadastradas; a descrição só é usada quando
+  // o valor aparece junto de um rótulo/contexto técnico explícito.
+  const highlights = (() => {
+    if (!p) return [];
+    const result: { label: string; value: string; icon: typeof Zap }[] = [];
+    const add = (label: string, value: string | undefined, icon: typeof Zap) => {
+      const clean = value?.trim();
+      if (clean && !/^(não informado|n\/a|-)$/i.test(clean) && !result.some((item) => item.label === label)) {
+        result.push({ label, value: clean, icon });
+      }
+    };
+    const specs = p.specs ?? [];
+    const findSpec = (pattern: RegExp) => specs.find((item) => pattern.test(item.label))?.value;
+    add("Potência", findSpec(/pot[eê]ncia nominal|pot[eê]ncia de sa[ií]da|pot[eê]ncia\b/i), Zap);
+    add("Iluminância", findSpec(/ilumin[aâ]ncia|lux/i), Sun);
+    add("Temperatura de cor", findSpec(/temperatura de cor|cct/i), Thermometer);
+    add("Qualidade de cor", findSpec(/\bcri\b|\bra\b|\btlci\b|\bssi\b|tm.?30/i), Palette);
+    add("Peso", findSpec(/peso|weight/i), Scale);
+    add("Tipo de iluminação", findSpec(/tipo de ilumina[cç][aã]o|fonte de luz|light source/i), Lightbulb);
+
+    const description = p.description ?? "";
+    const addFromDescription = (label: string, pattern: RegExp, icon: typeof Zap) => {
+      if (result.some((item) => item.label === label)) return;
+      const match = description.match(pattern);
+      if (match?.[1]) add(label, match[1].replace(/\s+/g, " ").trim(), icon);
+    };
+    addFromDescription("Potência", /(?:pot[eê]ncia nominal|pot[eê]ncia de sa[ií]da)\s*(?:de|:|=)?\s*(\d+(?:[.,]\d+)?\s*(?:W|watts?)\b)/i, Zap);
+    addFromDescription("Iluminância", /((?:at[eé]\s*)?\d[\d.,]*\s*lux\s*(?:a|at)\s*\d+(?:[.,]\d+)?\s*m\b[^.;]*)/i, Sun);
+    addFromDescription("Temperatura de cor", /(?:faixa|intervalo|temperatura de cor)\s*(?:de)?\s*(\d[\d.,]*\s*(?:–|-|a)\s*\d[\d.,]*\s*K\b[^.;]*)/i, Thermometer);
+    const colorMetrics = [
+      ["CRI", /\bCRI\s*[:=]?\s*\d{2,3}\+?\b/i],
+      ["TLCI", /\bTLCI\s*[:=]?\s*\d{2,3}\+?\b/i],
+      ["SSI", /\bSSI\s*[:=]?\s*\d{2,3}\s*\/\s*\d{2,3}\b/i],
+      ["TM-30", /\bTM\s*[- ]?30\s*\d{2,3}\s*\/\s*\d{2,3}\b/i],
+    ].map(([label, pattern]) => {
+      const match = description.match(pattern as RegExp);
+      return match ? match[0].replace(/\s+/g, " ").trim() : null;
+    }).filter(Boolean);
+    if (!result.some((item) => item.label === "Qualidade de cor") && colorMetrics.length) {
+      add("Qualidade de cor", colorMetrics.join(" · "), Palette);
+    }
+    addFromDescription("Peso", /(?:peso(?: l[ií]quido)?|net weight|weight)\s*[:=]?\s*(\d+(?:[.,]\d+)?\s*(?:kg|g)\b)/i, Scale);
+    addFromDescription("Tipo de iluminação", /\b(LED|RGBWW|RGB|Bi-Color|bicolor)\b/i, Lightbulb);
+    return result.slice(0, 6);
+  })();
 
   return (
     <SiteShell>
@@ -232,6 +277,23 @@ function ProductPage() {
               </Button>
               <div className="mt-3"><ProductComparison product={p} /></div>
               </div>
+              {highlights.length > 0 && (
+                <section className="mt-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-6" aria-label="Principais características">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand/10 text-brand"><Zap className="h-5 w-5" /></span>
+                    <div><p className="text-xs font-bold uppercase tracking-[0.15em] text-brand">Resumo técnico</p><h2 className="mt-1 text-lg font-bold">Principais características</h2></div>
+                  </div>
+                  <dl className="mt-4 grid grid-cols-2 gap-3">
+                    {highlights.map(({ label, value, icon: Icon }) => (
+                      <div key={label} className="min-w-0 rounded-xl border border-border/70 bg-muted/20 p-3">
+                        <dt className="flex items-center gap-1.5 text-xs leading-5 text-muted-foreground"><Icon className="h-3.5 w-3.5 shrink-0 text-brand" />{label}</dt>
+                        <dd className="mt-1 break-words text-sm font-semibold leading-5 text-foreground">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">Resumo baseado nas especificações cadastradas e nos dados explicitamente identificados na descrição.</p>
+                </section>
+              )}
             </div>
           </div>
         )}
