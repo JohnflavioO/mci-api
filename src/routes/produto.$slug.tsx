@@ -48,16 +48,22 @@ function ProductPage() {
       // do mesmo produto no Supabase, sem substituir preço, estoque ou outros dados públicos.
       if (current.product && current.product.images.length <= 1) {
         try {
-          const supabaseProducts = await createSupabaseCatalog().listPublished();
+          const supabaseCatalog = createSupabaseCatalog();
+          const supabaseProducts = await supabaseCatalog.listPublished();
           const sameProduct = supabaseProducts.find(
-            (product) => product.slug === current.product?.slug ||
+            (product) =>
+              product.slug === current.product?.slug ||
+              (!!current.product?.sku && product.sku === current.product.sku) ||
               slugifyProductName(product.name) === slugifyProductName(current.product?.name ?? "")
           );
-          if (sameProduct && sameProduct.images.length > current.product.images.length) {
-            return { ...current, product: { ...current.product, images: sameProduct.images } };
+          if (sameProduct) {
+            const gallery = await supabaseCatalog.getProductImages(sameProduct.slug);
+            if (gallery.length > current.product.images.length) {
+              return { ...current, product: { ...current.product, images: gallery } };
+            }
           }
-        } catch {
-          // A galeria pública principal continua disponível mesmo se a fonte suplementar falhar.
+        } catch (error) {
+          console.error("[product-gallery] Não foi possível recuperar a galeria do Supabase:", error);
         }
       }
       return current;
