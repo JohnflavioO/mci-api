@@ -67,19 +67,32 @@ function ProductsPage() {
       if (customer !== null && reseller !== null && reseller > customer) throw new Error("O preço de revenda não pode ser maior que o preço ao cliente.");
       if (f.images.some((url) => !/^https:\/\//i.test(url.trim()))) throw new Error("Todas as URLs de imagens precisam usar HTTPS.");
       if (f.images.length + f.imageFiles.length > 10) throw new Error("Cada produto pode ter no máximo 10 imagens.");
+      if (f.status === "published" && f.images.length + f.imageFiles.length === 0) {
+        throw new Error("Para publicar o produto, adicione pelo menos uma imagem à galeria.");
+      }
       for (const file of f.imageFiles) {
         if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) throw new Error("Use imagens JPG, PNG, WebP ou AVIF.");
         if (file.size > 8 * 1024 * 1024) throw new Error("Cada imagem deve ter no máximo 8 MB.");
       }
       const stock = f.stock.trim() === "" ? null : Number(f.stock);
       if (stock !== null && (!Number.isInteger(stock) || stock < 0)) throw new Error("Estoque disponível deve ser um número inteiro maior ou igual a zero.");
+      // Produtos novos com fotos locais precisam ser criados como rascunho primeiro:
+      // a galeria só pode ser gravada depois que o produto tiver um ID. Publicamos no final.
+      const publishAfterImages = f.status === "published" && f.imageFiles.length > 0;
       const id = await catalog.saveAdmin({
         ...(f.id ? { id: f.id } : {}), name: f.name, brand: f.brand, sku: f.sku, category: f.category,
-        description: f.description, status: f.status, customerPrice: customer,
+        description: f.description, status: publishAfterImages ? "draft" : f.status, customerPrice: customer,
         resellerPrice: reseller, imageUrl: f.images[0] ?? "",
       });
       await catalog.setStock(id, stock, f.stockConfirmed);
-      await catalog.saveProductImages(id, f.images, f.imageFiles);
+      const savedImageUrls = await catalog.saveProductImages(id, f.images, f.imageFiles);
+      if (publishAfterImages) {
+        await catalog.saveAdmin({
+          id, name: f.name, brand: f.brand, sku: f.sku, category: f.category,
+          description: f.description, status: "published", customerPrice: customer,
+          resellerPrice: reseller, imageUrl: savedImageUrls[0] ?? "",
+        });
+      }
       return id;
     },
     onSuccess: async () => {
