@@ -184,34 +184,51 @@ function Index() {
       </section>
 
 
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e95b19]">Encontre o que precisa</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Explore por categoria</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Acesse rapidamente as linhas de equipamentos.</p>
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e95b19]">Compre do seu jeito</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Explore por categoria</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Encontre rapidamente o equipamento ideal para sua produção.</p>
+            </div>
+            <Link to="/catalogo" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-[#e95b19]">Ver todos os produtos <ArrowRight className="size-4" /></Link>
           </div>
-          <Link to="/catalogo" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-[#e95b19]">Ver catálogo completo <ArrowRight className="size-4" /></Link>
-        </div>
-        {categories.length > 0 ? (
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {categories.map((category, index) => {
-              const Icon = categoryIcons[index % categoryIcons.length]!;
-              const count = products.filter((p) => p.category === category).length;
-              return <Link key={category} to="/catalogo" search={{ categoria: category }} className="group rounded-2xl border bg-white p-4 transition duration-200 hover:-translate-y-1 hover:border-[#ff681f]/50 hover:shadow-lg hover:shadow-slate-900/5 sm:p-5">
-                <span className="flex size-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-[#fff0e8] group-hover:text-[#e95b19]"><Icon className="size-5" /></span>
-                <p className="mt-5 text-sm font-semibold leading-snug">{category}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{count} {count === 1 ? "produto" : "produtos"}</p>
-              </Link>;
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { name: "Iluminação", icon: Lightbulb, description: "Luzes, painéis e soluções LED", tint: "from-orange-50 to-amber-100" },
+              { name: "Acessórios", icon: Package, description: "Itens que completam seu setup", tint: "from-slate-50 to-slate-200" },
+              { name: "Áudio", icon: AudioLines, description: "Equipamentos para captar e reproduzir som", tint: "from-blue-50 to-indigo-100" },
+              { name: "Vídeo", icon: Camera, description: "Soluções para imagem e produção", tint: "from-violet-50 to-fuchsia-100" },
+              { name: "Cabos e Conexões", icon: Cable, description: "Conectividade para seu equipamento", tint: "from-emerald-50 to-teal-100" },
+              { name: "Suportes e Estruturas", icon: Headphones, description: "Montagem, fixação e suporte", tint: "from-rose-50 to-orange-100" },
+            ].map((item) => {
+              const categoryProducts = products.filter((p) => p.category.trim().toLocaleLowerCase("pt-BR") === item.name.toLocaleLowerCase("pt-BR"));
+              const firstProduct = categoryProducts[0];
+              const Icon = item.icon;
+              return firstProduct ? (
+                <Link key={item.name} to="/catalogo" search={{ categoria: item.name }} className={`group relative flex min-h-40 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br ${item.tint} p-5 transition duration-200 hover:-translate-y-1 hover:border-[#ff681f]/50 hover:shadow-xl hover:shadow-slate-900/10`}>
+                  <div className="relative z-10 flex max-w-[62%] flex-col items-start">
+                    <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#e95b19]">{categoryProducts.length} {categoryProducts.length === 1 ? "produto" : "produtos"}</span>
+                    <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-900">{item.name}</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600">{item.description}</p>
+                    <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-semibold text-slate-900">Explorar <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+                  </div>
+                  {firstProduct.images[0] ? <img src={firstProduct.images[0]} alt="" loading="lazy" className="absolute -right-2 bottom-0 h-[88%] w-[48%] object-contain transition-transform duration-300 group-hover:scale-105" /> : <Icon className="absolute bottom-4 right-5 size-20 text-slate-900/15" />}
+                </Link>
+              ) : (
+                <div key={item.name} aria-disabled="true" className="relative flex min-h-40 overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5">
+                  <div className="relative z-10 flex max-w-[72%] flex-col items-start">
+                    <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-500">Em breve</span>
+                    <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-800">{item.name}</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{item.description}</p>
+                  </div>
+                  <span className={`absolute -bottom-4 -right-3 flex size-28 items-center justify-center rounded-full bg-gradient-to-br ${item.tint} text-slate-700/35`}><Icon className="size-12" /></span>
+                </div>
+              );
             })}
           </div>
-        ) : (
-          <div className="mt-8 rounded-2xl border border-dashed bg-white px-6 py-10 text-center">
-            <Package className="mx-auto size-8 text-slate-400" />
-            <p className="mt-3 font-semibold">Estamos preparando o catálogo</p>
-            <p className="mt-1 text-sm text-muted-foreground">Os produtos serão exibidos aqui assim que estiverem publicados.</p>
-          </div>
-        )}
+        </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
