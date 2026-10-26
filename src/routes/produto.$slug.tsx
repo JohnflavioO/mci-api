@@ -11,7 +11,7 @@ import { useCart } from "@/lib/cart";
 import { canSell } from "@/lib/cart";
 import { catalogService } from "@/services";
 import { catalogSource } from "@/lib/api";
-import { formatPrice } from "@/services/catalog";
+import { formatPrice, slugifyProductName } from "@/services/catalog";
 
 export const Route = createFileRoute("/produto/$slug")({
   head: () => ({
@@ -29,7 +29,18 @@ export const Route = createFileRoute("/produto/$slug")({
 
 function ProductPage() {
   const { slug } = Route.useParams();
-  const q = useQuery({ queryKey: ["product", slug], queryFn: () => catalogService.get(slug) });
+  const q = useQuery({
+    queryKey: ["product", slug],
+    queryFn: async () => {
+      // URLs antigas com UUID continuam funcionando. Slugs legíveis são resolvidos pelo nome público.
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)) {
+        return catalogService.get(slug);
+      }
+      const listing = await catalogService.list();
+      const match = listing.products.find((product) => slugifyProductName(product.name) === slug);
+      return match ? catalogService.get(match.slug) : { product: null, isDemo: listing.isDemo };
+    },
+  });
   const cart = useCart();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
