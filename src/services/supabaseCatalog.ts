@@ -233,6 +233,32 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       }
       return urls;
     },
+    /** Resolve a galeria pública pelo SKU do produto, sem depender do join aninhado. */
+    getPublishedImagesBySku: async (sku: string): Promise<string[]> => {
+      const client = sb();
+      const cleanSku = sku.trim();
+      if (!cleanSku) return [];
+      const { data: product, error: productError } = await client
+        .from("products")
+        .select("id")
+        .eq("sku", cleanSku)
+        .eq("status", "published")
+        .maybeSingle();
+      if (productError) throw new Error(`Não foi possível localizar o produto pelo SKU: ${productError.message}`);
+      if (!product?.id) return [];
+      return await (async () => {
+        const { data, error } = await client
+          .from("product_images")
+          .select("url,position")
+          .eq("product_id", product.id)
+          .order("position", { ascending: true });
+        if (error) throw new Error(`Não foi possível carregar as imagens do SKU ${cleanSku}: ${error.message}`);
+        return ((data ?? []) as { url: string; position: number }[])
+          .sort((a, b) => a.position - b.position)
+          .map((row) => row.url)
+          .filter(isHttpsUrl);
+      })();
+    },
     /** Lê a galeria diretamente da tabela, sem depender do relacionamento aninhado do catálogo. */
     getProductImages: async (productId: string): Promise<string[]> => {
       const { data, error } = await sb()
