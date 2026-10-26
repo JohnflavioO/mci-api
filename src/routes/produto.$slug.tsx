@@ -86,11 +86,29 @@ function ProductPage() {
     },
   });
   const cart = useCart();
+  const [resellerUserId, setResellerUserId] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const images = q.data?.product?.images?.filter(Boolean) ?? [];
   const activeImage = images[activeImageIndex] ?? images[0];
   useEffect(() => { setActiveImageIndex(0); setLightboxOpen(false); }, [slug]);
+  useEffect(() => {
+    let active = true;
+    let unsubscribe = () => {};
+    void import("@/lib/supabase").then(({ getSupabase, isSupabaseConfigured }) => {
+      if (!active || !isSupabaseConfigured()) return;
+      const supabase = getSupabase();
+      void supabase.auth.getSession().then(({ data }) => {
+        if (active) setResellerUserId(data.session?.user.id ?? null);
+      });
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (active) setResellerUserId(session?.user.id ?? null);
+      });
+      unsubscribe = () => listener.subscription.unsubscribe();
+      if (!active) unsubscribe();
+    });
+    return () => { active = false; unsubscribe(); };
+  }, []);
   useEffect(() => {
     if (!lightboxOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -103,8 +121,8 @@ function ProductPage() {
     return () => { window.removeEventListener("keydown", onKeyDown); document.body.style.overflow = ""; };
   }, [lightboxOpen, images.length]);
   const rp = useQuery({
-    queryKey: ["reseller-price", slug],
-    enabled: catalogSource() === "supabase",
+    queryKey: ["reseller-price", resellerUserId, slug],
+    enabled: !!resellerUserId && catalogSource() === "supabase",
     retry: false,
     queryFn: async () => {
       const { getSupabase } = await import("@/lib/supabase");
@@ -259,7 +277,16 @@ function ProductPage() {
                   <>
                     <p className="text-xs font-semibold uppercase tracking-wider text-brand">Seu preço de revenda</p>
                     <p className="mt-1 font-display text-4xl font-bold text-foreground">{formatPrice(rp.data as number, p.currency)}</p>
-                    {p.customerPrice != null && <p className="mt-2 text-sm text-muted-foreground">Preço para cliente final: {formatPrice(p.customerPrice, p.currency)}</p>}
+                    {p.customerPrice != null && (
+                      <>
+                        <p className="mt-2 text-sm text-muted-foreground">Preço para cliente final: {formatPrice(p.customerPrice, p.currency)}</p>
+                        {p.customerPrice > (rp.data as number) && (
+                          <p className="mt-2 inline-flex items-center rounded-full bg-brand/10 px-3 py-1 text-sm font-semibold text-brand">
+                            {Math.round(((p.customerPrice - (rp.data as number)) / p.customerPrice) * 100)}% de desconto sobre o preço final
+                          </p>
+                        )}
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
