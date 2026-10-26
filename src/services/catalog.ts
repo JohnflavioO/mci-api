@@ -116,7 +116,7 @@ export const catalogService = {
 
 /** Gera um caminho legível para a página pública do produto. */
 export const slugifyProductName = (name: string) =>
-  name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()
+  name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 /** Categorias derivadas dos produtos exibidos (sem lista fixa quando conectado). */
