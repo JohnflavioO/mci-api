@@ -184,44 +184,51 @@ function Index() {
       </section>
 
 
-      <section className="bg-white py-12 sm:py-16">
+      <section className="bg-[#f5f6f7] py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e95b19]">Encontre seu equipamento</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Explore por categoria</h2>
-              <p className="mt-2 max-w-xl text-sm text-slate-600">Acesse rapidamente as linhas de produtos da MCI.</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#e95b19]">Universo MCI</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#171a1f] sm:text-4xl">O equipamento certo começa aqui.</h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">Explore as principais linhas e encontre soluções para sua produção.</p>
             </div>
-            <Link to="/catalogo" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 transition hover:text-[#e95b19]">Ver todos os produtos <ArrowRight className="size-4" /></Link>
+            <Link to="/catalogo" className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:border-[#ff681f] hover:text-[#e95b19]">Ver catálogo completo <ArrowRight className="size-4" /></Link>
           </div>
-          <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-7 grid grid-cols-1 gap-4 lg:grid-cols-12">
             {[
-              { name: "Iluminação", icon: Lightbulb, description: "Luzes, painéis e soluções LED", tint: "bg-[#fff7e8]" },
-              { name: "Acessórios", icon: Package, description: "Itens que completam seu setup", tint: "bg-slate-50" },
-              { name: "Áudio", icon: AudioLines, description: "Equipamentos para captar e reproduzir som", tint: "bg-slate-50" },
-              { name: "Vídeo", icon: Camera, description: "Soluções para imagem e produção", tint: "bg-slate-50" },
-              { name: "Cabos e Conexões", icon: Cable, description: "Conectividade para seu equipamento", tint: "bg-slate-50" },
-              { name: "Suportes e Estruturas", icon: Headphones, description: "Montagem, fixação e suporte", tint: "bg-slate-50" },
+              { name: "Iluminação", icon: Lightbulb, description: "Luzes, painéis e soluções LED", tint: "bg-[#fff4df]", accent: "text-[#a94712]", span: "lg:col-span-6" },
+              { name: "Áudio", icon: AudioLines, description: "Captação, monitoração e reprodução", tint: "bg-white", accent: "text-slate-700", span: "lg:col-span-3" },
+              { name: "Vídeo", icon: Camera, description: "Imagem e produção profissional", tint: "bg-white", accent: "text-slate-700", span: "lg:col-span-3" },
+              { name: "Acessórios", icon: Package, description: "Itens para completar seu setup", tint: "bg-white", accent: "text-slate-700", span: "lg:col-span-4" },
+              { name: "Cabos e Conexões", icon: Cable, description: "Conectividade para seu equipamento", tint: "bg-white", accent: "text-slate-700", span: "lg:col-span-4" },
+              { name: "Suportes e Estruturas", icon: Headphones, description: "Montagem, fixação e suporte", tint: "bg-white", accent: "text-slate-700", span: "lg:col-span-4" },
             ].map((item) => {
               const categoryProducts = products.filter((p) => p.category.trim().toLocaleLowerCase("pt-BR") === item.name.toLocaleLowerCase("pt-BR"));
               const firstProduct = categoryProducts[0];
               const Icon = item.icon;
+              const featuredCategory = item.name === "Iluminação";
               return (
-                <Link key={item.name} to="/catalogo" search={{ categoria: item.name }} className={`group relative flex min-h-[172px] overflow-hidden rounded-xl border border-slate-200 ${firstProduct ? item.tint : "bg-white"} p-5 transition duration-200 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-900/[0.06]`}>
-                  <div className="relative z-10 flex w-[58%] flex-col items-start">
-                    <h3 className="text-lg font-semibold tracking-tight text-slate-950">{item.name}</h3>
-                    <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{item.description}</p>
-                    <span className="mt-auto inline-flex items-center gap-1 pt-5 text-sm font-semibold text-slate-900">
-                      {firstProduct ? `${categoryProducts.length} ${categoryProducts.length === 1 ? "produto" : "produtos"}` : "Explorar catálogo"}
+                <Link key={item.name} to="/catalogo" search={{ categoria: item.name }} className={`group relative isolate flex min-h-[154px] overflow-hidden rounded-2xl border border-slate-200/90 ${item.tint} ${item.span} ${featuredCategory ? "lg:min-h-[250px]" : ""} transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/[0.07]`}>
+                  <div className={`relative z-10 flex flex-1 flex-col items-start p-5 sm:p-6 ${featuredCategory ? "max-w-[58%] justify-center" : "justify-between"}`}>
+                    <div>
+                      <span className={`inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] ${item.accent}`}>
+                        <span className={`h-px w-5 ${featuredCategory ? "bg-[#e95b19]" : "bg-slate-300"}`} />
+                        {featuredCategory ? "Linha em destaque" : "Explore a linha"}
+                      </span>
+                      <h3 className={`mt-3 font-semibold tracking-tight text-[#171a1f] ${featuredCategory ? "text-2xl sm:text-3xl" : "text-xl"}`}>{item.name}</h3>
+                      <p className="mt-1.5 max-w-[230px] text-xs leading-relaxed text-slate-600">{item.description}</p>
+                    </div>
+                    <span className={`mt-5 inline-flex items-center gap-2 text-sm font-semibold ${featuredCategory ? "text-[#b94710]" : "text-slate-800"}`}>
+                      {categoryProducts.length > 0 ? `Ver ${categoryProducts.length} ${categoryProducts.length === 1 ? "produto" : "produtos"}` : "Ver categoria"}
                       <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                     </span>
                   </div>
-                  <div className="absolute inset-y-3 right-3 flex w-[38%] items-center justify-center overflow-hidden rounded-lg">
+                  <div className={`pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center ${featuredCategory ? "w-[46%] px-3 py-4 sm:px-5" : "w-[30%]"}`}>
                     {firstProduct?.images?.[0] ? (
-                      <img src={firstProduct.images[0]} alt={firstProduct.name} loading="lazy" className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.04]" />
+                      <img src={firstProduct.images[0]} alt="" loading="lazy" className={`h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04] ${featuredCategory ? "mix-blend-multiply" : "hidden"}`} />
                     ) : (
-                      <div className="flex size-full items-center justify-center rounded-lg bg-slate-100/80 text-slate-400">
-                        <Icon className="size-10 stroke-[1.5]" />
+                      <div className={`flex items-center justify-center ${featuredCategory ? "size-24 rounded-full bg-white/70" : "size-16 rounded-2xl bg-slate-100"} text-slate-400`}>
+                        <Icon className={featuredCategory ? "size-10" : "size-8"} strokeWidth={1.4} />
                       </div>
                     )}
                   </div>
