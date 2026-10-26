@@ -175,6 +175,32 @@ function ProductPage() {
                 <span className="inline-flex items-center gap-2"><Maximize2 className="h-4 w-4 text-brand" /> Imagens ampliáveis</span>
                 <span>Fotos do produto e detalhes visuais</span>
               </div>
+              <section className="mt-6 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><Maximize2 className="h-5 w-5" /></span>
+                  <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Conheça o equipamento</p><h2 className="mt-1 text-xl font-bold">Descrição do produto</h2></div>
+                </div>
+                <div className="mt-5 space-y-4 text-sm leading-7 text-foreground/80">
+                  {(p.description || "Consulte nossa equipe para mais informações sobre este produto.")
+                    .split(/\n\s*\n/)
+                    .map((paragraph, index) => paragraph.trim() ? <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p> : null)}
+                </div>
+              </section>
+              <section className="mt-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Dados do fabricante</p><h2 className="mt-1 text-xl font-bold">Ficha técnica</h2></div>
+                  <span className="rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{p.specs.length} itens</span>
+                </div>
+                {p.specs.length > 0 ? (
+                  <dl className="mt-5 grid gap-2 sm:grid-cols-2">
+                    {p.specs.map(({ label: k, value: v }, i) => (
+                      <div key={`${k}-${i}`} className="min-w-0 rounded-xl border bg-muted/20 p-3.5">
+                        <dt className="text-xs font-medium leading-5 text-muted-foreground">{k}</dt><dd className="mt-1 break-words text-sm font-semibold leading-6 text-foreground">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : <p className="mt-4 rounded-xl bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">As especificações técnicas deste produto serão adicionadas em breve. Consulte nossa equipe para confirmar os detalhes.</p>}
+              </section>
             </section>
             <div className="min-w-0 lg:sticky lg:top-6">
               <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
@@ -205,19 +231,6 @@ function ProductPage() {
                 Adicionar ao carrinho
               </Button>
               <div className="mt-3"><ProductComparison product={p} /></div>
-              <div className="mt-6 rounded-xl bg-muted/50 p-4 sm:p-5"><h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Descrição do produto</h2><p className="mt-2 whitespace-pre-line text-sm leading-7 text-foreground/80">{p.description || "Consulte nossa equipe para mais informações sobre este produto."}</p></div>
-              </div>
-              <div className="mt-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
-                <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Ficha técnica</p><h2 className="mt-1 text-xl font-bold">Especificações do produto</h2></div><span className="rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{p.specs.length} itens</span></div>
-                {p.specs.length > 0 ? (
-                  <dl className="mt-5 grid gap-2 sm:grid-cols-2">
-                    {p.specs.map(({ label: k, value: v }, i) => (
-                      <div key={`${k}-${i}`} className="min-w-0 rounded-xl border bg-muted/20 p-3.5">
-                        <dt className="text-xs font-medium leading-5 text-muted-foreground">{k}</dt><dd className="mt-1 break-words text-sm font-semibold leading-6 text-foreground">{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                ) : <p className="mt-4 rounded-xl bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">As especificações técnicas deste produto serão adicionadas em breve. Consulte nossa equipe para confirmar os detalhes.</p>}
               </div>
             </div>
           </div>
