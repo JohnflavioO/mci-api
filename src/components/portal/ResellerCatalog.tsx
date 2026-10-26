@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Package, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Package, Search, SlidersHorizontal } from "lucide-react";
 import { ProductImage } from "@/components/shop/ProductCard";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import { formatPrice } from "@/services/catalog";
@@ -66,23 +66,28 @@ export function ResellerCatalog() {
       </section>
 
       {filtered.length > 0 ? (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filtered.map((product) => (
-            <article key={product.slug} className="flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card transition hover:border-brand/40 hover:shadow-md">
-              <Link to="/produto/$slug" params={{ slug: product.slug }} className="block bg-secondary p-4">
-                <ProductImage src={product.images[0]} alt={product.name} className="aspect-[4/3] w-full rounded-lg" />
+            <article key={product.slug} className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card transition-colors duration-200 hover:border-brand/50">
+              <Link to="/produto/$slug" params={{ slug: product.slug }} aria-label={`Ver ${product.name}`} className="relative flex h-48 items-center justify-center overflow-hidden border-b bg-muted/40 p-4">
+                <ProductImage src={product.images[0]} alt={product.name} className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+                <span className="absolute left-3 top-3 rounded-md border bg-background/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{product.category || "Equipamento"}</span>
               </Link>
-              <div className="flex flex-1 flex-col p-5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-brand">{product.category || "Equipamento profissional"}</p>
-                <h3 className="mt-2 font-display text-lg font-semibold leading-snug">{product.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{[product.brand, product.sku ? "Modelo: " + product.sku : null].filter(Boolean).join(" · ") || "Produto MCI Xpress"}</p>
-                <div className="mt-5 rounded-lg border border-brand/20 bg-brand/5 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Seu preço de revenda</p>
-                  <p className="mt-1 text-xl font-bold">{product.resellerPrice != null ? formatPrice(product.resellerPrice, product.currency) : "Sob consulta"}</p>
-                  {product.resellerPrice == null && <p className="mt-1 text-xs leading-5 text-muted-foreground">Consulte a equipe comercial MCI para confirmar a condição deste produto.</p>}
+              <div className="flex flex-1 flex-col p-4">
+                <div className="min-h-[76px]">
+                  <h3 className="line-clamp-2 text-[15px] font-semibold leading-5 tracking-tight">{product.name}</h3>
+                  <p className="mt-1.5 truncate text-xs text-muted-foreground">{[product.brand, product.sku ? "SKU " + product.sku : null].filter(Boolean).join(" · ") || "Produto MCI Xpress"}</p>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">{product.stock == null ? "Disponibilidade a confirmar" : product.stock > 0 ? product.stock + " unidades disponíveis" : "Sem estoque disponível"}</p>
-                <Link to="/produto/$slug" params={{ slug: product.slug }} className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-graphite px-4 text-sm font-semibold text-graphite-foreground transition hover:bg-brand hover:text-brand-foreground">Ver produto <ArrowUpRight className="size-4" /></Link>
+                <div className="mt-3 border-y py-3">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Preço para revendedor</p>
+                  <p className="mt-1 text-xl font-semibold tracking-tight">{product.resellerPrice != null ? formatPrice(product.resellerPrice, product.currency) : "Sob consulta"}</p>
+                </div>
+                <div className="mt-3 flex min-h-5 items-center gap-1.5 text-xs text-muted-foreground">
+                  {product.stock != null && product.stock > 0 ? <CheckCircle2 className="size-3.5 text-emerald-600" /> : <span className="size-1.5 rounded-full bg-muted-foreground/60" />}
+                  <span>{product.stock == null ? "Disponibilidade a confirmar" : product.stock > 0 ? `${product.stock} ${product.stock === 1 ? "unidade disponível" : "unidades disponíveis"}` : "Consulte disponibilidade"}</span>
+                </div>
+                {product.resellerPrice == null && <p className="mt-2 text-xs leading-4 text-muted-foreground">Consulte a equipe comercial para confirmar sua condição.</p>}
+                <Link to="/produto/$slug" params={{ slug: product.slug }} className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-foreground/15 bg-foreground px-4 text-sm font-medium text-background transition-colors hover:border-brand hover:bg-brand hover:text-brand-foreground">Ver produto <ArrowUpRight className="size-4" /></Link>
               </div>
             </article>
           ))}
