@@ -34,10 +34,12 @@ function specValue(product: CatalogProduct, matcher: RegExp) {
   const isSupply = /alimenta[cç][aã]o|voltagem|tens[aã]o|bateria|power supply/i.test(matcher.source);
 
   if (isPower) {
-    const labeled = source.match(/(?:pot[eê]ncia(?:\s+(?:nominal|m[aá]xima|de sa[ií]da))?|consumo(?:\s+(?:nominal|m[aá]ximo|de energia))?|power(?:\s+(?:consumption|output|rating))?)\s*[:=–-]?\s*(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
+    const labeled = source.match(/pot[eê]ncia(?:\s+(?:nominal|m[aá]xima|de sa[ií]da))?\s*[:=–-]?\s*(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
     if (labeled) return labeled[1] + " " + labeled[2].toUpperCase();
     const productPower = source.match(/(?:monolight|LED|luz|light)[^.\n]{0,100}\b(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
     if (productPower) return productPower[1] + " " + productPower[2].toUpperCase();
+    const consumption = source.match(/consumo(?:\s+(?:nominal|m[aá]ximo|de energia))?\s*[:=–-]?\s*(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
+    if (consumption) return consumption[1] + " " + consumption[2].toUpperCase();
   }
 
   if (isLux) {
