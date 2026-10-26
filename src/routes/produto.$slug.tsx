@@ -121,8 +121,8 @@ function ProductPage() {
     return () => { window.removeEventListener("keydown", onKeyDown); document.body.style.overflow = ""; };
   }, [lightboxOpen, images.length]);
   const rp = useQuery({
-    queryKey: ["reseller-price", resellerUserId, slug],
-    enabled: !!resellerUserId && catalogSource() === "supabase",
+    queryKey: ["reseller-price", resellerUserId, q.data?.product.id],
+    enabled: !!resellerUserId && !!q.data?.product.id && catalogSource() === "supabase",
     retry: false,
     queryFn: async () => {
       const { getSupabase } = await import("@/lib/supabase");
