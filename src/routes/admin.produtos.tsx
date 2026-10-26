@@ -86,6 +86,10 @@ function ProductsPage() {
       });
       await catalog.setStock(id, stock, f.stockConfirmed);
       const savedImageUrls = await catalog.saveProductImages(id, f.images, f.imageFiles);
+      const persistedImageUrls = await catalog.getProductImages(id);
+      if (persistedImageUrls.length !== savedImageUrls.length) {
+        throw new Error(`A galeria não foi salva integralmente: ${persistedImageUrls.length} de ${savedImageUrls.length} imagens confirmadas no banco. Tente salvar novamente.`);
+      }
       if (publishAfterImages) {
         await catalog.saveAdmin({
           id, name: f.name, brand: f.brand, sku: f.sku, category: f.category,
