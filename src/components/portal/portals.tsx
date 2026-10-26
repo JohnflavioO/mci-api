@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
+import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign, ImagePlus,
@@ -217,6 +218,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   const label = section?.label ?? slug;
 
   if (portal === "admin" && slug === "usuarios") return <AdminUsersSection />;
+  if (portal === "admin" && slug === "permissoes") return <AdminPermissionsSection />;
 
   if (portal === "revendedor" && slug === "aprovacao") {
     return <ResellerApprovalStatus />;
