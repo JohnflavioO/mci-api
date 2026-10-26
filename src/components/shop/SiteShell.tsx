@@ -6,7 +6,6 @@ import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
 const nav = [
-  { to: "/catalogo", label: "Catálogo" },
   { to: "/catalogo", label: "Iluminação", search: { categoria: "Iluminação" } },
   { to: "/catalogo", label: "Acessórios", search: { categoria: "Acessórios" } },
   { to: "/revendedor", label: "Revendedores" },
