@@ -49,21 +49,36 @@ function ProductPage() {
       if (current.product && current.product.images.length <= 1) {
         try {
           const supabaseCatalog = createSupabaseCatalog();
-          const supabaseProducts = await supabaseCatalog.listPublished();
-          const sameProduct = supabaseProducts.find(
-            (product) =>
-              product.slug === current.product?.slug ||
-              (!!current.product?.sku && product.sku === current.product.sku) ||
-              slugifyProductName(product.name) === slugifyProductName(current.product?.name ?? "")
-          );
-          if (sameProduct) {
-            const gallery = await supabaseCatalog.getProductImages(sameProduct.slug);
-            if (gallery.length > current.product.images.length) {
-              return { ...current, product: { ...current.product, images: gallery } };
+          let gallery: string[] = [];
+          // SKU é a chave de correspondência estável entre o catálogo público e o cadastro.
+          if (current.product.sku) {
+            gallery = await supabaseCatalog.getPublishedImagesBySku(current.product.sku);
+          }
+          // Compatibilidade para produtos antigos sem SKU ou com SKU diferente entre origens.
+          if (gallery.length <= current.product.images.length) {
+            const supabaseProducts = await supabaseCatalog.listPublished();
+            const normalizedSku = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("pt-BR");
+            const normalizedName = (value: string) => slugifyProductName(value);
+            const sameProduct = supabaseProducts.find((product) =>
+              (!!current.product?.sku && normalizedSku(product.sku) === normalizedSku(current.product.sku)) ||
+              normalizedName(product.name) === normalizedName(current.product?.name ?? "")
+            );
+            if (sameProduct) {
+              const directGallery = await supabaseCatalog.getProductImages(sameProduct.slug);
+              if (directGallery.length > gallery.length) gallery = directGallery;
             }
           }
+          if (gallery.length > current.product.images.length) {
+            return { ...current, product: { ...current.product, images: gallery } };
+          }
+          console.warn("[product-gallery] Galeria complementar não encontrada ou contém apenas uma imagem.", {
+            sku: current.product.sku,
+            productName: current.product.name,
+            publicImageCount: current.product.images.length,
+            supabaseImageCount: gallery.length,
+          });
         } catch (error) {
-          console.error("[product-gallery] Não foi possível recuperar a galeria do Supabase:", error);
+          console.error("[product-gallery] Falha ao recuperar galeria do Supabase:", error);
         }
       }
       return current;
