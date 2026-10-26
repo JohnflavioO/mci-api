@@ -162,8 +162,14 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
           "image/webp": "webp",
           "image/avif": "avif",
         };
-        const ext = extByType[file.type];
-        if (!ext) throw new Error("Formato de imagem não permitido.");
+        const extensionFromName = file.name.split(".").pop()?.toLowerCase();
+        const ext = extByType[file.type] ?? (
+          extensionFromName === "jpeg" || extensionFromName === "jpg" ? "jpg" :
+          extensionFromName === "png" ? "png" :
+          extensionFromName === "webp" ? "webp" :
+          extensionFromName === "avif" ? "avif" : undefined
+        );
+        if (!ext) throw new Error(`Formato de imagem não permitido: "${file.name}" (tipo ${file.type || "não informado"}).`);
         if (file.size > 8 * 1024 * 1024) throw new Error("Cada imagem deve ter no máximo 8 MB.");
         const path = `${productId}/${crypto.randomUUID()}.${ext}`;
         const { error: uploadError } = await client.storage.from("product-images").upload(path, file, {
