@@ -13,7 +13,8 @@ const importantSpecs = [
   { key: "light", label: "Tipo de iluminação", match: /rgbw?|bi.?color|bicolor|tipo de luz|light source|fonte de luz|cor da luz/i },
   { key: "cct", label: "Temperatura de cor", match: /temperatura de cor|\bkelvin\b|\bcct\b|\b[0-9]{4}\s?k\b/i },
   { key: "beam", label: "Ângulo de abertura", match: /[aâ]ngulo|beam angle|abertura do feixe/i },
-  { key: "cri", label: "Índice de reprodução de cor", match: /\bcri\b|\bra\b|reprodu[cç][aã]o de cor/i },
+  { key: "cri", label: "Índices de qualidade de cor", match: /\bcri\b|\bra\b|\btlci\b|\bssi\b|tm.?30|tm.?30.?20|reprodu[cç][aã]o de cor|color quality/i },
+  { key: "weight", label: "Peso", match: /peso|weight|net weight/i },
   { key: "power", label: "Alimentação", match: /alimenta[cç][aã]o|voltagem|tens[aã]o|bateria|power supply/i },
 ] as const;
 
@@ -32,6 +33,7 @@ function specValue(product: CatalogProduct, matcher: RegExp) {
   const isBeam = /[aâ]ngulo|beam angle|abertura do feixe/i.test(matcher.source);
   const isCri = /\bcri\b|\bra\b|reprodu[cç][aã]o de cor/i.test(matcher.source);
   const isSupply = /alimenta[cç][aã]o|voltagem|tens[aã]o|bateria|power supply/i.test(matcher.source);
+  const isWeight = /peso|weight|net weight/i.test(matcher.source);
 
   if (isPower) {
     const labeled = source.match(/pot[eê]ncia(?:\s+(?:nominal|m[aá]xima|de sa[ií]da))?\s*[:=–-]?\s*(\d+(?:[.,]\d+)?)\s*(W|watts?)\b/i);
@@ -76,11 +78,27 @@ function specValue(product: CatalogProduct, matcher: RegExp) {
   }
 
   if (isCri) {
-    const cri = source.match(/\bCRI\s*[:=≥>]?\s*(\d{2,3})\+?\b/i);
-    const tlci = source.match(/\bTLCI\s*[:=≥>]?\s*(\d{2,3})\+?\b/i);
-    const ra = source.match(/\bRa\s*[:=≥>]?\s*(\d{2,3})\+?\b/i);
-    const values = [cri ? "CRI " + cri[1] : "", ra ? "Ra " + ra[1] : "", tlci ? "TLCI " + tlci[1] : ""].filter(Boolean);
+    // Extract only explicitly labeled color-quality metrics, preserving paired values such as SSI 80/87 and TM-30 Rf/Rg 94/100.
+    const metrics = [
+      { label: "CRI", pattern: /\bCRI\s*[:=≥>]?\s*(\d{2,3})\+?\b/i },
+      { label: "TLCI", pattern: /\bTLCI\s*[:=≥>]?\s*(\d{2,3})\+?\b/i },
+      { label: "Ra", pattern: /\bRa\s*[:=≥>]?\s*(\d{2,3})\+?\b/i },
+      { label: "SSI", pattern: /\bSSI\s*[:=]?\s*(\d{2,3}(?:\s*\/\s*\d{2,3})?)\b/i },
+      { label: "TM-30", pattern: /\bTM\s*[- ]?\s*30(?:\s*[- ]?\s*20)?\s*(?:[:=]\s*)?(?:(?:Rf\s*[:=]?\s*(\d{2,3})\s*[,;/]\s*Rg\s*[:=]?\s*(\d{2,3}))|(\d{2,3}\s*\/\s*\d{2,3}))/i },
+    ];
+    const values = metrics.flatMap(({ label, pattern }) => {
+      const match = source.match(pattern);
+      if (!match) return [];
+      if (label === "TM-30" && match[1] && match[2]) return ["TM-30 Rf " + match[1] + " / Rg " + match[2]];
+      const value = match[1] ?? match[3];
+      return value ? [label + " " + value.replace(/\s+/g, "")] : [];
+    });
     if (values.length) return [...new Set(values)].join("; ");
+  }
+
+  if (isWeight) {
+    const labeledWeight = source.match(/(?:peso(?:\s+(?:l[ií]quido|l[ií]quido do equipamento|do equipamento|com embalagem|bruto))?|weight|net weight|product weight)\s*[:=–-]?\s*(\d+(?:[.,]\d+)?)\s*(kg|g|gramas?|grams?)\b/i);
+    if (labeledWeight) return labeledWeight[1] + " " + (/^kg$/i.test(labeledWeight[2]) ? "kg" : "g");
   }
 
   if (isSupply) {
