@@ -136,6 +136,19 @@ function ProductPage() {
   });
   const isApprovedReseller = rp.data != null;
   const p = q.data?.product;
+  const relatedQuery = useQuery({
+    queryKey: ["related-products", p?.slug, p?.category, p?.brand],
+    enabled: !!p,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const listing = await catalogService.list();
+      const products = listing.products.filter((item) => item.slug !== p?.slug);
+      const sameCategory = products.filter((item) => item.category?.toLocaleLowerCase("pt-BR") === p?.category?.toLocaleLowerCase("pt-BR"));
+      const sameBrand = products.filter((item) => item.brand && item.brand.toLocaleLowerCase("pt-BR") === p?.brand?.toLocaleLowerCase("pt-BR"));
+      const ranked = [...sameCategory, ...sameBrand, ...products].filter((item, index, all) => all.findIndex((candidate) => candidate.slug === item.slug) === index);
+      return { products: ranked.slice(0, 4), isDemo: listing.isDemo };
+    },
+  });
   // Destaques usam primeiro especificações cadastradas; a descrição só é usada quando
   // o valor aparece junto de um rótulo/contexto técnico explícito.
   const highlights = (() => {
@@ -309,6 +322,32 @@ function ProductPage() {
               )}
             </div>
           </div>
+        )}
+        {p && (relatedQuery.data?.products.length ?? 0) > 0 && (
+          <section className="mt-12 border-t border-border/70 pt-9 sm:mt-16 sm:pt-12" aria-labelledby="related-products-heading">
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Continue explorando</p>
+                <h2 id="related-products-heading" className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Produtos relacionados</h2>
+                <p className="mt-2 text-sm text-muted-foreground">Outras opções que podem combinar com seu projeto.</p>
+              </div>
+              <Link to="/catalogo" className="hidden shrink-0 text-sm font-semibold text-foreground transition hover:text-brand sm:inline-flex">Ver catálogo <span aria-hidden="true" className="ml-1">→</span></Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
+              {relatedQuery.data.products.map((item) => (
+                <Link key={item.slug} to="/produto/$slug" params={{ slug: slugifyProductName(item.name) }} className="group min-w-0 overflow-hidden rounded-xl border border-border/70 bg-card transition-colors hover:border-brand/40">
+                  <div className="aspect-[4/3] overflow-hidden bg-white p-3 sm:p-4">
+                    <ProductImage src={item.images[0]} alt={item.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]" />
+                  </div>
+                  <div className="p-3 sm:p-4">
+                    <p className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-foreground">{item.name}</p>
+                    <p className="mt-2 text-base font-bold">{priceLabel(item)}</p>
+                    <span className="mt-3 inline-flex items-center text-xs font-semibold text-muted-foreground group-hover:text-brand">Ver produto <span aria-hidden="true" className="ml-1">→</span></span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
       {lightboxOpen && activeImage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 p-3 backdrop-blur-sm sm:p-8" role="dialog" aria-modal="true" aria-label={`Galeria de imagens de ${p?.name ?? "produto"}`} onClick={() => setLightboxOpen(false)}>
