@@ -5,7 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 
 type MarketingKind = "promocoes" | "cupons";
 type Promotion = {
-  id: string; title: string; description: string | null; discount_type: "percentage" | "fixed";
+  id: string; title: string; target_mode?: "all" | "products" | "categories"; description: string | null; discount_type: "percentage" | "fixed";
   discount_value: number; starts_at: string | null; ends_at: string | null; is_active: boolean; created_at: string;
 };
 type Coupon = {
@@ -116,15 +116,11 @@ export function AdminMarketingSection({ kind }: { kind: MarketingKind }) {
       const sb = getSupabase();
       const result = editing
         ? await sb.from(table).update(payload).eq("id", editing.id)
-        : await sb.from(table).insert(payload);
+        : isCoupon ? await sb.from(table).insert(payload) : await sb.from(table).insert(payload).select("id").single();
       if (result.error) throw result.error;
       if (!isCoupon) {
-        let promotionId = editing?.id ?? "";
-        if (!promotionId) {
-          const { data: latest, error: findError } = await sb.from("marketing_promotions").select("id").eq("title", form.name.trim()).order("created_at", { ascending: false }).limit(1).maybeSingle();
-          if (findError || !latest?.id) throw new Error("Não foi possível recuperar o ID da promoção para salvar os vínculos.");
-          promotionId = latest.id;
-        }
+        const promotionId = editing?.id ?? ("data" in result ? String((result.data as { id?: string } | null)?.id ?? "") : "");
+        if (!promotionId) throw new Error("Não foi possível recuperar o ID da promoção para salvar os vínculos.");
         const [rp, rc] = await Promise.all([sb.from("marketing_promotion_products").delete().eq("promotion_id", promotionId), sb.from("marketing_promotion_categories").delete().eq("promotion_id", promotionId)]);
         if (rp.error || rc.error) throw rp.error ?? rc.error;
         if (formTarget.mode === "products") { const { error: linkError } = await sb.from("marketing_promotion_products").insert(formTarget.productIds.map(product_id => ({ promotion_id: promotionId, product_id }))); if (linkError) throw linkError; }
@@ -160,7 +156,7 @@ export function AdminMarketingSection({ kind }: { kind: MarketingKind }) {
           <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-orange-50 text-orange-600"><BadgePercent className="size-5" /></span>
           <div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-orange-600">Marketing comercial</p><h2 className="mt-1 text-xl font-semibold">{title}</h2><p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p></div>
         </div>
-        <button onClick={() => { setEditing(null); setForm({ name: "", code: "", description: "", discount_type: "percentage", discount_value: "10", usage_limit: "", starts_at: "", ends_at: "", is_active: true }); setFormOpen(true); setError(""); setNotice(""); }} className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"><Plus className="size-4" /> Novo {isCoupon ? "cupom" : "promoção"}</button>
+        <button onClick={() => { setEditing(null); setForm({ name: "", code: "", description: "", discount_type: "percentage", discount_value: "10", usage_limit: "", starts_at: "", ends_at: "", is_active: true }); setFormTarget({ mode: "all", productIds: [], categories: [] }); setTargetSearch(""); setFormOpen(true); setError(""); setNotice(""); }} className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"><Plus className="size-4" /> Novo {isCoupon ? "cupom" : "promoção"}</button>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Total cadastrado</p><p className="mt-1 text-2xl font-semibold">{query.isPending ? "—" : stats.total}</p></div>
