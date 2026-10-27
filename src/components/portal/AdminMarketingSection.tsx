@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgePercent, CalendarClock, Check, CircleAlert, LoaderCircle, Plus, Tag, Trash2, X } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
@@ -68,7 +68,6 @@ export function AdminMarketingSection({ kind }: { kind: MarketingKind }) {
   }
   function startEdit(item: RecordItem) {
     setEditing(item);
-    const value = item as Promotion & Coupon;
     setForm({
       name: "title" in item ? item.title : "",
       code: "code" in item ? item.code : "",
@@ -82,7 +81,7 @@ export function AdminMarketingSection({ kind }: { kind: MarketingKind }) {
     });
     setFormOpen(true); setError(""); setNotice("");
   }
-  async function save(event: React.FormEvent<HTMLFormElement>) {
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setError(""); setNotice("");
     try {
       const value = Number(form.discount_value);
