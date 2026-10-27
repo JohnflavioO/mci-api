@@ -106,7 +106,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <Link to={accountTo} className="hidden h-9 items-center gap-2 rounded-md border border-border/80 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:border-foreground/25 hover:bg-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex">
+            <Link to={accountTo} className="group hidden h-9 items-center gap-2 px-2 text-sm font-medium text-foreground/75 transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex">
               {accountIcon} {accountLabel}
             </Link>
             {account.user && !account.loading && <button type="button" onClick={() => void signOut()} className="hidden h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-semibold text-foreground transition hover:bg-secondary sm:inline-flex" aria-label="Sair da conta"><LogOut className="size-4" /><span className="hidden lg:inline">Sair</span></button>}
@@ -128,7 +128,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ) : (
               <Link key={n.label} to={n.to} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-md px-3 text-base font-semibold text-foreground/80 hover:bg-secondary" activeProps={{ className: "flex min-h-12 items-center rounded-md border-l-2 border-brand bg-secondary px-3 text-base font-semibold text-foreground" }}>{n.label}</Link>
             ))}
-            <Link to={accountTo} onClick={() => setOpen(false)} className="mt-3 flex h-12 items-center justify-center gap-2 rounded-md border border-border bg-background text-base font-medium text-foreground transition-colors hover:bg-secondary">
+            <Link to={accountTo} onClick={() => setOpen(false)} className="mt-3 flex h-12 items-center gap-3 border-y border-border px-3 text-base font-medium text-foreground/80 transition-colors hover:text-brand">
               {accountIcon} {accountLabel}
             </Link>
             {account.user && !account.loading && <button type="button" onClick={() => void signOut()} className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-md border border-border text-base font-semibold" aria-label="Sair da conta"><LogOut className="size-4" /> Sair da conta</button>}
