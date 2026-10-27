@@ -74,9 +74,9 @@ export function ResellerCatalog() {
               : null;
             return (
             <article key={product.slug} className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card transition-colors duration-200 hover:border-brand/50">
-              <Link to="/produto/$slug" params={{ slug: product.slug }} aria-label={`Ver ${product.name}`} className="relative flex h-56 items-center justify-center overflow-hidden border-b bg-white p-2 sm:h-60">
-                <ProductImage src={product.images[0]} alt={product.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]" />
-                <span className="absolute left-3 top-3 rounded-md border border-border/80 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{product.category || "Equipamento"}</span>
+              <Link to="/produto/$slug" params={{ slug: product.slug }} aria-label={`Ver ${product.name}`} className="relative flex h-60 items-center justify-center overflow-hidden border-b border-border/60 bg-white p-0 sm:h-64">
+                <ProductImage src={product.images[0]} alt={product.name} className="h-full w-full !bg-white object-contain scale-[1.18] transition-transform duration-300 group-hover:scale-[1.22]" />
+                <span className="absolute left-3 top-3 rounded border border-border/70 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{product.category || "Equipamento"}</span>
               </Link>
               <div className="flex flex-1 flex-col p-4">
                 <div className="min-h-[76px]">
