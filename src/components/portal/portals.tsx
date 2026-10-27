@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
+import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign, ImagePlus,
@@ -39,6 +40,8 @@ export const portals = {
       { slug: "produtos", label: "Produtos", icon: Package, group: "Principal", description: "Catálogo de produtos cadastrados." },
       { slug: "importar", label: "Importar produto por link", icon: Cable, group: "Principal", description: "Traga produtos da MCI Store a partir do link." },
       { slug: "banners", label: "Banners da página inicial", icon: ImagePlus, group: "Principal", description: "Gerencie o slider e as campanhas da hero da loja." },
+      { slug: "promocoes", label: "Promoções", icon: BadgePercent, group: "Marketing", description: "Cadastre e gerencie campanhas promocionais." },
+      { slug: "cupons", label: "Cupons de desconto", icon: Tags, group: "Marketing", description: "Crie códigos de desconto, validade e limites de uso." },
       { slug: "pedidos", label: "Pedidos", icon: ShoppingCart, group: "Operação comercial", description: "Pedidos de clientes e revendedores." },
       { slug: "precos", label: "Preços", icon: Tags, group: "Operação comercial", description: "Tabelas de preço para clientes e revendedores." },
       { slug: "revendedores", label: "Revendedores", icon: Store, group: "Operação comercial", description: "Cadastro e aprovação de revendedores." },
@@ -252,6 +255,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
 
   if (portal === "admin" && slug === "usuarios") return <AdminUsersSection />;
   if (portal === "admin" && slug === "permissoes") return <AdminPermissionsSection />;
+  if (portal === "admin" && (slug === "promocoes" || slug === "cupons")) return <AdminMarketingSection kind={slug} />;
 
   if (portal === "revendedor" && slug === "aprovacao") {
     return <ResellerApprovalStatus />;
