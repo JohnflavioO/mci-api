@@ -2,12 +2,28 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useState } from "react";
-import { ChevronRight, LayoutDashboard, LogOut, Store, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
+import { ChevronRight, LayoutDashboard, LogOut, Store, PanelLeftClose, PanelLeftOpen, UserRound, type LucideIcon } from "lucide-react";
 
 export type PortalSection = { slug: string; label: string; icon: LucideIcon; group?: string; description?: string };
 
 export function PortalLayout({ title, base, sections }: { title: string; base: "/revendedor" | "/afiliado" | "/admin"; sections: PortalSection[] }) {
   const [collapsed, setCollapsed] = useState(false);
+  const adminProfile = useQuery({
+    queryKey: ["admin", "portal-sidebar-profile"],
+    enabled: base === "/admin" && isSupabaseConfigured(),
+    queryFn: async () => {
+      const { data, error } = await getSupabase().auth.getUser();
+      if (error) throw error;
+      const user = data.user;
+      if (!user) return { name: "Administrador", email: "", avatar: "" };
+      const meta = user.user_metadata ?? {};
+      const email = user.email ?? "";
+      const name = String(meta.full_name || meta.name || meta.display_name || email.split("@")[0] || "Administrador");
+      return { name, email, avatar: String(meta.avatar_url || meta.picture || "") };
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
   const resellerProfile = useQuery({
     queryKey: ["reseller", "portal-header-profile"],
     enabled: base === "/revendedor" && isSupabaseConfigured(),
@@ -49,7 +65,7 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
 
   return (
     <div className="flex min-h-screen flex-col bg-secondary md:flex-row">
-      <aside className={`bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-screen md:shrink-0 md:overflow-y-auto transition-[width] ${collapsed ? "md:w-[72px]" : "md:w-64"}`}>
+      <aside className={`flex flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-screen md:shrink-0 md:overflow-y-auto transition-[width] ${collapsed ? "md:w-[72px]" : "md:w-64"}`}>
         <div className="flex h-16 items-center justify-between gap-2 border-b border-sidebar-border px-4">
           <Link to="/" className="flex items-center gap-2 font-display font-bold">
             <span className="grid size-8 place-items-center rounded-md bg-sidebar-primary text-sm text-sidebar-primary-foreground">M</span>
@@ -60,7 +76,7 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
           </button>
         </div>
         {!collapsed && <p className="px-5 pt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/45">{title}</p>}
-        <nav className="flex gap-1 overflow-x-auto p-3 md:flex-col md:gap-0.5">
+        <nav className="flex flex-1 gap-1 overflow-x-auto p-3 md:flex-col md:gap-0.5">
           {!collapsed && <p className="hidden px-3 pb-1 pt-2 text-[11px] font-medium text-sidebar-primary md:block">Principal</p>}
           <Link to={base} activeOptions={{ exact: true }} className={item} activeProps={active} title="Visão geral">
             <LayoutDashboard className="size-4 shrink-0" />
@@ -78,6 +94,28 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
             </div>
           ))}
         </nav>
+      <div className="mt-auto border-t border-sidebar-border p-3">
+        <div className={`flex min-w-0 items-center gap-3 rounded-md ${collapsed ? "justify-center" : "px-2 py-2"}`}>
+          <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-sidebar-border bg-sidebar-accent text-sm font-semibold text-sidebar-foreground">
+            {adminProfile.data?.avatar
+              ? <img src={adminProfile.data.avatar} alt="" className="size-full object-cover" />
+              : adminProfile.data?.name
+                ? adminProfile.data.name.trim().slice(0, 1).toUpperCase()
+                : <UserRound className="size-4" />}
+          </span>
+          {!collapsed && (
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">Logado como</span>
+              <span className="mt-0.5 block truncate text-sm font-medium" title={adminProfile.data?.name || "Administrador"}>
+                {adminProfile.data?.name || (adminProfile.isLoading ? "Carregando conta…" : "Administrador")}
+              </span>
+              <span className="block truncate text-xs text-sidebar-foreground/55" title={adminProfile.data?.email || ""}>
+                {adminProfile.data?.email || "Sessão administrativa"}
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
       </aside>
       <div className="min-w-0 flex-1">
         <header className="border-b bg-card">
