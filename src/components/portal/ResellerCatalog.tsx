@@ -76,17 +76,17 @@ export function ResellerCatalog() {
             <article key={product.slug} className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card transition-colors duration-200 hover:border-brand/50">
               <Link to="/produto/$slug" params={{ slug: product.slug }} aria-label={`Ver ${product.name}`} className="relative flex h-60 items-center justify-center overflow-hidden border-b border-border/60 bg-white p-0 sm:h-64">
                 <ProductImage src={product.images[0]} alt={product.name} className="h-full w-full !bg-white object-contain scale-[1.18] transition-transform duration-300 group-hover:scale-[1.22]" />
-                <span className="absolute left-3 top-3 rounded border border-border/70 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{product.category || "Equipamento"}</span>
+                <span className="absolute left-3 top-3 rounded border border-border/70 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{product.category || "Equipamento"}</span>\n                {discountPercent != null && discountPercent > 0 && <span className="absolute right-3 top-3 inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border-2 border-white bg-orange-500 px-2 text-sm font-extrabold leading-none text-white shadow-md ring-1 ring-orange-600/20" aria-label={`Economize ${discountPercent}%`} title={`${discountPercent}% de diferença para o preço de cliente final`}>-{discountPercent}%</span>}
               </Link>
               <div className="flex flex-1 flex-col p-4">
                 <div className="min-h-[76px]">
-                  <h3 className="line-clamp-2 text-[15px] font-semibold leading-5 tracking-tight">{product.name}</h3>
+                  <h3 className="line-clamp-2 text-base font-bold leading-6 tracking-tight">{product.name}</h3>
                   <p className="mt-1.5 truncate text-xs text-muted-foreground">{[product.brand, product.sku ? "SKU " + product.sku : null].filter(Boolean).join(" · ") || "Produto MCI Xpress"}</p>
                 </div>
                 <div className="mt-3 space-y-2 border-y py-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-brand">Seu preço de revenda</p>
-                    <p className="mt-0.5 text-xl font-bold leading-6 tracking-tight">{product.resellerPrice != null ? formatPrice(product.resellerPrice, product.currency) : "Sob consulta"}</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-brand">Seu preço de revenda</p>
+                    <p className="mt-1 text-2xl font-extrabold leading-7 tracking-tight text-foreground">{product.resellerPrice != null ? formatPrice(product.resellerPrice, product.currency) : "Sob consulta"}</p>
                   </div>
                   {hasBothPrices && (
                     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed pt-2">
@@ -95,7 +95,7 @@ export function ResellerCatalog() {
                         <p className="mt-0.5 text-sm text-muted-foreground">{formatPrice(product.customerPrice!, product.currency)}</p>
                       </div>
                       {discountPercent != null && discountPercent > 0 && (
-                        <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                        <span className="inline-flex shrink-0 items-center rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-bold text-orange-700 shadow-sm">
                           {discountPercent}% de diferença
                         </span>
                       )}
