@@ -106,12 +106,30 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
           {!collapsed && (
             <span className="min-w-0 flex-1">
               <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">Logado como</span>
-              <span className="mt-0.5 block truncate text-sm font-medium" title={adminProfile.data?.name || "Administrador"}>
-                {adminProfile.data?.name || (adminProfile.isLoading ? "Carregando conta…" : "Administrador")}
-              </span>
-              <span className="block truncate text-xs text-sidebar-foreground/55" title={adminProfile.data?.email || ""}>
-                {adminProfile.data?.email || "Sessão administrativa"}
-              </span>
+              {base === "/revendedor" ? (
+                <>
+                  <span className="mt-0.5 block truncate text-sm font-medium" title={resellerProfile.data?.fullName || "Revendedor"}>
+                    {resellerProfile.data?.fullName || (resellerProfile.isLoading ? "Carregando conta…" : "Revendedor")}
+                  </span>
+                  <span className="block truncate text-xs text-sidebar-foreground/55" title={resellerProfile.data?.company || ""}>
+                    {resellerProfile.data?.company || "Portal do revendedor"}
+                  </span>
+                </>
+              ) : base === "/afiliado" ? (
+                <>
+                  <span className="mt-0.5 block truncate text-sm font-medium">Afiliado</span>
+                  <span className="block truncate text-xs text-sidebar-foreground/55">Portal do afiliado</span>
+                </>
+              ) : (
+                <>
+                  <span className="mt-0.5 block truncate text-sm font-medium" title={adminProfile.data?.name || "Administrador"}>
+                    {adminProfile.data?.name || (adminProfile.isLoading ? "Carregando conta…" : "Administrador")}
+                  </span>
+                  <span className="block truncate text-xs text-sidebar-foreground/55" title={adminProfile.data?.email || ""}>
+                    {adminProfile.data?.email || "Sessão administrativa"}
+                  </span>
+                </>
+              )}
             </span>
           )}
         </div>
