@@ -70,7 +70,12 @@ function StockSettingsPage() {
   }, [companyQuery.data]);
   const companySave = useMutation({
     mutationFn: async () => {
+      const { data: authData, error: authError } = await catalogClient.auth.getUser();
+      if (authError || !authData.user) {
+        throw new Error("Sua sessão não foi validada. Entre novamente antes de salvar.");
+      }
       const { error } = await catalogClient.from("platform_company_profile").update({
+        updated_by: authData.user.id,
         legal_name: company.legal_name.trim(),
         trade_name: company.trade_name.trim(),
         cnpj: company.cnpj.trim(),
