@@ -32,7 +32,10 @@ function CustomerAccount() {
   const account = useQuery({
     queryKey: ["customer-account"],
     queryFn: async () => {
-      const { data, error } = await getSupabase().auth.getUser();
+      const supabase = getSupabase();
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return null;
+      const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (!data.user) return null;
       return {
