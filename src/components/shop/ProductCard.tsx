@@ -13,7 +13,7 @@ import { formatPrice, slugifyProductName, type CatalogProduct } from "@/services
 export function ProductImage({ src, alt = "", className = "" }: { src?: string | undefined; alt?: string; className?: string }) {
   const [failed, setFailed] = useState(false);
   if (src && !failed)
-    return <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} className={`bg-secondary object-contain ${className}`} />;
+    return <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} className={`bg-white object-contain ${className}`} />;
   return (
     <div data-testid="image-fallback" className={`flex items-center justify-center bg-secondary text-muted-foreground ${className}`}>
       <Package className="size-10 opacity-40" aria-hidden />
