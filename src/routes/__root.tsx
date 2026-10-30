@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -91,7 +92,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/Icone.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,
@@ -114,13 +115,27 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+
+function OutlineLoadingIndicator() {
+  return (
+    <div className="store-house-route-loader" role="status" aria-label="Carregando página">
+      <svg className="store-house-route-loader__icon" viewBox="0 0 64 64" aria-hidden="true">
+        <path className="store-house-route-loader__trace" d="M10 8.5 Q8 7 8 11 V53 Q8 57 12 55 L54 33 Q58 31 54 28 Z" />
+      </svg>
+    </div>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const navigationStatus = useRouterState({ select: (state) => state.status });
+  const isNavigating = navigationStatus === "pending";
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <CartProvider>
+        {isNavigating && <OutlineLoadingIndicator />}
         <Outlet />
         <Toaster />
       </CartProvider>
