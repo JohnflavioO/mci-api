@@ -16,18 +16,34 @@ export type VolumeDiscountQuote = {
   totalAfterDiscount: number;
 };
 
-export function getVolumeDiscountRule(quantity: number, rules: VolumeDiscountRule[]): VolumeDiscountRule | null {
+export function getVolumeDiscountRule(
+  quantity: number,
+  rules: VolumeDiscountRule[],
+  productId?: string,
+): VolumeDiscountRule | null {
   if (!Number.isInteger(quantity) || quantity < 1) return null;
+
   return rules
-    .filter((rule) => rule.is_active && quantity >= rule.min_quantity && (rule.max_quantity == null || quantity <= rule.max_quantity))
+    .filter((rule) => {
+      if (!rule.is_active || quantity < rule.min_quantity) return false;
+      if (rule.max_quantity != null && quantity > rule.max_quantity) return false;
+      // Quando há identificação do produto, somente regras explicitamente direcionadas a ele valem.
+      if (productId && !(rule.product_ids ?? []).includes(productId)) return false;
+      return true;
+    })
     .sort((a, b) => b.min_quantity - a.min_quantity)[0] ?? null;
 }
 
 /** O desconto fixo é aplicado por unidade. O desconto nunca pode exceder o preço unitário. */
-export function calculateVolumeDiscount(unitPrice: number, quantity: number, rules: VolumeDiscountRule[]): VolumeDiscountQuote {
+export function calculateVolumeDiscount(
+  unitPrice: number,
+  quantity: number,
+  rules: VolumeDiscountRule[],
+  productId?: string,
+): VolumeDiscountQuote {
   const safePrice = Number.isFinite(unitPrice) ? Math.max(0, unitPrice) : 0;
   const safeQuantity = Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
-  const rule = getVolumeDiscountRule(safeQuantity, rules);
+  const rule = getVolumeDiscountRule(safeQuantity, rules, productId);
   const rawDiscount = !rule ? 0 : rule.discount_type === "percentage"
     ? safePrice * Math.min(100, Math.max(0, rule.discount_value)) / 100
     : Math.max(0, rule.discount_value);
