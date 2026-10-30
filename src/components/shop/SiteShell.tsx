@@ -20,7 +20,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
       aria-label="Store House — início"
     >
       <img
-        src={inverted ? "/store-house-logo-dark.svg" : "/store-house-logo.svg"}
+        src={inverted ? "/store-house-logo-dark.png" : "/store-house-logo.png"}
         alt="Store House"
         width={254}
         height={104}
