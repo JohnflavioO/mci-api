@@ -16,7 +16,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
     <Link
       to="/"
-      className="group inline-flex shrink-0 items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      className="group inline-flex shrink-0 items-center rounded-md px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       aria-label="Store House — início"
     >
       <img
@@ -24,7 +24,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
         alt="Store House"
         width={254}
         height={104}
-        className="h-auto w-[132px] sm:w-[148px]"
+        className="h-auto w-[148px] sm:w-[156px]"
         loading="eager"
       />
     </Link>
