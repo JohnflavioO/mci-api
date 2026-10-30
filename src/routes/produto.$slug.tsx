@@ -299,7 +299,7 @@ function ProductPage() {
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock == null && <p className="mt-1 text-sm text-muted-foreground">Estoque a confirmar — venda indisponível no momento</p>}
               {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock > 0 ? `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}` : "Sem estoque no momento"}</p>}
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="w-full sm:w-32">
                   <label htmlFor="product-quantity" className="mb-1.5 block text-sm font-medium">Quantidade</label>
                   <div className="flex h-12 items-center overflow-hidden rounded-md border bg-background">
