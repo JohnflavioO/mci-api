@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleDollarSign, LoaderCircle, Percent, Plus, Save, Trash2, TrendingUp } from "lucide-react";
+import { Check, CircleDollarSign, LoaderCircle, Percent, Save, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase";
 import type { VolumeDiscountRule } from "@/services/volumeDiscounts";
@@ -15,8 +15,6 @@ type RuleDraft = {
 };
 const blankRule = (): RuleDraft => ({ min_quantity: "", max_quantity: "", discount_type: "percentage", discount_value: "", is_active: true });
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const labelDiscount = (r: Pick<RuleDraft, "discount_type" | "discount_value">) =>
-  r.discount_type === "percentage" ? `${r.discount_value || "0"}%` : money(Number(r.discount_value || 0));
 
 export function AdminProgressiveDiscounts() {
   const qc = useQueryClient();
