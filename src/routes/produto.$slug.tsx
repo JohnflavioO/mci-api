@@ -88,10 +88,11 @@ function ProductPage() {
   const cart = useCart();
   const [resellerUserId, setResellerUserId] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [purchaseQty, setPurchaseQty] = useState(1);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const images = q.data?.product?.images?.filter(Boolean) ?? [];
   const activeImage = images[activeImageIndex] ?? images[0];
-  useEffect(() => { setActiveImageIndex(0); setLightboxOpen(false); }, [slug]);
+  useEffect(() => { setActiveImageIndex(0); setLightboxOpen(false); setPurchaseQty(1); }, [slug]);
   useEffect(() => {
     let active = true;
     let unsubscribe = () => {};
@@ -298,9 +299,27 @@ function ProductPage() {
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock == null && <p className="mt-1 text-sm text-muted-foreground">Estoque a confirmar — venda indisponível no momento</p>}
               {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock > 0 ? `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}` : "Sem estoque no momento"}</p>}
-              <Button className="mt-5 h-12 w-full bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:w-auto sm:px-10" size="lg" disabled={!canSell(p)} onClick={() => { if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock })) toast.success("Adicionado ao carrinho"); else toast.error("Quantidade máxima em estoque já está no carrinho."); }}>
-                Adicionar ao carrinho
-              </Button>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="w-full sm:w-32">
+                  <label htmlFor="product-quantity" className="mb-1.5 block text-sm font-medium">Quantidade</label>
+                  <div className="flex h-12 items-center overflow-hidden rounded-md border bg-background">
+                    <button type="button" aria-label="Diminuir quantidade" disabled={purchaseQty <= 1} onClick={() => setPurchaseQty((qty) => Math.max(1, qty - 1))} className="h-full w-10 text-lg font-medium hover:bg-muted disabled:opacity-40">−</button>
+                    <input id="product-quantity" type="number" inputMode="numeric" min={1} max={p.stock ?? undefined} step={1} value={purchaseQty} onChange={(event) => {
+                      const parsed = Number.parseInt(event.target.value, 10);
+                      if (!Number.isFinite(parsed)) { setPurchaseQty(1); return; }
+                      setPurchaseQty(Math.max(1, Math.min(p.stock ?? 999, parsed)));
+                    }} className="h-full min-w-0 w-full border-x bg-transparent text-center font-semibold outline-none" aria-describedby="product-quantity-help" />
+                    <button type="button" aria-label="Aumentar quantidade" disabled={p.stock == null || purchaseQty >= p.stock} onClick={() => setPurchaseQty((qty) => Math.min(p.stock ?? qty, qty + 1))} className="h-full w-10 text-lg font-medium hover:bg-muted disabled:opacity-40">+</button>
+                  </div>
+                  <p id="product-quantity-help" className="mt-1 text-xs text-muted-foreground">{p.stock != null ? `Máximo: ${p.stock}` : "Estoque a confirmar"}</p>
+                </div>
+                <Button className="h-12 w-full flex-1 bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
+                  if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
+                  else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
+                }}>
+                  Adicionar ao carrinho
+                </Button>
+              </div>
               <div className="mt-3"><ProductComparison product={p} /></div>
               </div>
               {highlights.length > 0 && (
