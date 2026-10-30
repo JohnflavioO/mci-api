@@ -161,3 +161,43 @@
     letter-spacing: -0.02em;
   }
 }
+
+
+/* Store House: animação de traçado do contorno durante navegação entre telas. */
+.store-house-route-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: hsl(var(--background) / 0.72);
+  backdrop-filter: blur(2px);
+  animation: store-house-loader-fade-in 140ms ease-out both;
+}
+.store-house-route-loader__icon {
+  width: 58px;
+  height: 58px;
+  overflow: visible;
+}
+.store-house-route-loader__trace {
+  fill: none;
+  stroke: #ff5a0a;
+  stroke-width: 3.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  animation: store-house-outline-draw 1.15s ease-in-out infinite;
+}
+@keyframes store-house-outline-draw {
+  0% { stroke-dashoffset: 180; opacity: .55; }
+  65%, 100% { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes store-house-loader-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .store-house-route-loader__trace { animation: none; stroke-dashoffset: 0; }
+  .store-house-route-loader { animation: none; }
+}
