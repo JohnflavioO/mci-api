@@ -2,11 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
+import { AdminProgressiveDiscounts } from "@/components/portal/AdminProgressiveDiscounts";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign, ImagePlus,
   Clock, FileEdit, Link2, Package, Plus, Receipt, Settings, ShieldCheck, ShoppingCart,
-  Store, Tags, Upload, Users, Wallet, UserRoundCog, type LucideIcon,
+  Store, Tags, Upload, Users, Wallet, UserRoundCog, TrendingUp, type LucideIcon,
 } from "lucide-react";
 import { portalService } from "@/services";
 import { resellerService, statusLabel } from "@/services/resellers";
@@ -44,6 +45,7 @@ export const portals = {
       { slug: "cupons", label: "Cupons de desconto", icon: Tags, group: "Marketing", description: "Crie códigos de desconto, validade e limites de uso." },
       { slug: "pedidos", label: "Pedidos", icon: ShoppingCart, group: "Operação comercial", description: "Pedidos de clientes e revendedores." },
       { slug: "precos", label: "Preços", icon: Tags, group: "Operação comercial", description: "Tabelas de preço para clientes e revendedores." },
+      { slug: "desconto-progressivo", label: "Desconto por volume", icon: TrendingUp, group: "Operação comercial", description: "Configure descontos por quantidade de luminárias no pedido." },
       { slug: "revendedores", label: "Revendedores", icon: Store, group: "Operação comercial", description: "Cadastro e aprovação de revendedores." },
       { slug: "afiliados", label: "Afiliados", icon: Link2, group: "Operação comercial", description: "Parceiros com link de indicação." },
       { slug: "comissoes", label: "Comissões", icon: CircleDollarSign, group: "Operação comercial", description: "Regras e apuração de comissões." },
@@ -256,6 +258,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   if (portal === "admin" && slug === "usuarios") return <AdminUsersSection />;
   if (portal === "admin" && slug === "permissoes") return <AdminPermissionsSection />;
   if (portal === "admin" && (slug === "promocoes" || slug === "cupons")) return <AdminMarketingSection kind={slug} />;
+  if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
 
   if (portal === "revendedor" && slug === "aprovacao") {
     return <ResellerApprovalStatus />;
