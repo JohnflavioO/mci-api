@@ -26,6 +26,17 @@ describe("progressive reseller discounts", () => {
     expect(quote.unitDiscount).toBe(50);
     expect(quote.discountedUnitPrice).toBe(0);
   });
+  it("applies only rules assigned to the selected product", () => {
+    const targeted: VolumeDiscountRule[] = [
+      { ...rules[0], product_ids: ["lamp-a"] },
+      { ...rules[1], product_ids: ["lamp-b"] },
+    ];
+    expect(getVolumeDiscountRule(3, targeted, "lamp-a")?.id).toBe("a");
+    expect(getVolumeDiscountRule(4, targeted, "lamp-a")).toBeNull();
+    expect(getVolumeDiscountRule(4, targeted, "lamp-b")?.id).toBe("b");
+    expect(calculateVolumeDiscount(1000, 4, targeted, "lamp-a").totalDiscount).toBe(0);
+  });
+
   it("ignores inactive tiers", () => {
     expect(getVolumeDiscountRule(4, [{ ...rules[1], is_active: false }])).toBeNull();
   });
