@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb, TrendingUp, BadgePercent, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductComparison } from "@/components/shop/ProductComparison";
@@ -14,6 +14,7 @@ import { catalogService } from "@/services";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { catalogSource } from "@/lib/api";
 import { formatPrice, slugifyProductName } from "@/services/catalog";
+import { calculateVolumeDiscount, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 
 export const Route = createFileRoute("/produto/$slug")({
   head: () => ({
@@ -137,6 +138,27 @@ function ProductPage() {
   });
   const isApprovedReseller = rp.data != null;
   const p = q.data?.product;
+  const volumeRulesQuery = useQuery({
+    queryKey: ["product-reseller-volume-discounts", resellerUserId, p?.slug],
+    enabled: isApprovedReseller && !!p?.slug && catalogSource() === "supabase",
+    staleTime: 60_000,
+    retry: false,
+    queryFn: async () => {
+      const { getSupabase } = await import("@/lib/supabase");
+      const { data, error } = await getSupabase()
+        .from("reseller_volume_discount_rules")
+        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active")
+        .eq("is_active", true)
+        .order("min_quantity", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as VolumeDiscountRule[];
+    },
+  });
+  const volumeRules = volumeRulesQuery.data ?? [];
+  const volumeQuote = isApprovedReseller && rp.data != null
+    ? calculateVolumeDiscount(rp.data as number, purchaseQty, volumeRules)
+    : null;
+  const nextVolumeRule = volumeRules.find(rule => rule.min_quantity > purchaseQty);
   const relatedQuery = useQuery({
     queryKey: ["related-products", p?.slug, p?.category, p?.brand],
     enabled: !!p,
@@ -295,6 +317,47 @@ function ProductPage() {
                   </>
                 )}
               </div>
+              {isApprovedReseller && !volumeRulesQuery.isPending && volumeRules.length > 0 && (
+                <section className="mt-4 overflow-hidden rounded-xl border border-brand/20 bg-gradient-to-br from-brand/[0.07] via-card to-card" aria-label="Desconto progressivo para revendedores">
+                  <div className="flex items-start gap-3 px-4 pt-4">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand"><TrendingUp className="size-4" /></span>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-sm font-semibold">Desconto progressivo</h2>
+                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Compre mais unidades no mesmo pedido e aproveite as faixas configuradas pela loja.</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">
+                    {volumeRules.map(rule => {
+                      const applies = purchaseQty >= rule.min_quantity && (rule.max_quantity == null || purchaseQty <= rule.max_quantity);
+                      const discountLabel = rule.discount_type === "percentage"
+                        ? `${Number(rule.discount_value)}% de desconto`
+                        : `${formatPrice(Number(rule.discount_value), p.currency)} por unidade`;
+                      return <div key={rule.id} className={`rounded-lg border p-3 transition-colors ${applies ? "border-brand bg-brand/10 shadow-sm" : "border-border/80 bg-background/80"}`}>
+                        <div className="flex items-center gap-1.5 text-xs font-semibold">
+                          {applies ? <CheckCircle2 className="size-3.5 shrink-0 text-brand" /> : <BadgePercent className="size-3.5 shrink-0 text-muted-foreground" />}
+                          <span>{rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidade(s)` : `${rule.min_quantity}–${rule.max_quantity} unidades`}</span>
+                        </div>
+                        <p className={`mt-2 text-xs font-semibold ${applies ? "text-brand" : "text-muted-foreground"}`}>{discountLabel}</p>
+                      </div>;
+                    })}
+                  </div>
+                  {volumeQuote && volumeQuote.rule && (
+                    <div className="mx-3 mb-3 rounded-lg bg-background/90 px-3 py-2.5">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">Preço por unidade com desconto</span>
+                        <strong className="text-brand">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">Economia estimada ({purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"})</span>
+                        <strong>{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
+                      </div>
+                    </div>
+                  )}
+                  {!volumeQuote?.rule && nextVolumeRule && (
+                    <p className="px-4 pb-3 text-xs text-muted-foreground">Faltam {nextVolumeRule.min_quantity - purchaseQty} {nextVolumeRule.min_quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima faixa.</p>
+                  )}
+                </section>
+              )}
               {p.customerPrice == null && <p className="text-sm text-muted-foreground">O preço para seu perfil será informado pela plataforma após login.</p>}
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock == null && <p className="mt-1 text-sm text-muted-foreground">Estoque a confirmar — venda indisponível no momento</p>}
