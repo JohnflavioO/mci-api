@@ -57,14 +57,26 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   });
   const resellerPrice = resellerPriceQuery.data ?? null;
   const hasResellerPrice = resellerPrice != null && product.customerPrice != null;
-  const discountPercent = hasResellerPrice
-    ? Math.round(((product.customerPrice! - resellerPrice) / product.customerPrice!) * 100)
+  const discountPercent = hasResellerPrice && product.customerPrice! > resellerPrice!
+    ? Math.round(((product.customerPrice! - resellerPrice!) / product.customerPrice!) * 100)
     : null;
+  const hasResellerDiscount = discountPercent != null && discountPercent > 0;
 
   return (
     <div className="flex h-full flex-col">
     <Link to="/produto/$slug" params={{ slug: slugifyProductName(product.name) }} className="group block">
-      <ProductImage src={product.images[0]} alt={product.name} className="aspect-square w-full rounded-md transition group-hover:brightness-95" />
+      <div className="relative">
+        <ProductImage src={product.images[0]} alt={product.name} className="aspect-square w-full rounded-md transition group-hover:brightness-95" />
+        {hasResellerDiscount && (
+          <span
+            className="absolute right-2 top-2 inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border-2 border-white bg-orange-500 px-2 text-sm font-extrabold leading-none text-white shadow-md ring-1 ring-orange-600/20"
+            aria-label={`Economize ${discountPercent}% em relação ao preço para cliente final`}
+            title={`Preço de revenda ${discountPercent}% abaixo do preço para cliente final`}
+          >
+            -{discountPercent}%
+          </span>
+        )}
+      </div>
       <p className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">{product.category}</p>
       <p className="font-display font-semibold leading-tight">{product.name}</p>
       {hasResellerPrice ? (
