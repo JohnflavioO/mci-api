@@ -14,9 +14,19 @@ const nav = [
 
 export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
-    <Link to="/" className="group inline-flex items-baseline gap-2 rounded-md font-display focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" aria-label="MCI Xpress — início">
-      <span className={`text-2xl font-bold tracking-tight ${inverted ? "text-graphite-foreground" : "text-graphite"}`}>MCI<span className="text-brand">.</span></span>
-      <span className={`text-[11px] font-semibold uppercase tracking-[0.28em] ${inverted ? "text-graphite-muted" : "text-muted-foreground"}`}>Xpress</span>
+    <Link
+      to="/"
+      className="group inline-flex shrink-0 items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      aria-label="Store House — início"
+    >
+      <img
+        src={inverted ? "/store-house-logo-dark.svg" : "/store-house-logo.svg"}
+        alt="Store House"
+        width={254}
+        height={104}
+        className="h-auto w-[132px] sm:w-[148px]"
+        loading="eager"
+      />
     </Link>
   );
 }
@@ -160,7 +170,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
         <div className="border-t border-graphite-foreground/10">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-graphite-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <span>© {new Date().getFullYear()} MCI Xpress. Todos os direitos reservados.</span>
+            <span>© {new Date().getFullYear()} Store House. Todos os direitos reservados.</span>
             <span className="inline-flex items-center gap-2"><ShieldCheck className="size-3.5" /> Conexão via HTTPS</span>
           </div>
         </div>
