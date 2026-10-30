@@ -6,6 +6,7 @@ import { ProductImage } from "@/components/shop/ProductCard";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import { formatPrice } from "@/services/catalog";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
+import { ResellerVolumeDiscountPanel } from "@/components/portal/ResellerVolumeDiscountPanel";
 
 export function ResellerCatalog() {
   const [term, setTerm] = useState("");
@@ -49,6 +50,8 @@ export function ResellerCatalog() {
           </div>
         </div>
       </section>
+
+      <ResellerVolumeDiscountPanel products={products} />
 
       <section className="rounded-xl border bg-card p-4 sm:p-5">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_240px]">
