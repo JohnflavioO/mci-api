@@ -67,9 +67,15 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
     <div className="flex min-h-screen flex-col bg-secondary md:flex-row">
       <aside className={`flex flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-screen md:shrink-0 md:overflow-y-auto transition-[width] ${collapsed ? "md:w-[72px]" : "md:w-64"}`}>
         <div className="flex h-16 items-center justify-between gap-2 border-b border-sidebar-border px-4">
-          <Link to="/" className="flex items-center gap-2 font-display font-bold">
-            <span className="grid size-8 place-items-center rounded-md bg-sidebar-primary text-sm text-sidebar-primary-foreground">M</span>
-            {!collapsed && <span>MCI <span className="text-sidebar-primary">Xpress</span></span>}
+          <Link to="/" className="flex min-w-0 items-center gap-2" aria-label="Store House — início" title="Store House">
+            <img
+              src="/store-house-logo-dark.png"
+              alt="Store House"
+              width={254}
+              height={104}
+              className={collapsed ? "h-auto w-10 shrink-0 object-contain" : "h-auto w-[132px] min-w-0 object-contain"}
+              loading="eager"
+            />
           </Link>
           <button onClick={() => setCollapsed(!collapsed)} className="hidden rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent md:block" aria-label={collapsed ? "Expandir menu" : "Recolher menu"}>
             {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
