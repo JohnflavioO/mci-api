@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleDollarSign, LoaderCircle, Percent, Save, Trash2, TrendingUp } from "lucide-react";
+import { Check, CircleDollarSign, LoaderCircle, Percent, Save, Trash2, TrendingUp, Package, Search } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase";
 import type { VolumeDiscountRule } from "@/services/volumeDiscounts";
@@ -12,13 +12,23 @@ type RuleDraft = {
   discount_type: "percentage" | "fixed";
   discount_value: string;
   is_active: boolean;
+  product_ids: string[];
 };
-const blankRule = (): RuleDraft => ({ min_quantity: "", max_quantity: "", discount_type: "percentage", discount_value: "", is_active: true });
+const blankRule = (): RuleDraft => ({ min_quantity: "", max_quantity: "", discount_type: "percentage", discount_value: "", is_active: true, product_ids: [] });
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function AdminProgressiveDiscounts() {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<RuleDraft>(blankRule());
+  const [productSearch, setProductSearch] = useState("");
+  const productsQuery = useQuery({
+    queryKey: ["admin", "volume-discount-products"],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().from("products").select("id,name,sku,category,status").eq("status", "published").order("name");
+      if (error) throw error;
+      return (data ?? []) as { id: string; name: string; sku: string | null; category: string | null; status: string }[];
+    }, retry: false,
+  });
   const query = useQuery({
     queryKey: ["admin", "reseller-volume-discounts"],
     queryFn: async () => {
@@ -42,7 +52,8 @@ export function AdminProgressiveDiscounts() {
       const overlap = existing.find(r => r.id !== draft.id && r.is_active && draft.is_active &&
         (max === null || r.min_quantity <= max) && (r.max_quantity == null || r.max_quantity >= min));
       if (overlap) throw new Error("Esta faixa se sobrepõe a outra faixa ativa. Ajuste os limites antes de salvar.");
-      const payload = { min_quantity: min, max_quantity: max, discount_type: draft.discount_type, discount_value: value, is_active: draft.is_active, updated_at: new Date().toISOString() };
+      if (draft.product_ids.length === 0) throw new Error("Selecione pelo menos um produto para esta faixa.");
+      const payload = { min_quantity: min, max_quantity: max, discount_type: draft.discount_type, discount_value: value, is_active: draft.is_active, product_ids: draft.product_ids, updated_at: new Date().toISOString() };
       const req = draft.id
         ? getSupabase().from("reseller_volume_discount_rules").update(payload).eq("id", draft.id)
         : getSupabase().from("reseller_volume_discount_rules").insert(payload);
@@ -69,7 +80,9 @@ export function AdminProgressiveDiscounts() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-  const edit = (r: VolumeDiscountRule) => setDraft({ id: r.id, min_quantity: String(r.min_quantity), max_quantity: r.max_quantity == null ? "" : String(r.max_quantity), discount_type: r.discount_type, discount_value: String(r.discount_value), is_active: r.is_active });
+  const edit = (r: VolumeDiscountRule) => setDraft({ id: r.id, min_quantity: String(r.min_quantity), max_quantity: r.max_quantity == null ? "" : String(r.max_quantity), discount_type: r.discount_type, discount_value: String(r.discount_value), is_active: r.is_active, product_ids: r.product_ids ?? [] });
+  const toggleProduct = (id: string) => setDraft(current => ({ ...current, product_ids: current.product_ids.includes(id) ? current.product_ids.filter(x => x !== id) : [...current.product_ids, id] }));
+  const visibleProducts = (productsQuery.data ?? []).filter(p => `${p.name} ${p.sku ?? ""} ${p.category ?? ""}`.toLowerCase().includes(productSearch.toLowerCase()));
 
   return <div className="space-y-6">
     <section className="overflow-hidden rounded-2xl border bg-card">
@@ -90,6 +103,23 @@ export function AdminProgressiveDiscounts() {
         <label className="space-y-1.5 text-sm"><span className="font-medium">Quantidade máxima</span><input type="number" min={draft.min_quantity || "2"} step="1" value={draft.max_quantity} onChange={e => setDraft({...draft,max_quantity:e.target.value})} className="h-10 w-full rounded-md border bg-background px-3" placeholder="Sem limite" /></label>
         <label className="space-y-1.5 text-sm"><span className="font-medium">Tipo de desconto *</span><select value={draft.discount_type} onChange={e => setDraft({...draft,discount_type:e.target.value as RuleDraft["discount_type"]})} className="h-10 w-full rounded-md border bg-background px-3"><option value="percentage">Percentual (%)</option><option value="fixed">Valor em reais (R$)</option></select></label>
         <label className="space-y-1.5 text-sm"><span className="font-medium">{draft.discount_type === "percentage" ? "Percentual de desconto (%)" : "Desconto por unidade (R$)"} *</span><div className="relative"><input required type="number" min="0.01" step="0.01" max={draft.discount_type === "percentage" ? 100 : undefined} value={draft.discount_value} onChange={e => setDraft({...draft,discount_value:e.target.value})} className="h-10 w-full rounded-md border bg-background pl-3 pr-10" placeholder={draft.discount_type === "percentage" ? "Ex.: 5" : "Ex.: 120"} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{draft.discount_type === "percentage" ? <Percent className="size-4" /> : <CircleDollarSign className="size-4" />}</span></div></label>
+        <div className="md:col-span-2 xl:col-span-3 rounded-xl border bg-background p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><div className="flex items-center gap-2 font-semibold"><Package className="size-4 text-brand" />Produtos participantes *</div><p className="mt-1 text-sm text-muted-foreground">A faixa só será aplicada aos produtos selecionados. Produtos novos não entram automaticamente.</p></div>
+            <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">{draft.product_ids.length} selecionado(s)</span>
+          </div>
+          <div className="mt-3 flex items-center gap-2 rounded-md border px-3"><Search className="size-4 text-muted-foreground" /><input value={productSearch} onChange={e => setProductSearch(e.target.value)} className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none" placeholder="Buscar produto por nome, SKU ou categoria" /></div>
+          {productsQuery.isPending ? <p className="py-4 text-sm text-muted-foreground">Carregando produtos publicados…</p>
+          : productsQuery.isError ? <p className="py-4 text-sm text-destructive">Não foi possível carregar os produtos: {productsQuery.error.message}</p>
+          : visibleProducts.length === 0 ? <p className="py-4 text-sm text-muted-foreground">Nenhum produto encontrado.</p>
+          : <div className="mt-3 grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2">
+            {visibleProducts.map(product => <label key={product.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${draft.product_ids.includes(product.id) ? "border-brand bg-brand/5" : "hover:bg-muted/50"}`}>
+              <input type="checkbox" checked={draft.product_ids.includes(product.id)} onChange={() => toggleProduct(product.id)} className="mt-1 size-4 accent-orange-600" />
+              <span className="min-w-0"><span className="block text-sm font-medium">{product.name}</span><span className="mt-0.5 block text-xs text-muted-foreground">{[product.sku ? `SKU ${product.sku}` : null, product.category].filter(Boolean).join(" · ") || "Sem SKU/categoria"}</span></span>
+            </label>)}
+          </div>}
+          <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => setDraft(current => ({...current, product_ids: [...new Set([...current.product_ids, ...visibleProducts.map(p => p.id)])]}))} className="rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Selecionar resultados</button><button type="button" onClick={() => setDraft(current => ({...current, product_ids: current.product_ids.filter(id => !visibleProducts.some(p => p.id === id))}))} className="rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Desmarcar resultados</button></div>
+        </div>
         <label className="flex items-center gap-2 self-end rounded-lg border p-3 text-sm"><input type="checkbox" checked={draft.is_active} onChange={e => setDraft({...draft,is_active:e.target.checked})} className="size-4 accent-orange-600" />Faixa ativa para revendedores</label>
         <div className="flex items-end"><button type="submit" disabled={save.isPending} className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">{save.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}{save.isPending ? "Salvando…" : "Salvar faixa"}</button></div>
       </form>
@@ -100,7 +130,7 @@ export function AdminProgressiveDiscounts() {
       {query.isPending ? <div className="p-8 text-center text-sm text-muted-foreground"><LoaderCircle className="mx-auto mb-2 size-5 animate-spin" />Carregando faixas…</div>
       : query.isError ? <div className="p-6"><p className="font-medium">Não foi possível carregar as faixas.</p><p className="mt-1 text-sm text-muted-foreground">{query.error.message}. Verifique se a migration proposta foi aplicada e se a sessão possui permissão administrativa.</p><button type="button" onClick={() => void query.refetch()} className="mt-3 text-sm font-semibold underline">Tentar novamente</button></div>
       : !query.data?.length ? <div className="p-8 text-center"><TrendingUp className="mx-auto size-8 text-muted-foreground/50" /><p className="mt-3 font-semibold">Nenhuma faixa cadastrada</p><p className="mt-1 text-sm text-muted-foreground">Crie a primeira faixa acima. Ela ficará disponível no portal de revenda quando estiver ativa.</p></div>
-      : <div className="divide-y">{query.data.map(r => <div key={r.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-700"><Check className="size-5" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{r.min_quantity}+ luminárias</p><span className={r.is_active ? "rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700" : "rounded-full bg-secondary px-2 py-1 text-xs font-semibold text-muted-foreground"}>{r.is_active ? "Ativa" : "Pausada"}</span></div><p className="mt-1 text-sm text-muted-foreground">{r.max_quantity == null ? "A partir de " + r.min_quantity : r.min_quantity + " a " + r.max_quantity} unidade(s) · {r.discount_type === "percentage" ? r.discount_value + "%" : money(r.discount_value) + " por unidade"}</p></div><div className="flex gap-2"><button type="button" onClick={() => edit(r)} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-secondary">Editar</button><button type="button" onClick={() => { if (window.confirm("Excluir esta faixa de desconto?")) remove.mutate(r.id); }} disabled={remove.isPending} aria-label="Excluir faixa" className="grid size-9 place-items-center rounded-md border text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button></div></div>)}</div>}
+      : <div className="divide-y">{query.data.map(r => <div key={r.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-700"><Check className="size-5" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{r.min_quantity}+ luminárias</p><span className={r.is_active ? "rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700" : "rounded-full bg-secondary px-2 py-1 text-xs font-semibold text-muted-foreground"}>{r.is_active ? "Ativa" : "Pausada"}</span></div><p className="mt-1 text-sm text-muted-foreground">{r.max_quantity == null ? "A partir de " + r.min_quantity : r.min_quantity + " a " + r.max_quantity} unidade(s) · {r.discount_type === "percentage" ? r.discount_value + "%" : money(r.discount_value) + " por unidade"} · {(r.product_ids ?? []).length} produto(s)</p></div><div className="flex gap-2"><button type="button" onClick={() => edit(r)} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-secondary">Editar</button><button type="button" onClick={() => { if (window.confirm("Excluir esta faixa de desconto?")) remove.mutate(r.id); }} disabled={remove.isPending} aria-label="Excluir faixa" className="grid size-9 place-items-center rounded-md border text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button></div></div>)}</div>}
     </section>
     <p className="text-xs leading-5 text-muted-foreground">Importante: esta tela configura e publica as faixas. A aplicação financeira definitiva no pedido exige que o cálculo seja validado no serviço de criação do pedido; a API de pedidos atual ainda está desativada, então não há cobrança ou pedido com desconto sendo efetivado por esta tela.</p>
   </div>;
