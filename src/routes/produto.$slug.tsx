@@ -147,14 +147,14 @@ function ProductPage() {
       const { getSupabase } = await import("@/lib/supabase");
       const { data, error } = await getSupabase()
         .from("reseller_volume_discount_rules")
-        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active")
+        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
         .eq("is_active", true)
         .order("min_quantity", { ascending: true });
       if (error) throw error;
       return (data ?? []) as VolumeDiscountRule[];
     },
   });
-  const volumeRules = volumeRulesQuery.data ?? [];
+  const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.slug ?? ""));
   const volumeQuote = isApprovedReseller && rp.data != null
     ? calculateVolumeDiscount(rp.data as number, purchaseQty, volumeRules)
     : null;
@@ -318,43 +318,43 @@ function ProductPage() {
                 )}
               </div>
               {isApprovedReseller && !volumeRulesQuery.isPending && volumeRules.length > 0 && (
-                <section className="mt-4 overflow-hidden rounded-xl border border-brand/20 bg-gradient-to-br from-brand/[0.07] via-card to-card" aria-label="Desconto progressivo para revendedores">
-                  <div className="flex items-start gap-3 px-4 pt-4">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand"><TrendingUp className="size-4" /></span>
+                <section className="mt-5 overflow-hidden rounded-2xl border border-brand/25 bg-card shadow-sm" aria-label="Desconto progressivo para revendedores">
+                  <div className="flex items-start gap-3 border-b bg-gradient-to-r from-brand/10 via-brand/[0.04] to-transparent px-5 py-4 sm:px-6">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand"><TrendingUp className="size-5" /></span>
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-sm font-semibold">Desconto progressivo</h2>
-                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Compre mais unidades no mesmo pedido e aproveite as faixas configuradas pela loja.</p>
+                      <h2 className="text-base font-bold sm:text-lg">Desconto progressivo para revendedores</h2>
+                      <p className="mt-1 text-sm leading-5 text-muted-foreground">Escolha a quantidade e veja qual condição comercial da loja se aplica ao produto.</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">
+                  <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
                     {volumeRules.map(rule => {
                       const applies = purchaseQty >= rule.min_quantity && (rule.max_quantity == null || purchaseQty <= rule.max_quantity);
                       const discountLabel = rule.discount_type === "percentage"
                         ? `${Number(rule.discount_value)}% de desconto`
                         : `${formatPrice(Number(rule.discount_value), p.currency)} por unidade`;
-                      return <div key={rule.id} className={`rounded-lg border p-3 transition-colors ${applies ? "border-brand bg-brand/10 shadow-sm" : "border-border/80 bg-background/80"}`}>
-                        <div className="flex items-center gap-1.5 text-xs font-semibold">
-                          {applies ? <CheckCircle2 className="size-3.5 shrink-0 text-brand" /> : <BadgePercent className="size-3.5 shrink-0 text-muted-foreground" />}
+                      return <div key={rule.id} className={`flex items-center justify-between gap-3 rounded-xl border p-4 transition-colors ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : "border-border bg-background"}`}>
+                        <div className="flex items-center gap-2 text-sm font-semibold">
+                          {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
                           <span>{rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidade(s)` : `${rule.min_quantity}–${rule.max_quantity} unidades`}</span>
                         </div>
-                        <p className={`mt-2 text-xs font-semibold ${applies ? "text-brand" : "text-muted-foreground"}`}>{discountLabel}</p>
+                        <p className={`text-right text-sm font-bold sm:text-base ${applies ? "text-brand" : "text-foreground"}`}>{discountLabel}</p>
                       </div>;
                     })}
                   </div>
                   {volumeQuote && volumeQuote.rule && (
-                    <div className="mx-3 mb-3 rounded-lg bg-background/90 px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-3 text-sm">
+                    <div className="mx-4 mb-4 rounded-xl border border-brand/20 bg-brand/[0.04] p-4 sm:mx-5 sm:mb-5">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <span className="text-muted-foreground">Preço por unidade com desconto</span>
                         <strong className="text-brand">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
                       </div>
-                      <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-3 text-sm">
                         <span className="text-muted-foreground">Economia estimada ({purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"})</span>
                         <strong>{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
                       </div>
                     </div>
                   )}
                   {!volumeQuote?.rule && nextVolumeRule && (
-                    <p className="px-4 pb-3 text-xs text-muted-foreground">Faltam {nextVolumeRule.min_quantity - purchaseQty} {nextVolumeRule.min_quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima faixa.</p>
+                    <p className="border-t px-5 py-3 text-sm text-muted-foreground">Faltam {nextVolumeRule.min_quantity - purchaseQty} {nextVolumeRule.min_quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima faixa.</p>
                   )}
                 </section>
               )}

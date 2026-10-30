@@ -5,6 +5,7 @@ export type VolumeDiscountRule = {
   discount_type: "percentage" | "fixed";
   discount_value: number;
   is_active: boolean;
+  product_ids: string[];
 };
 
 export type VolumeDiscountQuote = {
