@@ -17,7 +17,7 @@ export function clampQty(qty: number, maxQty?: number | null): number {
 type Cart = {
   items: CartItem[];
   /** Retorna false quando o estoque disponível já está todo no carrinho. */
-  add: (item: Omit<CartItem, "qty">) => boolean;
+  add: (item: Omit<CartItem, "qty"> & { qty?: number }) => boolean;
   setQty: (slug: string, qty: number) => void;
   remove: (slug: string) => void;
   count: number;
@@ -45,10 +45,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     count: items.reduce((n, i) => n + i.qty, 0),
     add: (item) => {
       const max = item.maxQty ?? null;
-      if (max !== null && max <= 0) return false;
+      const requestedQty = clampQty(item.qty ?? 1, max);
+      if (max !== null && (max <= 0 || requestedQty <= 0)) return false;
       const found = items.find((i) => i.slug === item.slug);
-      if (found && max !== null && found.qty >= max) return false;
-      save(found ? items.map((i) => (i.slug === item.slug ? { ...i, maxQty: max, qty: clampQty(i.qty + 1, max) } : i)) : [...items, { ...item, maxQty: max, qty: 1 }]);
+      const nextQty = (found?.qty ?? 0) + requestedQty;
+      if (max !== null && nextQty > max) return false;
+      save(found
+        ? items.map((i) => (i.slug === item.slug ? { ...i, maxQty: max, qty: nextQty } : i))
+        : [...items, { slug: item.slug, name: item.name, maxQty: max, qty: requestedQty }]);
       return true;
     },
     setQty: (slug, qty) => save(items.map((i) => (i.slug === slug ? { ...i, qty: clampQty(qty, i.maxQty) } : i))),
