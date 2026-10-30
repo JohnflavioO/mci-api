@@ -21,7 +21,6 @@ export function AdminProgressiveDiscounts() {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<RuleDraft>(blankRule());
   const [productSearch, setProductSearch] = useState("");
-  const activeRulesCount = query.data?.filter(rule => rule.is_active).length ?? 0;
   const productsQuery = useQuery({
     queryKey: ["admin", "volume-discount-products"],
     queryFn: async () => {
@@ -39,6 +38,7 @@ export function AdminProgressiveDiscounts() {
     },
     retry: false,
   });
+  const activeRulesCount = query.data?.filter(rule => rule.is_active).length ?? 0;
   const save = useMutation({
     mutationFn: async () => {
       const min = Number(draft.min_quantity);
