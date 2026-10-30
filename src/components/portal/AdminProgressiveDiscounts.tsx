@@ -21,6 +21,7 @@ export function AdminProgressiveDiscounts() {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<RuleDraft>(blankRule());
   const [productSearch, setProductSearch] = useState("");
+  const activeRulesCount = query.data?.filter(rule => rule.is_active).length ?? 0;
   const productsQuery = useQuery({
     queryKey: ["admin", "volume-discount-products"],
     queryFn: async () => {
@@ -48,10 +49,20 @@ export function AdminProgressiveDiscounts() {
       if (!Number.isFinite(value) || value <= 0) throw new Error("Informe um desconto maior que zero.");
       if (draft.discount_type === "percentage" && value > 100) throw new Error("O percentual não pode ultrapassar 100%.");
       const existing = query.data ?? [];
-      if (existing.some(r => r.id !== draft.id && r.min_quantity === min)) throw new Error("Já existe uma faixa com essa quantidade mínima.");
-      const overlap = existing.find(r => r.id !== draft.id && r.is_active && draft.is_active &&
-        (max === null || r.min_quantity <= max) && (r.max_quantity == null || r.max_quantity >= min));
-      if (overlap) throw new Error("Esta faixa se sobrepõe a outra faixa ativa. Ajuste os limites antes de salvar.");
+      const selectedProducts = new Set(draft.product_ids);
+      const conflictingRules = existing.filter(rule => {
+        if (rule.id === draft.id || !rule.is_active || !draft.is_active) return false;
+        const quantityRangesOverlap = (max === null || rule.min_quantity <= max) &&
+          (rule.max_quantity == null || rule.max_quantity >= min);
+        const productsOverlap = (rule.product_ids ?? []).some(productId => selectedProducts.has(productId));
+        return quantityRangesOverlap && productsOverlap;
+      });
+      if (conflictingRules.length > 0) {
+        const conflictingProducts = [...new Set(conflictingRules.flatMap(rule => (rule.product_ids ?? []).filter(id => selectedProducts.has(id))))];
+        const productNames = (productsQuery.data ?? []).filter(product => conflictingProducts.includes(product.id)).map(product => product.name);
+        const names = productNames.length ? productNames.join(", ") : "um ou mais produtos selecionados";
+        throw new Error(`Há uma faixa ativa com intervalo de quantidade sobreposto para: ${names}. Edite ou pause a faixa existente, ou ajuste a quantidade/produtos.`);
+      }
       if (draft.product_ids.length === 0) throw new Error("Selecione pelo menos um produto para esta faixa.");
       const payload = { min_quantity: min, max_quantity: max, discount_type: draft.discount_type, discount_value: value, is_active: draft.is_active, product_ids: draft.product_ids, updated_at: new Date().toISOString() };
       const req = draft.id
@@ -63,6 +74,31 @@ export function AdminProgressiveDiscounts() {
     onSuccess: async () => {
       toast.success("Faixa de desconto salva.");
       setDraft(blankRule());
+      await qc.invalidateQueries({ queryKey: ["admin", "reseller-volume-discounts"] });
+      await qc.invalidateQueries({ queryKey: ["reseller", "volume-discounts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const pauseAll = useMutation({
+    mutationFn: async () => {
+      const { error } = await getSupabase().from("reseller_volume_discount_rules").update({ is_active: false, updated_at: new Date().toISOString() }).eq("is_active", true);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      toast.success("Todas as faixas ativas foram pausadas. Nenhum desconto progressivo será exibido.");
+      setDraft(blankRule());
+      await qc.invalidateQueries({ queryKey: ["admin", "reseller-volume-discounts"] });
+      await qc.invalidateQueries({ queryKey: ["reseller", "volume-discounts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await getSupabase().from("reseller_volume_discount_rules").update({ is_active, updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: async (_data, variables) => {
+      toast.success(variables.is_active ? "Faixa ativada." : "Faixa pausada.");
       await qc.invalidateQueries({ queryKey: ["admin", "reseller-volume-discounts"] });
       await qc.invalidateQueries({ queryKey: ["reseller", "volume-discounts"] });
     },
@@ -126,11 +162,14 @@ export function AdminProgressiveDiscounts() {
     </section>
 
     <section className="overflow-hidden rounded-xl border bg-card">
-      <div className="flex items-center gap-2 border-b px-5 py-4"><TrendingUp className="size-4 text-muted-foreground" /><h3 className="text-sm font-semibold">Faixas configuradas</h3><span className="text-xs text-muted-foreground">({query.data?.length ?? 0})</span></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
+        <div className="flex items-center gap-2"><TrendingUp className="size-4 text-muted-foreground" /><h3 className="text-sm font-semibold">Faixas configuradas</h3><span className="text-xs text-muted-foreground">({query.data?.length ?? 0})</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{activeRulesCount} ativa(s)</span></div>
+        {activeRulesCount > 0 && <button type="button" disabled={pauseAll.isPending} onClick={() => { if (window.confirm("Pausar TODAS as faixas ativas? Os revendedores deixarão de ver os descontos progressivos, mas as regras permanecerão cadastradas para reativação posterior.")) pauseAll.mutate(); }} className="rounded-md border border-destructive/30 px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/5 disabled:opacity-50">{pauseAll.isPending ? "Pausando…" : "Zerar descontos ativos"}</button>}
+      </div>
       {query.isPending ? <div className="p-8 text-center text-sm text-muted-foreground"><LoaderCircle className="mx-auto mb-2 size-5 animate-spin" />Carregando faixas…</div>
       : query.isError ? <div className="p-6"><p className="font-medium">Não foi possível carregar as faixas.</p><p className="mt-1 text-sm text-muted-foreground">{query.error.message}. Verifique se a migration proposta foi aplicada e se a sessão possui permissão administrativa.</p><button type="button" onClick={() => void query.refetch()} className="mt-3 text-sm font-semibold underline">Tentar novamente</button></div>
       : !query.data?.length ? <div className="p-8 text-center"><TrendingUp className="mx-auto size-8 text-muted-foreground/50" /><p className="mt-3 font-semibold">Nenhuma faixa cadastrada</p><p className="mt-1 text-sm text-muted-foreground">Crie a primeira faixa acima. Ela ficará disponível no portal de revenda quando estiver ativa.</p></div>
-      : <div className="divide-y">{query.data.map(r => <div key={r.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-700"><Check className="size-5" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{r.min_quantity}+ luminárias</p><span className={r.is_active ? "rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700" : "rounded-full bg-secondary px-2 py-1 text-xs font-semibold text-muted-foreground"}>{r.is_active ? "Ativa" : "Pausada"}</span></div><p className="mt-1 text-sm text-muted-foreground">{r.max_quantity == null ? "A partir de " + r.min_quantity : r.min_quantity + " a " + r.max_quantity} unidade(s) · {r.discount_type === "percentage" ? r.discount_value + "%" : money(r.discount_value) + " por unidade"} · {(r.product_ids ?? []).length} produto(s)</p></div><div className="flex gap-2"><button type="button" onClick={() => edit(r)} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-secondary">Editar</button><button type="button" onClick={() => { if (window.confirm("Excluir esta faixa de desconto?")) remove.mutate(r.id); }} disabled={remove.isPending} aria-label="Excluir faixa" className="grid size-9 place-items-center rounded-md border text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button></div></div>)}</div>}
+      : <div className="divide-y">{query.data.map(r => <div key={r.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-700"><Check className="size-5" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{r.min_quantity}+ luminárias</p><span className={r.is_active ? "rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700" : "rounded-full bg-secondary px-2 py-1 text-xs font-semibold text-muted-foreground"}>{r.is_active ? "Ativa" : "Pausada"}</span></div><p className="mt-1 text-sm text-muted-foreground">{r.max_quantity == null ? "A partir de " + r.min_quantity : r.min_quantity + " a " + r.max_quantity} unidade(s) · {r.discount_type === "percentage" ? r.discount_value + "%" : money(r.discount_value) + " por unidade"} · {(r.product_ids ?? []).length} produto(s)</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => edit(r)} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-secondary">Editar</button><button type="button" onClick={() => toggleActive.mutate({ id: r.id, is_active: !r.is_active })} disabled={toggleActive.isPending} className={`rounded-md border px-3 py-2 text-sm font-medium disabled:opacity-50 ${r.is_active ? "text-amber-700 hover:bg-amber-50" : "text-emerald-700 hover:bg-emerald-50"}`}>{r.is_active ? "Pausar" : "Ativar"}</button><button type="button" onClick={() => { if (window.confirm("Excluir esta faixa de desconto? Esta ação não pode ser desfeita.")) remove.mutate(r.id); }} disabled={remove.isPending} aria-label="Excluir faixa" className="grid size-9 place-items-center rounded-md border text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button></div></div>)}</div>}
     </section>
     <p className="text-xs leading-5 text-muted-foreground">Importante: esta tela configura e publica as faixas. A aplicação financeira definitiva no pedido exige que o cálculo seja validado no serviço de criação do pedido; a API de pedidos atual ainda está desativada, então não há cobrança ou pedido com desconto sendo efetivado por esta tela.</p>
   </div>;
