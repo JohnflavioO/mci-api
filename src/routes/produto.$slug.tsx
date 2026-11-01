@@ -368,7 +368,7 @@ function ProductPage() {
               {p.customerPrice == null && <p className="text-sm text-muted-foreground">O preço para seu perfil será informado pela plataforma após login.</p>}
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock == null && <p className="mt-1 text-sm text-muted-foreground">Estoque a confirmar — venda indisponível no momento</p>}
-              {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock > 0 ? `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}` : "Sem estoque no momento"}</p>}
+              {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock <= 0 ? "Sem estoque no momento" : (("stockConfirmed" in p) && !p.stockConfirmed) ? `${p.stock} ${p.stock === 1 ? "unidade informada" : "unidades informadas"} — aguardando confirmação da MCI` : `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}`}</p>}
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="w-full sm:w-32">
                   <label htmlFor="product-quantity" className="mb-1.5 block text-sm font-medium">Quantidade</label>
@@ -387,7 +387,9 @@ function ProductPage() {
                   if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
                   else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
                 }}>
-                  Adicionar ao carrinho
+                  {!canSell(p) && p.stock != null && p.stock > 0 && (("stockConfirmed" in p) && !p.stockConfirmed)
+                    ? "Aguardando confirmação de estoque"
+                    : !canSell(p) ? "Indisponível" : "Adicionar ao carrinho"}
                 </Button>
               </div>
               <div className="mt-3"><ProductComparison product={p} /></div>
