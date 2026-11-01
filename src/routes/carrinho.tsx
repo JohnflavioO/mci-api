@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { SiteShell } from "@/components/shop/SiteShell";
+import { ProductImage } from "@/components/shop/ProductCard";
 import { EmptyState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
+import { catalogService } from "@/services";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({
@@ -21,6 +24,8 @@ export const Route = createFileRoute("/carrinho")({
 
 function CartPage() {
   const { items, setQty, remove, count } = useCart();
+  const catalogQuery = useQuery({ queryKey: ["cart-product-thumbnails"], queryFn: () => catalogService.list(), staleTime: 60_000, retry: false });
+  const imageFor = (item: (typeof items)[number]) => item.image ?? catalogQuery.data?.products.find(product => product.slug === item.slug || product.name === item.name)?.images?.[0];
 
   return (
     <SiteShell>
@@ -50,7 +55,7 @@ function CartPage() {
               <ul className="divide-y">
                 {items.map(item => (
                   <li key={item.slug} className="flex gap-3 p-4 sm:gap-4 sm:p-5">
-                    <div className="grid size-[68px] shrink-0 place-items-center rounded-xl border bg-muted/30 text-muted-foreground sm:size-20"><ShoppingBag className="size-6 opacity-50" aria-hidden /></div>
+                    <div className="size-[76px] shrink-0 overflow-hidden rounded-xl border bg-white sm:size-24"><ProductImage src={imageFor(item)} alt={item.name} className="size-full object-contain" /></div>
                     <div className="min-w-0 flex-1">
                       <Link to="/produto/$slug" params={{ slug: item.slug }} className="line-clamp-2 text-sm font-bold leading-5 hover:text-brand sm:text-base">{item.name}</Link>
                       <p className="mt-1 text-xs text-muted-foreground">Preço e descontos confirmados na finalização</p>
