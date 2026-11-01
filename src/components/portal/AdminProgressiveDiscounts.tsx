@@ -26,7 +26,7 @@ type RuleDraft = {
   is_featured: boolean;
   sort_order: string;
 };
-const blankRule = (): RuleDraft => ({ min_quantity: "", max_quantity: "", discount_type: "percentage", discount_value: "", is_active: true, product_ids: [], badge_label: "", display_note: "", is_featured: false, sort_order: "0" });
+const blankRule = (): RuleDraft => ({ discount_mode: "range", quantity_discounts: [], min_quantity: "", max_quantity: "", discount_type: "percentage", discount_value: "", is_active: true, product_ids: [], badge_label: "", display_note: "", is_featured: false, sort_order: "0" });
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function AdminProgressiveDiscounts() {
