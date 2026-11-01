@@ -145,14 +145,22 @@ function ProductPage() {
     retry: false,
     queryFn: async () => {
       const { getSupabase } = await import("@/lib/supabase");
-      const { data, error } = await getSupabase()
+      const supabase = getSupabase();
+      const fullRules = await supabase
         .from("reseller_volume_discount_rules")
         .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("min_quantity", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as VolumeDiscountRule[];
+      const ruleResponse = fullRules.error && /badge_label|display_note|is_featured|sort_order|column .* does not exist|schema cache/i.test(fullRules.error.message)
+        ? await supabase
+            .from("reseller_volume_discount_rules")
+            .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
+            .eq("is_active", true)
+            .order("min_quantity", { ascending: true })
+        : fullRules;
+      if (ruleResponse.error) throw ruleResponse.error;
+      return (ruleResponse.data ?? []) as VolumeDiscountRule[];
     },
   });
   const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.slug ?? "")).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.min_quantity - b.min_quantity);
