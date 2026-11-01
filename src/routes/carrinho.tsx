@@ -6,7 +6,10 @@ import { ProductImage } from "@/components/shop/ProductCard";
 import { EmptyState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
-import { catalogService } from "@/services";
+import { catalogService, catalogSource } from "@/services";
+import { getSupabase } from "@/lib/supabase";
+import { calculateVolumeDiscount, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { formatPrice } from "@/services/catalog";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({
@@ -26,6 +29,39 @@ function CartPage() {
   const { items, setQty, remove, count } = useCart();
   const catalogQuery = useQuery({ queryKey: ["cart-product-thumbnails"], queryFn: () => catalogService.list(), staleTime: 60_000, retry: false });
   const imageFor = (item: (typeof items)[number]) => item.image ?? catalogQuery.data?.products.find(product => product.slug === item.slug || product.name === item.name)?.images?.[0];
+  const resellerCartQuery = useQuery({
+    queryKey: ["cart-reseller-pricing", items.map(item => `${item.slug}:${item.qty}`).join("|")],
+    enabled: catalogSource() === "supabase" && items.length > 0,
+    staleTime: 30_000,
+    retry: false,
+    queryFn: async () => {
+      const supabase = getSupabase();
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
+      const { data: isReseller, error: roleError } = await supabase.rpc("has_role", { _role: "revendedor" });
+      if (roleError || isReseller !== true) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
+      const [{ createSupabaseCatalog }, { data: ruleData, error: ruleError }] = await Promise.all([
+        import("@/services/supabaseCatalog"),
+        supabase.from("reseller_volume_discount_rules")
+          .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
+          .eq("is_active", true)
+          .order("min_quantity", { ascending: true }),
+      ]);
+      if (ruleError) throw ruleError;
+      const products = await createSupabaseCatalog().listReseller();
+      return { isReseller: true as const, products, rules: (ruleData ?? []) as VolumeDiscountRule[] };
+    },
+  });
+  const resellerPricing = resellerCartQuery.data?.isReseller === true ? resellerCartQuery.data : null;
+  const priceForItem = (item: (typeof items)[number]) => {
+    const product = resellerPricing?.products.find(product => product.slug === item.slug || product.name === item.name);
+    if (!product || product.resellerPrice == null) return null;
+    const rules = resellerPricing!.rules.filter(rule => (rule.product_ids ?? []).includes(product.slug));
+    return {
+      currency: product.currency,
+      quote: calculateVolumeDiscount(product.resellerPrice, item.qty, rules, product.slug),
+    };
+  };
 
   return (
     <SiteShell>
@@ -58,7 +94,27 @@ function CartPage() {
                     <div className="size-[76px] shrink-0 overflow-hidden rounded-xl border bg-white sm:size-24"><ProductImage src={imageFor(item)} alt={item.name} className="size-full object-contain" /></div>
                     <div className="min-w-0 flex-1">
                       <Link to="/produto/$slug" params={{ slug: item.slug }} className="line-clamp-2 text-sm font-bold leading-5 hover:text-brand sm:text-base">{item.name}</Link>
-                      <p className="mt-1 text-xs text-muted-foreground">Preço e descontos confirmados na finalização</p>
+                      {(() => {
+                        const pricing = priceForItem(item);
+                        if (resellerPricing && pricing) {
+                          const { quote, currency } = pricing;
+                          return (
+                            <div className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-semibold text-brand">Seu preço de revenda</span>
+                                <span className="text-sm font-bold tabular-nums">{formatPrice(quote.discountedUnitPrice, currency)}</span>
+                              </div>
+                              {quote.rule && <p className="mt-1 text-xs font-semibold text-brand">Desconto progressivo aplicado: {quote.rule.discount_type === "percentage" ? `${Number(quote.rule.discount_value)}% por unidade` : `${formatPrice(quote.unitDiscount, currency)} por unidade`}</p>}
+                              <div className="mt-2 flex items-center justify-between border-t border-brand/15 pt-2 text-sm">
+                                <span className="text-muted-foreground">Subtotal ({item.qty} {item.qty === 1 ? "unidade" : "unidades"})</span>
+                                <strong className="tabular-nums">{formatPrice(quote.totalAfterDiscount, currency)}</strong>
+                              </div>
+                              {quote.totalDiscount > 0 && <div className="mt-1 flex items-center justify-between text-xs text-emerald-700"><span>Economia estimada</span><strong>- {formatPrice(quote.totalDiscount, currency)}</strong></div>}
+                            </div>
+                          );
+                        }
+                        return <p className="mt-1 text-xs text-muted-foreground">{resellerPricing ? "Preço de revenda indisponível para este produto." : "Preço e descontos confirmados na finalização"}</p>;
+                      })()}
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                         <div className="inline-flex h-10 items-center overflow-hidden rounded-xl border bg-background" aria-label={`Quantidade de ${item.name}`}>
                           <button type="button" onClick={() => setQty(item.slug, item.qty - 1)} disabled={item.qty <= 1} aria-label={`Diminuir ${item.name}`} className="grid h-full w-10 place-items-center hover:bg-muted disabled:opacity-35"><Minus className="size-4" /></button>
