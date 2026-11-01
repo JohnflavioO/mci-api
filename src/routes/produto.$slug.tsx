@@ -353,7 +353,7 @@ function ProductPage() {
                       const applies = option.perUnit ? purchaseQty === option.quantity : purchaseQty >= option.min_quantity && (option.max_quantity == null || purchaseQty <= option.max_quantity);
                       const unavailable = p.stock != null && p.stock < option.quantity;
                       const discountLabel = !option.rule
-                        ? "Sem desconto"
+                        ? "Sem desconto progressivo"
                         : option.discount_type === "percentage"
                           ? `${Number(option.discount_value)}% nesta unidade`
                           : `${formatPrice(Number(option.discount_value), p.currency)} nesta unidade`;
@@ -407,12 +407,12 @@ function ProductPage() {
                   </div>
                   <p id="product-quantity-help" className="mt-1 text-xs text-muted-foreground">{p.stock != null ? `Máximo: ${p.stock}` : "Estoque a confirmar"}</p>
                 </div>
-                <Button className="h-12 w-full flex-1 bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
+                <Button className="h-12 min-h-12 w-full min-w-0 flex-1 whitespace-normal px-3 text-center text-sm leading-tight bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:text-base" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
                   if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
                   else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
                 }}>
                   {!canSell(p) && p.stock != null && p.stock > 0 && (("stockConfirmed" in p) && !p.stockConfirmed)
-                    ? "Aguardando confirmação de estoque"
+                    ? "Estoque em confirmação"
                     : !canSell(p) ? "Indisponível" : "Adicionar ao carrinho"}
                 </Button>
               </div>
