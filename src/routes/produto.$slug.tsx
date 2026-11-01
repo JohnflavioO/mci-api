@@ -473,7 +473,6 @@ function ProductPage() {
           </div>
         </div>
       )}
-      </div>
     </SiteShell>
   );
 }
