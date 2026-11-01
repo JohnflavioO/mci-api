@@ -444,6 +444,29 @@ function ProductPage() {
         </div>
       )}
       </div>
+      {p && !lightboxOpen && canSell(p) && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 p-3 pb-[calc(.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-18px_rgba(0,0,0,.35)] backdrop-blur-md sm:hidden">
+          <div className="mx-auto flex max-w-xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] font-medium text-muted-foreground">{purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"} · total estimado</p>
+              <p className="truncate text-lg font-extrabold leading-tight">
+                {isApprovedReseller && rp.data != null
+                  ? formatPrice(volumeQuote?.totalAfterDiscount ?? Number(rp.data) * purchaseQty, p.currency)
+                  : p.customerPrice != null ? formatPrice(Number(p.customerPrice) * purchaseQty, p.currency) : "Preço sob consulta"}
+              </p>
+            </div>
+            <Button className="h-12 shrink-0 rounded-xl bg-graphite px-5 text-graphite-foreground hover:bg-brand hover:text-brand-foreground"
+              disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)}
+              onClick={() => {
+                if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
+                else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
+              }}>
+              Adicionar ao carrinho
+            </Button>
+          </div>
+        </div>
+      )}
+      </div>
     </SiteShell>
   );
 }
