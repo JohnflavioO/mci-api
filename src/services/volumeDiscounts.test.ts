@@ -37,6 +37,43 @@ describe("progressive reseller discounts", () => {
     expect(calculateVolumeDiscount(1000, 4, targeted, "lamp-a").totalDiscount).toBe(0);
   });
 
+  it("applies different discounts to the second, third and fourth units only", () => {
+    const perUnit: VolumeDiscountRule[] = [{
+      id: "unit-tiers",
+      min_quantity: 2,
+      max_quantity: null,
+      discount_type: "percentage",
+      discount_value: 5,
+      is_active: true,
+      product_ids: ["lamp-a"],
+      quantity_discounts: [
+        { quantity: 2, discount_type: "percentage", discount_value: 5 },
+        { quantity: 3, discount_type: "percentage", discount_value: 10 },
+        { quantity: 4, discount_type: "fixed", discount_value: 100 },
+      ],
+    }];
+    const quote = calculateVolumeDiscount(1000, 4, perUnit, "lamp-a");
+    expect(quote.totalDiscount).toBe(250);
+    expect(quote.totalAfterDiscount).toBe(3750);
+    expect(quote.discountedUnitPrice).toBe(937.5);
+    expect(quote.appliedTiers.map(tier => tier.quantity)).toEqual([2, 3, 4]);
+  });
+  it("does not apply a configured later-unit discount if that unit is not purchased", () => {
+    const perUnit: VolumeDiscountRule[] = [{
+      id: "unit-tiers",
+      min_quantity: 2,
+      max_quantity: null,
+      discount_type: "percentage",
+      discount_value: 5,
+      is_active: true,
+      product_ids: ["lamp-a"],
+      quantity_discounts: [
+        { quantity: 2, discount_type: "percentage", discount_value: 5 },
+        { quantity: 3, discount_type: "percentage", discount_value: 10 },
+      ],
+    }];
+    expect(calculateVolumeDiscount(1000, 2, perUnit, "lamp-a").totalDiscount).toBe(50);
+  });
   it("ignores inactive tiers", () => {
     expect(getVolumeDiscountRule(4, [{ ...rules[1], is_active: false }])).toBeNull();
   });
