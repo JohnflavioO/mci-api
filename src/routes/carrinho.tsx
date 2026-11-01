@@ -41,15 +41,24 @@ function CartPage() {
       if (!sessionData.session) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
       const { data: isReseller, error: roleError } = await supabase.rpc("has_role", { _role: "revendedor" });
       if (roleError || isReseller !== true) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
-      const [{ createSupabaseCatalog }, { data: ruleData, error: ruleError }] = await Promise.all([
+      const [{ createSupabaseCatalog }] = await Promise.all([
         import("@/services/supabaseCatalog"),
-        supabase.from("reseller_volume_discount_rules")
-          .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true })
-          .order("min_quantity", { ascending: true }),
       ]);
-      if (ruleError) throw ruleError;
+      const fullRules = await supabase.from("reseller_volume_discount_rules")
+        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("min_quantity", { ascending: true });
+      // Compatibilidade durante a implantação da migration de merchandising:
+      // se os campos visuais ainda não existirem, mantém preço e desconto funcionando.
+      const ruleResponse = fullRules.error && /badge_label|display_note|is_featured|sort_order|column .* does not exist|schema cache/i.test(fullRules.error.message)
+        ? await supabase.from("reseller_volume_discount_rules")
+            .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
+            .eq("is_active", true)
+            .order("min_quantity", { ascending: true })
+        : fullRules;
+      if (ruleResponse.error) throw ruleResponse.error;
+      const ruleData = ruleResponse.data;
       // Busca o catálogo sem o relacionamento aninhado de preços: em alguns esquemas/RLS esse join
       // retorna o produto, mas omite o preço de revenda. O preço é consultado pela tabela autorizada.
       const catalog = createSupabaseCatalog();
