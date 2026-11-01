@@ -326,7 +326,7 @@ function ProductPage() {
                       <p className="mt-1 text-sm leading-5 text-muted-foreground">Escolha a quantidade e veja qual condição comercial da loja se aplica ao produto.</p>
                     </div>
                   </div>
-                  <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
+                  <div className="grid gap-2.5 p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
                     {volumeRules.map(rule => {
                       const applies = purchaseQty >= rule.min_quantity && (rule.max_quantity == null || purchaseQty <= rule.max_quantity);
                       const discountLabel = rule.discount_type === "percentage"
