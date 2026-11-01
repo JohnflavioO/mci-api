@@ -148,7 +148,7 @@ function ProductPage() {
       const supabase = getSupabase();
       const fullRules = await supabase
         .from("reseller_volume_discount_rules")
-        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
+        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order,quantity_discounts")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("min_quantity", { ascending: true });
@@ -164,10 +164,23 @@ function ProductPage() {
     },
   });
   const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.slug ?? "")).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.min_quantity - b.min_quantity);
+  const volumeOptions: { key: string; rule: VolumeDiscountRule | null; quantity: number; min_quantity: number; max_quantity: number | null; discount_type: "percentage" | "fixed"; discount_value: number; badge_label?: string | null; display_note?: string | null; is_featured?: boolean; perUnit: boolean }[] = [];
+  if (volumeRules.some(rule => (rule.quantity_discounts ?? []).length > 0)) {
+    volumeOptions.push({ key: "base-unit", rule: null, quantity: 1, min_quantity: 1, max_quantity: 1, discount_type: "percentage", discount_value: 0, badge_label: null, display_note: "Preço normal", is_featured: false, perUnit: true });
+  }
+  for (const rule of volumeRules) {
+    if (rule.quantity_discounts?.length) {
+      for (const tier of [...rule.quantity_discounts].sort((a, b) => a.quantity - b.quantity)) {
+        volumeOptions.push({ key: `${rule.id}-unit-${tier.quantity}`, rule, quantity: tier.quantity, min_quantity: tier.quantity, max_quantity: tier.quantity, discount_type: tier.discount_type, discount_value: Number(tier.discount_value), badge_label: tier.badge_label ?? rule.badge_label, display_note: tier.display_note ?? rule.display_note, is_featured: rule.is_featured, perUnit: true });
+      }
+    } else {
+      volumeOptions.push({ key: rule.id, rule, quantity: rule.min_quantity, min_quantity: rule.min_quantity, max_quantity: rule.max_quantity, discount_type: rule.discount_type, discount_value: Number(rule.discount_value), badge_label: rule.badge_label, display_note: rule.display_note, is_featured: rule.is_featured, perUnit: false });
+    }
+  }
   const volumeQuote = isApprovedReseller && rp.data != null
-    ? calculateVolumeDiscount(rp.data as number, purchaseQty, volumeRules)
+    ? calculateVolumeDiscount(rp.data as number, purchaseQty, volumeRules, p?.slug)
     : null;
-  const nextVolumeRule = volumeRules.find(rule => rule.min_quantity > purchaseQty);
+  const nextVolumeOption = volumeOptions.find(option => option.quantity > purchaseQty && option.rule !== null);
   const relatedQuery = useQuery({
     queryKey: ["related-products", p?.slug, p?.category, p?.brand],
     enabled: !!p,
@@ -336,22 +349,24 @@ function ProductPage() {
                     </div>
                   </div>
                   <div className="grid gap-2.5 p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
-                    {volumeRules.map(rule => {
-                      const applies = purchaseQty >= rule.min_quantity && (rule.max_quantity == null || purchaseQty <= rule.max_quantity);
-                      const unavailable = p.stock != null && p.stock < rule.min_quantity;
-                      const discountLabel = rule.discount_type === "percentage"
-                        ? `${Number(rule.discount_value)}% de desconto`
-                        : `${formatPrice(Number(rule.discount_value), p.currency)} por unidade`;
+                    {volumeOptions.map(option => {
+                      const applies = option.perUnit ? purchaseQty === option.quantity : purchaseQty >= option.min_quantity && (option.max_quantity == null || purchaseQty <= option.max_quantity);
+                      const unavailable = p.stock != null && p.stock < option.quantity;
+                      const discountLabel = !option.rule
+                        ? "Sem desconto"
+                        : option.discount_type === "percentage"
+                          ? `${Number(option.discount_value)}% nesta unidade`
+                          : `${formatPrice(Number(option.discount_value), p.currency)} nesta unidade`;
                       return (
-                        <button key={rule.id} type="button" disabled={unavailable} onClick={() => setPurchaseQty(rule.min_quantity)} aria-pressed={applies}
-                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : rule.is_featured ? "border-brand/60 bg-brand/[0.035] hover:border-brand" : "border-border bg-background hover:border-brand/50"}`}>
+                        <button key={option.key} type="button" disabled={unavailable} onClick={() => setPurchaseQty(option.quantity)} aria-pressed={applies}
+                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : option.is_featured ? "border-brand/60 bg-brand/[0.035] hover:border-brand" : "border-border bg-background hover:border-brand/50"}`}>
                           <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                             {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
-                            <span className="min-w-0"><span className="block">{rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidade(s)` : `${rule.min_quantity}–${rule.max_quantity} unidades`}</span>{rule.display_note && <span className="mt-1 block text-xs font-normal text-muted-foreground">{rule.display_note}</span>}</span>
+                            <span className="min-w-0"><span className="block">{option.perUnit ? option.quantity === 1 ? "1 unidade" : `${option.quantity} unidades` : option.max_quantity == null ? `${option.min_quantity}+ unidades` : option.min_quantity === option.max_quantity ? `${option.min_quantity} unidade(s)` : `${option.min_quantity}–${option.max_quantity} unidades`}</span>{option.display_note && <span className="mt-1 block text-xs font-normal text-muted-foreground">{option.display_note}</span>}</span>
                           </span>
-                          <span className="shrink-0 text-right">{rule.badge_label && <span className={`mb-1 inline-flex rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide ${rule.is_featured ? "bg-brand text-brand-foreground" : "bg-secondary text-secondary-foreground"}`}>{rule.badge_label}</span>}
+                          <span className="shrink-0 text-right">{option.badge_label && <span className={`mb-1 inline-flex rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide ${option.is_featured ? "bg-brand text-brand-foreground" : "bg-secondary text-secondary-foreground"}`}>{option.badge_label}</span>}
                             <span className={`block text-sm font-extrabold sm:text-base ${applies ? "text-brand" : "text-foreground"}`}>{discountLabel}</span>
-                            <span className="mt-1 block text-[11px] text-muted-foreground">{unavailable ? "Estoque insuficiente" : applies ? "Faixa selecionada" : "Selecionar faixa"}</span>
+                            <span className="mt-1 block text-[11px] text-muted-foreground">{unavailable ? "Estoque insuficiente" : applies ? "Opção selecionada" : "Selecionar quantidade"}</span>
                           </span>
                         </button>
                       );
