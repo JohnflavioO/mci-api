@@ -45,7 +45,7 @@ function CartPage() {
         import("@/services/supabaseCatalog"),
       ]);
       const fullRules = await supabase.from("reseller_volume_discount_rules")
-        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
+        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order,quantity_discounts")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("min_quantity", { ascending: true });
@@ -126,7 +126,11 @@ function CartPage() {
                                 <span className="text-xs font-semibold text-brand">Seu preço de revenda</span>
                                 <span className="text-sm font-bold tabular-nums">{formatPrice(quote.discountedUnitPrice, currency)}</span>
                               </div>
-                              {quote.rule && <p className="mt-1 text-xs font-semibold text-brand">Desconto progressivo aplicado: {quote.rule.discount_type === "percentage" ? `${Number(quote.rule.discount_value)}% por unidade` : `${formatPrice(quote.unitDiscount, currency)} por unidade`}</p>}
+                              {quote.rule?.quantity_discounts?.length ? (
+                                <div className="mt-2 space-y-1 text-xs text-brand">
+                                  {quote.appliedTiers.map(tier => <div key={tier.quantity} className="flex items-center justify-between gap-2"><span>{tier.quantity}ª unidade</span><strong>{tier.discountType === "percentage" ? `${tier.discountValue}% de desconto` : `${formatPrice(tier.unitDiscount, currency)} de desconto`}</strong></div>)}
+                                </div>
+                              ) : quote.rule ? <p className="mt-1 text-xs font-semibold text-brand">Desconto progressivo aplicado: {quote.rule.discount_type === "percentage" ? `${Number(quote.rule.discount_value)}% por unidade` : `${formatPrice(quote.unitDiscount, currency)} por unidade`}</p> : null}
                               <div className="mt-2 flex items-center justify-between border-t border-brand/15 pt-2 text-sm">
                                 <span className="text-muted-foreground">Subtotal ({item.qty} {item.qty === 1 ? "unidade" : "unidades"})</span>
                                 <strong className="tabular-nums">{formatPrice(quote.totalAfterDiscount, currency)}</strong>
