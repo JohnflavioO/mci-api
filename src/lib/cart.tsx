@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 /** Carrinho local: guarda itens, quantidades e o limite de estoque conhecido. Preços e totais virão da API. */
-export type CartItem = { slug: string; name: string; qty: number; maxQty?: number | null };
+export type CartItem = { slug: string; name: string; image?: string | null; qty: number; maxQty?: number | null };
 
 /** Limita a quantidade entre 1 e o estoque conhecido (null = sem limite informado). */
 /** Só vende com estoque conhecido e positivo (estoque "não informado" não é vendável). */
@@ -51,8 +51,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const nextQty = (found?.qty ?? 0) + requestedQty;
       if (max !== null && nextQty > max) return false;
       save(found
-        ? items.map((i) => (i.slug === item.slug ? { ...i, maxQty: max, qty: nextQty } : i))
-        : [...items, { slug: item.slug, name: item.name, maxQty: max, qty: requestedQty }]);
+        ? items.map((i) => (i.slug === item.slug ? { ...i, image: item.image ?? i.image, maxQty: max, qty: nextQty } : i))
+        : [...items, { slug: item.slug, name: item.name, image: item.image ?? null, maxQty: max, qty: requestedQty }]);
       return true;
     },
     setQty: (slug, qty) => save(items.map((i) => (i.slug === slug ? { ...i, qty: clampQty(qty, i.maxQty) } : i))),
