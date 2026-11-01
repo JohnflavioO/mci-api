@@ -384,7 +384,7 @@ function ProductPage() {
                   <p id="product-quantity-help" className="mt-1 text-xs text-muted-foreground">{p.stock != null ? `Máximo: ${p.stock}` : "Estoque a confirmar"}</p>
                 </div>
                 <Button className="h-12 w-full flex-1 bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
-                  if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
+                  if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
                   else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
                 }}>
                   Adicionar ao carrinho
@@ -465,7 +465,7 @@ function ProductPage() {
             <Button className="h-12 shrink-0 rounded-xl bg-graphite px-5 text-graphite-foreground hover:bg-brand hover:text-brand-foreground"
               disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)}
               onClick={() => {
-                if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
+                if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
                 else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
               }}>
               Adicionar ao carrinho
