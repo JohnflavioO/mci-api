@@ -147,14 +147,15 @@ function ProductPage() {
       const { getSupabase } = await import("@/lib/supabase");
       const { data, error } = await getSupabase()
         .from("reseller_volume_discount_rules")
-        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
+        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
         .eq("is_active", true)
+        .order("sort_order", { ascending: true })
         .order("min_quantity", { ascending: true });
       if (error) throw error;
       return (data ?? []) as VolumeDiscountRule[];
     },
   });
-  const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.slug ?? ""));
+  const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.id ?? "")).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.min_quantity - b.min_quantity);
   const volumeQuote = isApprovedReseller && rp.data != null
     ? calculateVolumeDiscount(rp.data as number, purchaseQty, volumeRules)
     : null;
@@ -335,12 +336,12 @@ function ProductPage() {
                         : `${formatPrice(Number(rule.discount_value), p.currency)} por unidade`;
                       return (
                         <button key={rule.id} type="button" disabled={unavailable} onClick={() => setPurchaseQty(rule.min_quantity)} aria-pressed={applies}
-                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : "border-border bg-background hover:border-brand/50"}`}>
+                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : rule.is_featured ? "border-brand/60 bg-brand/[0.035] hover:border-brand" : "border-border bg-background hover:border-brand/50"}`}>
                           <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                             {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
-                            <span>{rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidade(s)` : `${rule.min_quantity}–${rule.max_quantity} unidades`}</span>
+                            <span className="min-w-0"><span className="block">{rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidade(s)` : `${rule.min_quantity}–${rule.max_quantity} unidades`}</span>{rule.display_note && <span className="mt-1 block text-xs font-normal text-muted-foreground">{rule.display_note}</span>}</span>
                           </span>
-                          <span className="shrink-0 text-right">
+                          <span className="shrink-0 text-right">{rule.badge_label && <span className={`mb-1 inline-flex rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide ${rule.is_featured ? "bg-brand text-brand-foreground" : "bg-secondary text-secondary-foreground"}`}>{rule.badge_label}</span>}
                             <span className={`block text-sm font-extrabold sm:text-base ${applies ? "text-brand" : "text-foreground"}`}>{discountLabel}</span>
                             <span className="mt-1 block text-[11px] text-muted-foreground">{unavailable ? "Estoque insuficiente" : applies ? "Faixa selecionada" : "Selecionar faixa"}</span>
                           </span>

@@ -44,8 +44,9 @@ function CartPage() {
       const [{ createSupabaseCatalog }, { data: ruleData, error: ruleError }] = await Promise.all([
         import("@/services/supabaseCatalog"),
         supabase.from("reseller_volume_discount_rules")
-          .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
+          .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
           .eq("is_active", true)
+          .order("sort_order", { ascending: true })
           .order("min_quantity", { ascending: true }),
       ]);
       if (ruleError) throw ruleError;
@@ -57,10 +58,10 @@ function CartPage() {
   const priceForItem = (item: (typeof items)[number]) => {
     const product = resellerPricing?.products.find(product => product.slug === item.slug || product.name === item.name);
     if (!product || product.resellerPrice == null) return null;
-    const rules = resellerPricing!.rules.filter(rule => (rule.product_ids ?? []).includes(product.slug));
+    const rules = resellerPricing!.rules.filter(rule => (rule.product_ids ?? []).includes(product.id));
     return {
       currency: product.currency,
-      quote: calculateVolumeDiscount(product.resellerPrice, item.qty, rules, product.slug),
+      quote: calculateVolumeDiscount(product.resellerPrice, item.qty, rules, product.id),
     };
   };
 

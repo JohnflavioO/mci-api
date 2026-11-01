@@ -6,6 +6,10 @@ export type VolumeDiscountRule = {
   discount_value: number;
   is_active: boolean;
   product_ids: string[];
+  badge_label?: string | null;
+  display_note?: string | null;
+  is_featured?: boolean;
+  sort_order?: number;
 };
 
 export type VolumeDiscountQuote = {
