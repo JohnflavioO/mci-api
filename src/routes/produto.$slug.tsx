@@ -384,8 +384,8 @@ function ProductPage() {
                       </div>
                     </div>
                   )}
-                  {!volumeQuote?.rule && nextVolumeRule && (
-                    <p className="border-t px-5 py-3 text-sm text-muted-foreground">Faltam {nextVolumeRule.min_quantity - purchaseQty} {nextVolumeRule.min_quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima faixa.</p>
+                  {nextVolumeOption && purchaseQty < nextVolumeOption.quantity && (
+                    <p className="border-t px-5 py-3 text-sm text-muted-foreground">Adicione mais {nextVolumeOption.quantity - purchaseQty} {nextVolumeOption.quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima condição.</p>
                   )}
                 </section>
               )}
