@@ -253,7 +253,7 @@ function ProductPage() {
         ) : (
           <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,.92fr)] lg:gap-12">
             <section className="min-w-0">
-              <div className="group relative overflow-hidden rounded-3xl border border-border/70 bg-white shadow-[0_18px_55px_-35px_rgba(15,23,42,.45)]">
+              <div className="group relative overflow-hidden rounded-2xl bg-white shadow-[0_12px_36px_-28px_rgba(15,23,42,.35)]">
                 <button
                   type="button"
                   onClick={() => activeImage && setLightboxOpen(true)}
@@ -340,26 +340,26 @@ function ProductPage() {
                 )}
               </div>
               {isApprovedReseller && !volumeRulesQuery.isPending && volumeRules.length > 0 && (
-                <section className="mt-5 overflow-hidden rounded-2xl border border-brand/25 bg-card shadow-sm" aria-label="Desconto progressivo para revendedores">
-                  <div className="flex items-start gap-3 border-b bg-gradient-to-r from-brand/10 via-brand/[0.04] to-transparent px-5 py-4 sm:px-6">
+                <section className="mt-5 overflow-hidden rounded-2xl border border-border/70 bg-card" aria-label="Desconto progressivo para revendedores">
+                  <div className="flex items-start gap-3 border-b border-border/60 bg-muted/20 px-4 py-4 sm:px-6">
                     <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand"><TrendingUp className="size-5" /></span>
                     <div className="min-w-0 flex-1">
                       <h2 className="text-base font-bold sm:text-lg">Desconto progressivo para revendedores</h2>
                       <p className="mt-1 text-sm leading-5 text-muted-foreground">Escolha a quantidade e veja qual condição comercial da loja se aplica ao produto.</p>
                     </div>
                   </div>
-                  <div className="grid gap-2.5 p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
+                  <div className="grid gap-2 p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
                     {volumeOptions.map(option => {
                       const applies = option.perUnit ? purchaseQty === option.quantity : purchaseQty >= option.min_quantity && (option.max_quantity == null || purchaseQty <= option.max_quantity);
                       const unavailable = p.stock != null && p.stock < option.quantity;
                       const discountLabel = !option.rule
-                        ? "Sem desconto"
+                        ? "Sem desconto progressivo"
                         : option.discount_type === "percentage"
                           ? `${Number(option.discount_value)}% nesta unidade`
                           : `${formatPrice(Number(option.discount_value), p.currency)} nesta unidade`;
                       return (
                         <button key={option.key} type="button" disabled={unavailable} onClick={() => setPurchaseQty(option.quantity)} aria-pressed={applies}
-                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : option.is_featured ? "border-brand/60 bg-brand/[0.035] hover:border-brand" : "border-border bg-background hover:border-brand/50"}`}>
+                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors active:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand/80 bg-brand/[0.06]" : option.is_featured ? "border-brand/50 bg-brand/[0.025] hover:border-brand/70" : "border-border/70 bg-background hover:border-brand/40"}`}>
                           <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                             {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
                             <span className="min-w-0"><span className="block">{option.perUnit ? option.quantity === 1 ? "1 unidade" : `${option.quantity} unidades` : option.max_quantity == null ? `${option.min_quantity}+ unidades` : option.min_quantity === option.max_quantity ? `${option.min_quantity} unidade(s)` : `${option.min_quantity}–${option.max_quantity} unidades`}</span>{option.display_note && <span className="mt-1 block text-xs font-normal text-muted-foreground">{option.display_note}</span>}</span>
@@ -392,7 +392,7 @@ function ProductPage() {
               {p.customerPrice == null && <p className="text-sm text-muted-foreground">O preço para seu perfil será informado pela plataforma após login.</p>}
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock == null && <p className="mt-1 text-sm text-muted-foreground">Estoque a confirmar — venda indisponível no momento</p>}
-              {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock <= 0 ? "Sem estoque no momento" : (("stockConfirmed" in p) && !p.stockConfirmed) ? `${p.stock} ${p.stock === 1 ? "unidade informada" : "unidades informadas"} — aguardando confirmação da MCI` : `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}`}</p>}
+              {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock <= 0 ? "Sem estoque no momento" : `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}`}</p>}
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="w-full sm:w-32">
                   <label htmlFor="product-quantity" className="mb-1.5 block text-sm font-medium">Quantidade</label>
@@ -407,13 +407,11 @@ function ProductPage() {
                   </div>
                   <p id="product-quantity-help" className="mt-1 text-xs text-muted-foreground">{p.stock != null ? `Máximo: ${p.stock}` : "Estoque a confirmar"}</p>
                 </div>
-                <Button className="h-12 w-full flex-1 bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
+                <Button className="h-12 min-h-12 w-full min-w-0 flex-1 whitespace-normal px-3 text-center text-sm leading-tight bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:text-base" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
                   if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
                   else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
                 }}>
-                  {!canSell(p) && p.stock != null && p.stock > 0 && (("stockConfirmed" in p) && !p.stockConfirmed)
-                    ? "Aguardando confirmação de estoque"
-                    : !canSell(p) ? "Indisponível" : "Adicionar ao carrinho"}
+                  {!canSell(p) ? "Indisponível" : "Adicionar ao carrinho"}
                 </Button>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">

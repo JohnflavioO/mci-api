@@ -22,7 +22,7 @@ export function ProductImage({ src, alt = "", className = "" }: { src?: string |
 }
 
 export const availabilityLabel = (p: CatalogProduct) =>
-  p.inStock === false || p.stock === 0 ? "Indisponível" : p.stock == null ? "Estoque a confirmar" : (("stockConfirmed" in p) && !p.stockConfirmed) ? "Estoque a confirmar" : "Disponível";
+  p.inStock === false || p.stock === 0 ? "Indisponível" : p.stock == null ? "Estoque a confirmar" : "Disponível";
 
 export const priceLabel = (p: CatalogProduct) =>
   p.customerPrice != null ? formatPrice(p.customerPrice, p.currency) : "Preço sob consulta";
@@ -69,7 +69,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         <ProductImage src={product.images[0]} alt={product.name} className="aspect-square w-full rounded-md transition group-hover:brightness-95" />
         {hasResellerDiscount && (
           <span
-            className="absolute right-2 top-2 inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border-2 border-white bg-orange-500 px-2 text-sm font-extrabold leading-none text-white shadow-md ring-1 ring-orange-600/20"
+            className="absolute right-2 top-2 inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-white/80 bg-orange-500 px-2 text-sm font-extrabold leading-none text-white shadow-sm"
             aria-label={`Economize ${discountPercent}% em relação ao preço para cliente final`}
             title={`Preço de revenda ${discountPercent}% abaixo do preço para cliente final`}
           >
