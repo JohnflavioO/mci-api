@@ -6,7 +6,7 @@ export type CartItem = { slug: string; name: string; image?: string | null; qty:
 /** Limita a quantidade entre 1 e o estoque conhecido (null = sem limite informado). */
 /** Só vende com estoque conhecido e positivo (estoque "não informado" não é vendável). */
 export const canSell = (p: { stock?: number | null; inStock?: boolean | null }) =>
-  p.inStock !== false && typeof p.stock === "number" && p.stock > 0 && (("stockConfirmed" in p) ? p.stockConfirmed === true : true);
+  p.inStock !== false && typeof p.stock === "number" && p.stock > 0;
 
 export function clampQty(qty: number, maxQty?: number | null): number {
   const n = Number.isFinite(qty) ? Math.floor(qty) : 1;
