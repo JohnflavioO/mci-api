@@ -326,19 +326,26 @@ function ProductPage() {
                       <p className="mt-1 text-sm leading-5 text-muted-foreground">Escolha a quantidade e veja qual condição comercial da loja se aplica ao produto.</p>
                     </div>
                   </div>
-                  <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
+                  <div className="grid gap-2.5 p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
                     {volumeRules.map(rule => {
                       const applies = purchaseQty >= rule.min_quantity && (rule.max_quantity == null || purchaseQty <= rule.max_quantity);
+                      const unavailable = p.stock != null && p.stock < rule.min_quantity;
                       const discountLabel = rule.discount_type === "percentage"
                         ? `${Number(rule.discount_value)}% de desconto`
                         : `${formatPrice(Number(rule.discount_value), p.currency)} por unidade`;
-                      return <div key={rule.id} className={`flex items-center justify-between gap-3 rounded-xl border p-4 transition-colors ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : "border-border bg-background"}`}>
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                          {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
-                          <span>{rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidade(s)` : `${rule.min_quantity}–${rule.max_quantity} unidades`}</span>
-                        </div>
-                        <p className={`text-right text-sm font-bold sm:text-base ${applies ? "text-brand" : "text-foreground"}`}>{discountLabel}</p>
-                      </div>;
+                      return (
+                        <button key={rule.id} type="button" disabled={unavailable} onClick={() => setPurchaseQty(rule.min_quantity)} aria-pressed={applies}
+                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand bg-brand/10 shadow-sm ring-1 ring-brand/20" : "border-border bg-background hover:border-brand/50"}`}>
+                          <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                            {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
+                            <span>{rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidade(s)` : `${rule.min_quantity}–${rule.max_quantity} unidades`}</span>
+                          </span>
+                          <span className="shrink-0 text-right">
+                            <span className={`block text-sm font-extrabold sm:text-base ${applies ? "text-brand" : "text-foreground"}`}>{discountLabel}</span>
+                            <span className="mt-1 block text-[11px] text-muted-foreground">{unavailable ? "Estoque insuficiente" : applies ? "Faixa selecionada" : "Selecionar faixa"}</span>
+                          </span>
+                        </button>
+                      );
                     })}
                   </div>
                   {volumeQuote && volumeQuote.rule && (
@@ -444,6 +451,28 @@ function ProductPage() {
         </div>
       )}
       </div>
+      {p && !lightboxOpen && canSell(p) && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 p-3 pb-[calc(.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-18px_rgba(0,0,0,.35)] backdrop-blur-md sm:hidden">
+          <div className="mx-auto flex max-w-xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] font-medium text-muted-foreground">{purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"} · total estimado</p>
+              <p className="truncate text-lg font-extrabold leading-tight">
+                {isApprovedReseller && rp.data != null
+                  ? formatPrice(volumeQuote?.totalAfterDiscount ?? Number(rp.data) * purchaseQty, p.currency)
+                  : p.customerPrice != null ? formatPrice(Number(p.customerPrice) * purchaseQty, p.currency) : "Preço sob consulta"}
+              </p>
+            </div>
+            <Button className="h-12 shrink-0 rounded-xl bg-graphite px-5 text-graphite-foreground hover:bg-brand hover:text-brand-foreground"
+              disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)}
+              onClick={() => {
+                if (cart.add({ slug: p.slug, name: p.name, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
+                else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
+              }}>
+              Adicionar ao carrinho
+            </Button>
+          </div>
+        </div>
+      )}
     </SiteShell>
   );
 }
