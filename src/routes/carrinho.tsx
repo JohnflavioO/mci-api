@@ -41,16 +41,36 @@ function CartPage() {
       if (!sessionData.session) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
       const { data: isReseller, error: roleError } = await supabase.rpc("has_role", { _role: "revendedor" });
       if (roleError || isReseller !== true) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
-      const [{ createSupabaseCatalog }, { data: ruleData, error: ruleError }] = await Promise.all([
+      const [{ createSupabaseCatalog }] = await Promise.all([
         import("@/services/supabaseCatalog"),
-        supabase.from("reseller_volume_discount_rules")
-          .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true })
-          .order("min_quantity", { ascending: true }),
       ]);
-      if (ruleError) throw ruleError;
-      const products = await createSupabaseCatalog().listReseller();
+      const fullRules = await supabase.from("reseller_volume_discount_rules")
+        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("min_quantity", { ascending: true });
+      // Compatibilidade durante a implantação da migration de merchandising:
+      // se os campos visuais ainda não existirem, mantém preço e desconto funcionando.
+      const ruleResponse = fullRules.error && /badge_label|display_note|is_featured|sort_order|column .* does not exist|schema cache/i.test(fullRules.error.message)
+        ? await supabase.from("reseller_volume_discount_rules")
+            .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
+            .eq("is_active", true)
+            .order("min_quantity", { ascending: true })
+        : fullRules;
+      if (ruleResponse.error) throw ruleResponse.error;
+      const ruleData = ruleResponse.data;
+      // Busca o catálogo sem o relacionamento aninhado de preços: em alguns esquemas/RLS esse join
+      // retorna o produto, mas omite o preço de revenda. O preço é consultado pela tabela autorizada.
+      const catalog = createSupabaseCatalog();
+      const publishedProducts = await catalog.listPublished();
+      const products = await Promise.all(
+        publishedProducts
+          .filter(product => items.some(item => product.slug === item.slug || product.name === item.name))
+          .map(async product => ({
+            ...product,
+            resellerPrice: await catalog.resellerPrice(product.slug),
+          })),
+      );
       return { isReseller: true as const, products, rules: (ruleData ?? []) as VolumeDiscountRule[] };
     },
   });
@@ -58,10 +78,10 @@ function CartPage() {
   const priceForItem = (item: (typeof items)[number]) => {
     const product = resellerPricing?.products.find(product => product.slug === item.slug || product.name === item.name);
     if (!product || product.resellerPrice == null) return null;
-    const rules = resellerPricing!.rules.filter(rule => (rule.product_ids ?? []).includes(product.id));
+    const rules = resellerPricing!.rules.filter(rule => (rule.product_ids ?? []).includes(product.slug));
     return {
       currency: product.currency,
-      quote: calculateVolumeDiscount(product.resellerPrice, item.qty, rules, product.id),
+      quote: calculateVolumeDiscount(product.resellerPrice, item.qty, rules, product.slug),
     };
   };
 
@@ -115,6 +135,8 @@ function CartPage() {
                             </div>
                           );
                         }
+                        if (resellerCartQuery.isPending) return <p className="mt-1 text-xs text-muted-foreground">Carregando preço de revenda…</p>;
+                        if (resellerCartQuery.isError) return <p className="mt-1 text-xs text-destructive">Não foi possível carregar o preço de revenda. Atualize a página ou tente novamente.</p>;
                         return <p className="mt-1 text-xs text-muted-foreground">{resellerPricing ? "Preço de revenda indisponível para este produto." : "Preço e descontos confirmados na finalização"}</p>;
                       })()}
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -136,6 +158,15 @@ function CartPage() {
               <p className="mt-3 rounded-xl bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">Preços de revenda, descontos por quantidade, estoque e frete são validados conforme seu perfil e as regras vigentes.</p>
               <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm"><span className="text-muted-foreground">Produtos</span><strong>{items.length}</strong></div>
               <div className="mt-1 flex items-center justify-between text-sm"><span className="text-muted-foreground">Unidades</span><strong>{count}</strong></div>
+              {resellerPricing && items.every(item => priceForItem(item) != null) && (
+                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                  <span className="text-sm font-semibold">Subtotal estimado</span>
+                  <strong className="text-lg tabular-nums">{formatPrice(items.reduce((sum, item) => sum + (priceForItem(item)?.quote.totalAfterDiscount ?? 0), 0), priceForItem(items[0])?.currency ?? "BRL")}</strong>
+                </div>
+              )}
+              {resellerPricing && items.some(item => priceForItem(item) == null) && (
+                <p className="mt-3 text-xs text-amber-700">Um ou mais produtos estão sem preço de revenda cadastrado. Confira esses itens antes de continuar.</p>
+              )}
               <Button asChild className="mt-5 h-12 w-full rounded-xl bg-graphite font-bold text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/checkout">Continuar para checkout <ArrowRight className="ml-2 size-4" /></Link></Button>
               <Link to="/catalogo" className="mt-3 block text-center text-xs font-semibold text-muted-foreground hover:text-brand">Continuar comprando</Link>
             </aside>

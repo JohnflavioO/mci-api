@@ -145,17 +145,25 @@ function ProductPage() {
     retry: false,
     queryFn: async () => {
       const { getSupabase } = await import("@/lib/supabase");
-      const { data, error } = await getSupabase()
+      const supabase = getSupabase();
+      const fullRules = await supabase
         .from("reseller_volume_discount_rules")
         .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("min_quantity", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as VolumeDiscountRule[];
+      const ruleResponse = fullRules.error && /badge_label|display_note|is_featured|sort_order|column .* does not exist|schema cache/i.test(fullRules.error.message)
+        ? await supabase
+            .from("reseller_volume_discount_rules")
+            .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
+            .eq("is_active", true)
+            .order("min_quantity", { ascending: true })
+        : fullRules;
+      if (ruleResponse.error) throw ruleResponse.error;
+      return (ruleResponse.data ?? []) as VolumeDiscountRule[];
     },
   });
-  const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.id ?? "")).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.min_quantity - b.min_quantity);
+  const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.slug ?? "")).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.min_quantity - b.min_quantity);
   const volumeQuote = isApprovedReseller && rp.data != null
     ? calculateVolumeDiscount(rp.data as number, purchaseQty, volumeRules)
     : null;
@@ -391,6 +399,14 @@ function ProductPage() {
                   {!canSell(p) && p.stock != null && p.stock > 0 && (("stockConfirmed" in p) && !p.stockConfirmed)
                     ? "Aguardando confirmação de estoque"
                     : !canSell(p) ? "Indisponível" : "Adicionar ao carrinho"}
+                </Button>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button asChild variant="outline" className="h-10 min-w-0 rounded-xl text-xs font-semibold sm:text-sm">
+                  <Link to="/carrinho">Ir para o carrinho</Link>
+                </Button>
+                <Button asChild className="h-10 min-w-0 rounded-xl bg-brand text-xs font-semibold text-brand-foreground hover:bg-brand/90 sm:text-sm">
+                  <Link to="/checkout">Finalizar compra</Link>
                 </Button>
               </div>
               <div className="mt-3"><ProductComparison product={p} /></div>
