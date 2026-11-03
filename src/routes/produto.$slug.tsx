@@ -340,52 +340,83 @@ function ProductPage() {
                 )}
               </div>
               {isApprovedReseller && !volumeRulesQuery.isPending && volumeRules.length > 0 && (
-                <section className="mt-6 overflow-hidden rounded-[1.35rem] bg-card/70 py-1 sm:mt-7" aria-label="Desconto progressivo para revendedores">
-                  <div className="flex items-start gap-3 px-1 pb-4 pt-3 sm:px-2">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand"><TrendingUp className="size-5" strokeWidth={2.1} /></span>
+                <section className="mt-6 overflow-hidden rounded-[1.5rem] bg-white p-4 shadow-[0_14px_38px_-30px_rgba(15,23,42,.38)] sm:mt-7 sm:p-5" aria-label="Desconto progressivo para revendedores">
+                  <div className="flex items-start gap-3 pb-4">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-orange-50 text-brand">
+                      <TrendingUp className="size-5" strokeWidth={2.2} />
+                    </span>
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-base font-bold sm:text-lg">Desconto progressivo para revendedores</h2>
-                      <p className="mt-1 text-sm leading-5 text-muted-foreground">Escolha a quantidade e veja qual condição comercial da loja se aplica ao produto.</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-base font-bold tracking-tight text-foreground sm:text-lg">Desconto progressivo</h2>
+                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-brand">Revendedor</span>
+                      </div>
+                      <p className="mt-1 max-w-md text-sm leading-5 text-muted-foreground">Selecione uma quantidade para visualizar sua condição comercial e a economia.</p>
                     </div>
                   </div>
-                  <div className="grid gap-2.5 px-0 py-2 sm:grid-cols-2 sm:gap-3 sm:px-1 lg:grid-cols-1">
+                  <div className="grid grid-cols-1 gap-2.5">
                     {volumeOptions.map(option => {
                       const applies = option.perUnit ? purchaseQty === option.quantity : purchaseQty >= option.min_quantity && (option.max_quantity == null || purchaseQty <= option.max_quantity);
                       const unavailable = p.stock != null && p.stock < option.quantity;
                       const discountLabel = !option.rule
                         ? "Sem desconto progressivo"
                         : option.discount_type === "percentage"
-                          ? `${Number(option.discount_value)}% nesta unidade`
-                          : `${formatPrice(Number(option.discount_value), p.currency)} nesta unidade`;
+                          ? `${Number(option.discount_value)}% de desconto`
+                          : `${formatPrice(Number(option.discount_value), p.currency)} de desconto`;
+                      const quantityLabel = option.perUnit
+                        ? option.quantity === 1 ? "1 unidade" : `${option.quantity} unidades`
+                        : option.max_quantity == null ? `${option.min_quantity}+ unidades` : option.min_quantity === option.max_quantity ? `${option.min_quantity} unidade(s)` : `${option.min_quantity}–${option.max_quantity} unidades`;
                       return (
-                        <button key={option.key} type="button" disabled={unavailable} onClick={() => setPurchaseQty(option.quantity)} aria-pressed={applies}
-                          className={`group flex min-h-[78px] w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left transition-all active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-40 sm:px-5 ${applies ? "bg-brand/[0.075] ring-1 ring-inset ring-brand/55 shadow-[0_5px_18px_-14px_rgba(255,90,10,.45)]" : option.is_featured ? "bg-brand/[0.035] hover:bg-brand/[0.07]" : "bg-muted/35 hover:bg-muted/65"}`}>
-                          <span className="flex min-w-0 items-center gap-3 text-sm font-semibold">
-                            {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
-                            <span className="min-w-0"><span className="block">{option.perUnit ? option.quantity === 1 ? "1 unidade" : `${option.quantity} unidades` : option.max_quantity == null ? `${option.min_quantity}+ unidades` : option.min_quantity === option.max_quantity ? `${option.min_quantity} unidade(s)` : `${option.min_quantity}–${option.max_quantity} unidades`}</span>{option.display_note && <span className="mt-1 block text-xs font-normal text-muted-foreground">{option.display_note}</span>}</span>
+                        <button
+                          key={option.key}
+                          type="button"
+                          disabled={unavailable}
+                          onClick={() => setPurchaseQty(option.quantity)}
+                          aria-pressed={applies}
+                          className={`group flex min-h-[78px] w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4 ${applies
+                            ? "border-2 border-[#171717] bg-[#f7f7f5] shadow-[0_5px_18px_-14px_rgba(0,0,0,.5)]"
+                            : "border border-transparent bg-[#f5f5f4] hover:bg-[#eeedeb]" }`}
+                        >
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span className={`grid size-[21px] shrink-0 place-items-center rounded-full border-2 transition-colors ${applies ? "border-[#171717] bg-[#171717] text-white" : "border-[#a8a8a8] bg-white text-transparent group-hover:border-[#555]" }`}>
+                              {applies && <CheckCircle2 className="size-3.5" strokeWidth={2.8} />}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-sm font-bold text-foreground sm:text-[15px]">{quantityLabel}</span>
+                              {option.display_note && <span className="mt-1 block text-xs leading-4 text-muted-foreground">{option.display_note}</span>}
+                              {option.badge_label && <span className={`mt-1.5 inline-flex rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.08em] ${option.is_featured ? "bg-[#171717] text-white" : "bg-white text-muted-foreground" }`}>{option.badge_label}</span>}
+                            </span>
                           </span>
-                          <span className="min-w-0 shrink-0 text-right">{option.badge_label && <span className={`mb-1 inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${option.is_featured ? "bg-brand text-brand-foreground" : "bg-secondary text-secondary-foreground"}`}>{option.badge_label}</span>}
-                            <span className={`block text-sm font-extrabold sm:text-base ${applies ? "text-brand" : "text-foreground"}`}>{discountLabel}</span>
-                            <span className="mt-1 block text-[11px] text-muted-foreground">{unavailable ? "Estoque insuficiente" : applies ? "Opção selecionada" : "Selecionar quantidade"}</span>
+                          <span className="min-w-0 shrink-0 text-right">
+                            <span className={`block text-sm font-extrabold leading-5 sm:text-base ${applies ? "text-[#171717]" : "text-foreground" }`}>{discountLabel}</span>
+                            <span className="mt-1 block text-[11px] font-medium text-muted-foreground">
+                              {unavailable ? "Estoque insuficiente" : applies ? "Condição selecionada" : option.rule ? "Selecionar condição" : "Preço normal"}
+                            </span>
                           </span>
                         </button>
                       );
                     })}
                   </div>
                   {volumeQuote && volumeQuote.rule && (
-                    <div className="mx-1 mb-3 rounded-2xl bg-emerald-50/80 p-4 text-emerald-950 dark:bg-emerald-950/20 dark:text-emerald-100 sm:mx-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="text-muted-foreground">Preço por unidade com desconto</span>
-                        <strong className="text-brand">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
+                    <div className="mt-4 rounded-2xl bg-[#f4f3f0] p-4 sm:p-4">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Sua economia</span>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#27734b]">Desconto aplicado</span>
                       </div>
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-3 text-sm">
-                        <span className="text-muted-foreground">Economia estimada ({purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"})</span>
-                        <strong>{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">Preço por unidade</span>
+                        <strong className="text-base font-extrabold text-foreground">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/10 pt-3">
+                        <span className="text-sm text-muted-foreground">Economia total ({purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"})</span>
+                        <strong className="text-lg font-extrabold text-[#27734b]">{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
                       </div>
                     </div>
                   )}
                   {nextVolumeOption && purchaseQty < nextVolumeOption.quantity && (
-                    <p className="mt-1 rounded-xl bg-muted/45 px-4 py-3 text-sm text-muted-foreground">Adicione mais {nextVolumeOption.quantity - purchaseQty} {nextVolumeOption.quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima condição.</p>
+                    <p className="mt-3 flex items-center gap-2 px-1 text-xs leading-5 text-muted-foreground">
+                      <BadgePercent className="size-4 shrink-0 text-brand" />
+                      Faltam {nextVolumeOption.quantity - purchaseQty} {nextVolumeOption.quantity - purchaseQty === 1 ? "unidade" : "unidades"} para liberar a próxima condição.
+                    </p>
                   )}
                 </section>
               )}
