@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
+import { AdminAffiliatesSection } from "@/components/portal/AdminAffiliatesSection";
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { AdminProgressiveDiscounts } from "@/components/portal/AdminProgressiveDiscounts";
@@ -256,6 +257,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   const label = section?.label ?? slug;
 
   if (portal === "admin" && slug === "usuarios") return <AdminUsersSection />;
+  if (portal === "admin" && slug === "afiliados") return <AdminAffiliatesSection />;
   if (portal === "admin" && slug === "permissoes") return <AdminPermissionsSection />;
   if (portal === "admin" && (slug === "promocoes" || slug === "cupons")) return <AdminMarketingSection kind={slug} />;
   if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
