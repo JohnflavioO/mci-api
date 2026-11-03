@@ -91,7 +91,8 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           <p className="mt-2 font-display text-lg font-bold">{priceLabel(product)}</p>
         )}
         <p className={`mt-auto pt-1 text-xs ${unavailable ? "text-destructive" : "text-muted-foreground"}`}>{availabilityLabel(product)}</p>
-      </div>   </Link>
+      </div>
+    </Link>
     <button type="button" disabled={!canSell(product)}
       onClick={() => { if (cart.add({ slug: product.slug, name: product.name, image: product.images[0] ?? null, maxQty: product.stock })) toast.success("Adicionado ao carrinho"); else toast.error("Quantidade máxima em estoque já está no carrinho."); }}
       className="mt-3 h-10 w-full shrink-0 rounded-md bg-graphite text-sm font-semibold text-graphite-foreground transition hover:bg-brand hover:text-brand-foreground disabled:opacity-40">
