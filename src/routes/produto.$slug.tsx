@@ -393,7 +393,7 @@ function ProductPage() {
               <p className="mt-4 text-sm font-medium">{availabilityLabel(p)}</p>
               {p.stock == null && <p className="mt-1 text-sm text-muted-foreground">Estoque a confirmar — venda indisponível no momento</p>}
               {p.stock != null && <p className="mt-1 text-sm text-muted-foreground">{p.stock <= 0 ? "Sem estoque no momento" : `${p.stock} ${p.stock === 1 ? "unidade disponível" : "unidades disponíveis"}`}</p>}
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="w-full sm:w-32">
                   <label htmlFor="product-quantity" className="mb-1.5 block text-sm font-medium">Quantidade</label>
                   <div className="flex h-12 items-center overflow-hidden rounded-md border bg-background">
@@ -407,7 +407,7 @@ function ProductPage() {
                   </div>
                   <p id="product-quantity-help" className="mt-1 text-xs text-muted-foreground">{p.stock != null ? `Máximo: ${p.stock}` : "Estoque a confirmar"}</p>
                 </div>
-                <Button className="h-12 min-h-12 w-full min-w-0 flex-1 whitespace-normal px-3 text-center text-sm leading-tight bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:text-base" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
+                <Button className="h-12 min-h-12 w-full min-w-0 flex-1 whitespace-normal px-3 text-center text-sm leading-tight sm:mt-[1.625rem] bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:text-base" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
                   if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
                   else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
                 }}>
