@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb, TrendingUp, BadgePercent, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb, TrendingUp, BadgePercent, CheckCircle2, ShoppingCart, ArrowRight, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductComparison } from "@/components/shop/ProductComparison";
@@ -284,7 +284,7 @@ function ProductPage() {
                   </div>
                   <div className="flex gap-3 overflow-x-auto pb-2">
                     {images.map((src, index) => (
-                      <button key={src + index} type="button" onClick={() => setActiveImageIndex(index)} aria-label={`Ver imagem ${index + 1}`} aria-pressed={activeImageIndex === index} className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white p-1 transition sm:h-24 sm:w-24 ${activeImageIndex === index ? "border-brand shadow-[0_0_0_3px_rgba(255,102,31,.12)]" : "border-border hover:border-brand/50"}`}>
+                      <button key={src + index} type="button" onClick={() => setActiveImageIndex(index)} aria-label={`Ver imagem ${index + 1}`} aria-pressed={activeImageIndex === index} className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-muted/35 p-1 transition sm:h-24 sm:w-24 ${activeImageIndex === index ? "ring-2 ring-brand ring-offset-2 ring-offset-background" : "opacity-75 hover:opacity-100"}`}>
                         <ProductImage src={src} alt={`${p.name} — imagem ${index + 1}`} className="h-full w-full rounded-lg object-contain" />
                         {activeImageIndex === index && <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-brand" />}
                       </button>
@@ -292,11 +292,11 @@ function ProductPage() {
                   </div>
                 </div>
               )}
-              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-border/70 bg-card px-4 py-3 text-xs text-muted-foreground">
+              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 py-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-2"><Maximize2 className="h-4 w-4 text-brand" /> Imagens ampliáveis</span>
                 <span>Fotos do produto e detalhes visuais</span>
               </div>
-              <section className="mt-6 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
+              <section className="mt-6 rounded-2xl bg-card/60 p-4 sm:p-6">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><Maximize2 className="h-5 w-5" /></span>
                   <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Conheça o equipamento</p><h2 className="mt-1 text-xl font-bold">Descrição do produto</h2></div>
@@ -310,13 +310,13 @@ function ProductPage() {
 
             </section>
             <div className="min-w-0 lg:sticky lg:top-6">
-              <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
+              <div className="rounded-2xl bg-transparent p-0 sm:p-1">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {p.category} {q.data?.isDemo && <DemoBadge />}
               </div>
               <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{p.name}</h1>
               {(p.brand || p.sku) && <p className="mt-1 text-sm text-muted-foreground">{[p.brand, p.sku && `SKU ${p.sku}`].filter(Boolean).join(" · ")}</p>}
-              <div className="mt-5 border-y border-border py-4">
+              <div className="mt-5 border-b border-border/70 pb-5 pt-3">
                 {isApprovedReseller ? (
                   <>
                     <p className="text-xs font-semibold uppercase tracking-wider text-brand">Seu preço de revenda</p>
@@ -340,15 +340,15 @@ function ProductPage() {
                 )}
               </div>
               {isApprovedReseller && !volumeRulesQuery.isPending && volumeRules.length > 0 && (
-                <section className="mt-5 overflow-hidden rounded-2xl border border-border/70 bg-card" aria-label="Desconto progressivo para revendedores">
-                  <div className="flex items-start gap-3 border-b border-border/60 bg-muted/20 px-4 py-4 sm:px-6">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand"><TrendingUp className="size-5" /></span>
+                <section className="mt-6 overflow-hidden rounded-[1.35rem] bg-card/70 py-1 sm:mt-7" aria-label="Desconto progressivo para revendedores">
+                  <div className="flex items-start gap-3 px-1 pb-4 pt-3 sm:px-2">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand"><TrendingUp className="size-5" strokeWidth={2.1} /></span>
                     <div className="min-w-0 flex-1">
                       <h2 className="text-base font-bold sm:text-lg">Desconto progressivo para revendedores</h2>
                       <p className="mt-1 text-sm leading-5 text-muted-foreground">Escolha a quantidade e veja qual condição comercial da loja se aplica ao produto.</p>
                     </div>
                   </div>
-                  <div className="grid gap-2 p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
+                  <div className="grid gap-2.5 px-0 py-2 sm:grid-cols-2 sm:gap-3 sm:px-1 lg:grid-cols-1">
                     {volumeOptions.map(option => {
                       const applies = option.perUnit ? purchaseQty === option.quantity : purchaseQty >= option.min_quantity && (option.max_quantity == null || purchaseQty <= option.max_quantity);
                       const unavailable = p.stock != null && p.stock < option.quantity;
@@ -359,12 +359,12 @@ function ProductPage() {
                           : `${formatPrice(Number(option.discount_value), p.currency)} nesta unidade`;
                       return (
                         <button key={option.key} type="button" disabled={unavailable} onClick={() => setPurchaseQty(option.quantity)} aria-pressed={applies}
-                          className={`flex min-h-[82px] w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors active:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-45 sm:p-4 ${applies ? "border-brand/80 bg-brand/[0.06]" : option.is_featured ? "border-brand/50 bg-brand/[0.025] hover:border-brand/70" : "border-border/70 bg-background hover:border-brand/40"}`}>
-                          <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                          className={`group flex min-h-[78px] w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left transition-all active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-40 sm:px-5 ${applies ? "bg-brand/[0.075] ring-1 ring-inset ring-brand/55 shadow-[0_5px_18px_-14px_rgba(255,90,10,.45)]" : option.is_featured ? "bg-brand/[0.035] hover:bg-brand/[0.07]" : "bg-muted/35 hover:bg-muted/65"}`}>
+                          <span className="flex min-w-0 items-center gap-3 text-sm font-semibold">
                             {applies ? <CheckCircle2 className="size-4 shrink-0 text-brand" /> : <BadgePercent className="size-4 shrink-0 text-muted-foreground" />}
                             <span className="min-w-0"><span className="block">{option.perUnit ? option.quantity === 1 ? "1 unidade" : `${option.quantity} unidades` : option.max_quantity == null ? `${option.min_quantity}+ unidades` : option.min_quantity === option.max_quantity ? `${option.min_quantity} unidade(s)` : `${option.min_quantity}–${option.max_quantity} unidades`}</span>{option.display_note && <span className="mt-1 block text-xs font-normal text-muted-foreground">{option.display_note}</span>}</span>
                           </span>
-                          <span className="shrink-0 text-right">{option.badge_label && <span className={`mb-1 inline-flex rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide ${option.is_featured ? "bg-brand text-brand-foreground" : "bg-secondary text-secondary-foreground"}`}>{option.badge_label}</span>}
+                          <span className="min-w-0 shrink-0 text-right">{option.badge_label && <span className={`mb-1 inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${option.is_featured ? "bg-brand text-brand-foreground" : "bg-secondary text-secondary-foreground"}`}>{option.badge_label}</span>}
                             <span className={`block text-sm font-extrabold sm:text-base ${applies ? "text-brand" : "text-foreground"}`}>{discountLabel}</span>
                             <span className="mt-1 block text-[11px] text-muted-foreground">{unavailable ? "Estoque insuficiente" : applies ? "Opção selecionada" : "Selecionar quantidade"}</span>
                           </span>
@@ -373,19 +373,19 @@ function ProductPage() {
                     })}
                   </div>
                   {volumeQuote && volumeQuote.rule && (
-                    <div className="mx-4 mb-4 rounded-xl border border-brand/20 bg-brand/[0.04] p-4 sm:mx-5 sm:mb-5">
+                    <div className="mx-1 mb-3 rounded-2xl bg-emerald-50/80 p-4 text-emerald-950 dark:bg-emerald-950/20 dark:text-emerald-100 sm:mx-1">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <span className="text-muted-foreground">Preço por unidade com desconto</span>
                         <strong className="text-brand">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
                       </div>
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-3 text-sm">
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-3 text-sm">
                         <span className="text-muted-foreground">Economia estimada ({purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"})</span>
                         <strong>{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
                       </div>
                     </div>
                   )}
                   {nextVolumeOption && purchaseQty < nextVolumeOption.quantity && (
-                    <p className="border-t px-5 py-3 text-sm text-muted-foreground">Adicione mais {nextVolumeOption.quantity - purchaseQty} {nextVolumeOption.quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima condição.</p>
+                    <p className="mt-1 rounded-xl bg-muted/45 px-4 py-3 text-sm text-muted-foreground">Adicione mais {nextVolumeOption.quantity - purchaseQty} {nextVolumeOption.quantity - purchaseQty === 1 ? "unidade" : "unidades"} para alcançar a próxima condição.</p>
                   )}
                 </section>
               )}
@@ -396,43 +396,43 @@ function ProductPage() {
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="w-full sm:w-32">
                   <label htmlFor="product-quantity" className="mb-1.5 block text-sm font-medium">Quantidade</label>
-                  <div className="flex h-12 items-center overflow-hidden rounded-md border bg-background">
+                  <div className="flex h-12 items-center overflow-hidden rounded-xl bg-muted/55 ring-1 ring-inset ring-border/70">
                     <button type="button" aria-label="Diminuir quantidade" disabled={purchaseQty <= 1} onClick={() => setPurchaseQty((qty) => Math.max(1, qty - 1))} className="h-full w-10 text-lg font-medium hover:bg-muted disabled:opacity-40">−</button>
                     <input id="product-quantity" type="number" inputMode="numeric" min={1} max={p.stock ?? undefined} step={1} value={purchaseQty} onChange={(event) => {
                       const parsed = Number.parseInt(event.target.value, 10);
                       if (!Number.isFinite(parsed)) { setPurchaseQty(1); return; }
                       setPurchaseQty(Math.max(1, Math.min(p.stock ?? 999, parsed)));
-                    }} className="h-full min-w-0 w-full border-x bg-transparent text-center font-semibold outline-none" aria-describedby="product-quantity-help" />
+                    }} className="h-full min-w-0 w-full bg-transparent text-center font-semibold outline-none" aria-describedby="product-quantity-help" />
                     <button type="button" aria-label="Aumentar quantidade" disabled={p.stock == null || purchaseQty >= p.stock} onClick={() => setPurchaseQty((qty) => Math.min(p.stock ?? qty, qty + 1))} className="h-full w-10 text-lg font-medium hover:bg-muted disabled:opacity-40">+</button>
                   </div>
                   <p id="product-quantity-help" className="mt-1 text-xs text-muted-foreground">{p.stock != null ? `Máximo: ${p.stock}` : "Estoque a confirmar"}</p>
                 </div>
-                <Button className="h-12 min-h-12 w-full min-w-0 flex-1 whitespace-normal px-3 text-center text-sm leading-tight sm:mt-[1.625rem] bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:text-base" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
+                <Button className="h-12 min-h-12 w-full min-w-0 flex-1 whitespace-normal rounded-xl px-4 text-center text-sm font-bold leading-tight shadow-sm transition-all hover:-translate-y-0.5 sm:mt-[1.625rem] bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:text-base" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
                   if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
                   else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
                 }}>
-                  {!canSell(p) ? "Indisponível" : "Adicionar ao carrinho"}
+                  {!canSell(p) ? "Indisponível" : <><ShoppingCart className="mr-2 size-4" />Adicionar ao carrinho<ArrowRight className="ml-2 size-4" /></>}
                 </Button>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Button asChild variant="outline" className="h-10 min-w-0 rounded-xl text-xs font-semibold sm:text-sm">
-                  <Link to="/carrinho">Ir para o carrinho</Link>
+              <div className="mt-3 grid grid-cols-2 gap-2.5">
+                <Button asChild variant="outline" className="h-10 min-w-0 rounded-xl border-border/70 bg-muted/35 text-xs font-semibold hover:bg-muted/70 sm:text-sm">
+                  <Link to="/carrinho"><ShoppingBag className="mr-1.5 size-3.5" />Carrinho</Link>
                 </Button>
                 <Button asChild className="h-10 min-w-0 rounded-xl bg-brand text-xs font-semibold text-brand-foreground hover:bg-brand/90 sm:text-sm">
-                  <Link to="/checkout">Finalizar compra</Link>
+                  <Link to="/checkout">Finalizar compra<ArrowRight className="ml-1.5 size-3.5" /></Link>
                 </Button>
               </div>
               <div className="mt-3"><ProductComparison product={p} /></div>
               </div>
               {highlights.length > 0 && (
-                <section className="mt-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-6" aria-label="Principais características">
+                <section className="mt-6 rounded-2xl bg-card/60 p-4 sm:p-6" aria-label="Principais características">
                   <div className="flex items-center gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand/10 text-brand"><Zap className="h-5 w-5" /></span>
                     <div><p className="text-xs font-bold uppercase tracking-[0.15em] text-brand">Resumo técnico</p><h2 className="mt-1 text-lg font-bold">Principais características</h2></div>
                   </div>
                   <dl className="mt-4 grid grid-cols-2 gap-3">
                     {highlights.map(({ label, value, icon: Icon }) => (
-                      <div key={label} className="min-w-0 rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <div key={label} className="min-w-0 rounded-xl bg-muted/45 p-3.5">
                         <dt className="flex items-center gap-1.5 text-xs leading-5 text-muted-foreground"><Icon className="h-3.5 w-3.5 shrink-0 text-brand" />{label}</dt>
                         <dd className="mt-1 break-words text-sm font-semibold leading-5 text-foreground">{value}</dd>
                       </div>
@@ -456,7 +456,7 @@ function ProductPage() {
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
               {relatedQuery.data.products.map((item) => (
-                <Link key={item.slug} to="/produto/$slug" params={{ slug: slugifyProductName(item.name) }} className="group min-w-0 overflow-hidden rounded-xl border border-border/70 bg-card transition-colors hover:border-brand/40">
+                <Link key={item.slug} to="/produto/$slug" params={{ slug: slugifyProductName(item.name) }} className="group min-w-0 overflow-hidden rounded-2xl bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg">
                   <div className="aspect-[4/3] overflow-hidden bg-white p-3 sm:p-4">
                     <ProductImage src={item.images[0]} alt={item.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]" />
                   </div>
