@@ -63,8 +63,8 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   const hasResellerDiscount = discountPercent != null && discountPercent > 0;
 
   return (
-    <div className="flex h-full flex-col">
-    <Link to="/produto/$slug" params={{ slug: slugifyProductName(product.name) }} className="group block">
+    <div className="flex h-full min-h-[390px] flex-col">
+    <Link to="/produto/$slug" params={{ slug: slugifyProductName(product.name) }} className="group flex flex-1 flex-col">
       <div className="relative">
         <ProductImage src={product.images[0]} alt={product.name} className="aspect-square w-full rounded-md transition group-hover:brightness-95" />
         {hasResellerDiscount && (
@@ -78,9 +78,9 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         )}
       </div>
       <p className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">{product.category}</p>
-      <p className="font-display font-semibold leading-tight">{product.name}</p>
+      <p className="min-h-[2.5rem] line-clamp-2 font-display font-semibold leading-tight">{product.name}</p>
+      <div className="mt-2 flex min-h-[4.75rem] flex-col">
       {hasResellerPrice ? (
-        <div className="mt-2">
           <p className="text-[10px] font-bold uppercase tracking-wider text-brand">Seu preço de revenda</p>
           <p className="font-display text-lg font-bold text-foreground">{formatPrice(resellerPrice!, product.currency)}</p>
           <p className="text-xs text-muted-foreground">Preço final: {formatPrice(product.customerPrice!, product.currency)}</p>
@@ -89,11 +89,12 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
       ) : (
         <p className="mt-2 font-display text-lg font-bold">{priceLabel(product)}</p>
       )}
-      <p className={`text-xs ${unavailable ? "text-destructive" : "text-muted-foreground"}`}>{availabilityLabel(product)}</p>
+      <p className={`mt-auto pt-1 text-xs ${unavailable ? "text-destructive" : "text-muted-foreground"}`}>{availabilityLabel(product)}</p>
+      </div>
     </Link>
     <button type="button" disabled={!canSell(product)}
       onClick={() => { if (cart.add({ slug: product.slug, name: product.name, image: product.images[0] ?? null, maxQty: product.stock })) toast.success("Adicionado ao carrinho"); else toast.error("Quantidade máxima em estoque já está no carrinho."); }}
-      className="mt-3 h-10 rounded-md bg-graphite text-sm font-semibold text-graphite-foreground transition hover:bg-brand hover:text-brand-foreground disabled:opacity-40">
+      className="mt-3 h-10 w-full shrink-0 rounded-md bg-graphite text-sm font-semibold text-graphite-foreground transition hover:bg-brand hover:text-brand-foreground disabled:opacity-40">
       {unavailable ? "Indisponível" : "Adicionar ao carrinho"}
     </button>
     </div>
