@@ -308,6 +308,23 @@ function ProductPage() {
                 </div>
               </section>
 
+              {highlights.length > 0 && (
+                <section className="mt-6 rounded-2xl bg-card/60 p-4 sm:p-6" aria-label="Principais características">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand/10 text-brand"><Zap className="h-5 w-5" /></span>
+                    <div><p className="text-xs font-bold uppercase tracking-[0.15em] text-brand">Resumo técnico</p><h2 className="mt-1 text-lg font-bold">Principais características</h2></div>
+                  </div>
+                  <dl className="mt-4 grid grid-cols-2 gap-3">
+                    {highlights.map(({ label, value, icon: Icon }) => (
+                      <div key={label} className="min-w-0 rounded-xl bg-muted/45 p-3.5">
+                        <dt className="flex items-center gap-1.5 text-xs leading-5 text-muted-foreground"><Icon className="h-3.5 w-3.5 shrink-0 text-brand" />{label}</dt>
+                        <dd className="mt-1 break-words text-sm font-semibold leading-5 text-foreground">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">Resumo baseado nas especificações cadastradas e nos dados explicitamente identificados na descrição.</p>
+                </section>
+              )}
             </section>
             <div className="min-w-0 lg:sticky lg:top-6">
               <div className="rounded-2xl bg-transparent p-0 sm:p-1">
@@ -455,23 +472,7 @@ function ProductPage() {
               </div>
               <div className="mt-3"><ProductComparison product={p} /></div>
               </div>
-              {highlights.length > 0 && (
-                <section className="mt-6 rounded-2xl bg-card/60 p-4 sm:p-6" aria-label="Principais características">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand/10 text-brand"><Zap className="h-5 w-5" /></span>
-                    <div><p className="text-xs font-bold uppercase tracking-[0.15em] text-brand">Resumo técnico</p><h2 className="mt-1 text-lg font-bold">Principais características</h2></div>
-                  </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-3">
-                    {highlights.map(({ label, value, icon: Icon }) => (
-                      <div key={label} className="min-w-0 rounded-xl bg-muted/45 p-3.5">
-                        <dt className="flex items-center gap-1.5 text-xs leading-5 text-muted-foreground"><Icon className="h-3.5 w-3.5 shrink-0 text-brand" />{label}</dt>
-                        <dd className="mt-1 break-words text-sm font-semibold leading-5 text-foreground">{value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <p className="mt-3 text-xs leading-5 text-muted-foreground">Resumo baseado nas especificações cadastradas e nos dados explicitamente identificados na descrição.</p>
-                </section>
-              )}
+
             </div>
           </div>
         )}
