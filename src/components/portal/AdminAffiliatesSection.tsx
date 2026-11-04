@@ -21,10 +21,6 @@ type ProgramData = {
   affiliates: Array<{ user_id: string; referral_code: string; slug: string | null; commission_rate: number; commission_override_pct: number | null; status: string; clicks30d: number; sales30d: number; pendingCommission: number; points: { performance: number; reward: number } }>;
 };
 type Tab = "overview" | "settings" | "points" | "commissions";
-const defaults: ProgramSettings = {
-  enabled: false, default_commission_rate: 5, attribution_window_days: 30,
-  minimum_payout: 100, performance_points_per_real: 1, reward_points_per_real: 1, reward_points_enabled: true,
-};
 const dateLabel = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
