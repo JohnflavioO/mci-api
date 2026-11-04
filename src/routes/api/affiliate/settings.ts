@@ -95,7 +95,7 @@ export const Route = createFileRoute("/api/affiliate/settings")({
         if (normalizedLevels.some((row) => !row.name || row.name.length > 40 || !Number.isInteger(row.min_points) || row.min_points < 0 || !Number.isFinite(row.commission_pct) || row.commission_pct < 0 || row.commission_pct > 100)) return Response.json({ error: "Cada nível precisa de nome, pontos inteiros não negativos e comissão entre 0 e 100%." }, { status: 400 });
         normalizedLevels.sort((a,b) => a.min_points - b.min_points);
         if (normalizedLevels[0].min_points !== 0 || normalizedLevels.some((row,i) => i > 0 && (row.min_points <= normalizedLevels[i-1].min_points || normalizedLevels.slice(0,i).some((prev) => prev.name.toLowerCase() === row.name.toLowerCase())))) return Response.json({ error: "Os níveis devem começar em 0 ponto e ter faixas crescentes, sem nomes repetidos." }, { status: 400 });
-        const rewardCostPct = rewardPoints * rewardValue * 100;
+        const rewardCostPct = (values.reward_points_enabled ?? old.reward_points_enabled) === true ? rewardPoints * rewardValue * 100 : 0;
         const violating = normalizedLevels.find((level) => level.commission_pct + rewardCostPct > ceiling + 0.000001);
         if (violating) return Response.json({ error: `Nível "${violating.name}" viola o teto: comissão ${violating.commission_pct.toLocaleString("pt-BR")}% + custo de recompensa ${rewardCostPct.toLocaleString("pt-BR",{maximumFractionDigits:4})}% = ${(violating.commission_pct + rewardCostPct).toLocaleString("pt-BR",{maximumFractionDigits:4})}%, acima do limite de ${ceiling.toLocaleString("pt-BR")}%.` }, { status: 400 });
         values.levels = normalizedLevels;
