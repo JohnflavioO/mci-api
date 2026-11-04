@@ -15,19 +15,10 @@ type AdminAffiliate = {
   bannedUntil: string | null;
   role: string | null;
 };
-type ProgramSettings = {
-  enabled: boolean;
-  default_commission_rate: number;
-  attribution_window_days: number;
-  minimum_payout: number;
-  performance_points_per_real: number;
-  reward_points_per_real: number;
-  reward_points_enabled: boolean;
-};
+type ProgramSettings = AffiliateSettings;
 type ProgramData = {
-  settings: ProgramSettings;
   metrics: { affiliates: number; clicks: number; commissions: number; pendingCommissions: number; commissionTotal: number; redemptions: number };
-  affiliates: Array<{ user_id: string; referral_code: string; commission_rate: number; status: string; points: { performance: number; reward: number } }>;
+  affiliates: Array<{ user_id: string; referral_code: string; slug: string | null; commission_rate: number; commission_override_pct: number | null; status: string; clicks30d: number; sales30d: number; pendingCommission: number; points: { performance: number; reward: number } }>;
 };
 type Tab = "overview" | "settings" | "points" | "commissions";
 const defaults: ProgramSettings = {
@@ -53,13 +44,7 @@ async function loadProgram(): Promise<ProgramData> {
   return body as ProgramData;
 }
 async function saveProgram(settings: ProgramSettings) {
-  const token = await adminToken();
-  const response = await fetch("/api/admin/affiliates", {
-    method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(settings),
-  });
-  const body = await response.json().catch(() => ({})) as { error?: string };
-  if (!response.ok) throw new Error(body.error || "Não foi possível salvar as configurações.");
+  await saveAffiliateSettings(settings);
 }
 
 export function AdminAffiliatesSection() {
@@ -101,7 +86,7 @@ export function AdminAffiliatesSection() {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     return affiliates.filter((item) => !term || item.fullName.toLocaleLowerCase("pt-BR").includes(term) || item.email.toLocaleLowerCase("pt-BR").includes(term));
   }, [affiliates, search]);
-  const active = affiliates.filter((item) => (!item.bannedUntil || new Date(item.bannedUntil).getTime() <= Date.now()) && !!item.emailConfirmedAt).length;
+  const active = affiliates.filter((item) => { const stat = program?.affiliates.find((x) => x.user_id === item.id); return (!item.bannedUntil || new Date(item.bannedUntil).getTime() <= Date.now()) && !!item.emailConfirmedAt && stat?.status !== "suspended"; }).length;
   const blocked = affiliates.filter((item) => !!item.bannedUntil && new Date(item.bannedUntil).getTime() > Date.now()).length;
   const unconfirmed = affiliates.filter((item) => !item.emailConfirmedAt && (!item.bannedUntil || new Date(item.bannedUntil).getTime() <= Date.now())).length;
   const suspended = (program?.affiliates ?? []).filter((item) => item.status === "suspended").length;
@@ -126,7 +111,7 @@ export function AdminAffiliatesSection() {
     </nav>
 
     {tab === "overview" && <>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
           { label: "Afiliados cadastrados", value: usersQuery.isPending ? "—" : affiliates.length, detail: "Contas com perfil de afiliado", icon: Users },
           { label: "Ativos", value: usersQuery.isPending ? "—" : active, detail: "E-mail confirmado e conta liberada", icon: CheckCircle2 },
