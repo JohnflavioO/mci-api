@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/admin/affiliates")({
         auth.admin.from("affiliate_profiles").select("user_id,referral_code,commission_rate,commission_override_pct,status,created_at").order("created_at", { ascending: false }).limit(500),
         auth.admin.from("affiliate_links").select("id,affiliate_id,slug,is_active"),
         auth.admin.from("link_clicks").select("id,link_id").gte("created_at", since).limit(10000),
-        auth.admin.from("orders").select("id,affiliate_link_id").not("affiliate_link_id", "is", null).gte("created_at", since).limit(10000),
+        auth.admin.from("orders").select("id,affiliate_link_id,status").not("affiliate_link_id", "is", null).gte("created_at", since).limit(10000),
         auth.admin.from("affiliate_commissions").select("id,affiliate_user_id,status,commission_amount").limit(5000),
         auth.admin.from("affiliate_points_ledger").select("affiliate_user_id,points_type,points_delta").limit(5000),
         auth.admin.from("affiliate_reward_redemptions").select("id,status,points_cost").limit(1000),
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/admin/affiliates")({
       const linkOwner = new Map((links.data ?? []).map((x) => [x.id, x.affiliate_id]));
       const clickCounts = new Map<string, number>(), salesCounts = new Map<string, number>(), pending = new Map<string, number>();
       for (const click of clicks.data ?? []) { const owner = linkOwner.get(click.link_id); if (owner) clickCounts.set(owner, (clickCounts.get(owner) ?? 0) + 1); }
-      for (const sale of orders.data ?? []) { const owner = sale.affiliate_link_id ? linkOwner.get(sale.affiliate_link_id) : null; if (owner) salesCounts.set(owner, (salesCounts.get(owner) ?? 0) + 1); }
+      for (const sale of orders.data ?? []) { const owner = sale.status === "paid" && sale.affiliate_link_id ? linkOwner.get(sale.affiliate_link_id) : null; if (owner) salesCounts.set(owner, (salesCounts.get(owner) ?? 0) + 1); }
       for (const row of commissions.data ?? []) if (row.status === "pending") pending.set(row.affiliate_user_id, (pending.get(row.affiliate_user_id) ?? 0) + Number(row.commission_amount));
       const balances = new Map<string, { performance: number; reward: number }>();
       for (const row of ledger.data ?? []) {
