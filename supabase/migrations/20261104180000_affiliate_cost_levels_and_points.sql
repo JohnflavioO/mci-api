@@ -22,8 +22,7 @@ set performance_points_per_real = 1,
     reward_points_per_real = 1,
     simulation_sale_value = 2500.00
 where id = true
-  and performance_points_per_real = 2
-  and coalesce(simulation_sale_value, 1000) = 1000;
+  and performance_points_per_real = 2;
 
 alter table public.affiliate_commissions
   add column if not exists eligible_at timestamptz,
