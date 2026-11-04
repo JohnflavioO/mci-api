@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, BadgePercent, CheckCircle2, Clock3, Coins, Gift, Link2, RefreshCw, Search, Settings2, Trophy, Users, UserRoundX, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -85,6 +85,7 @@ export function AdminAffiliatesSection() {
     staleTime: 15_000,
   });
   const program = programQuery.data;
+  useEffect(() => { if (program?.settings) setSettings({ ...defaults, ...program.settings }); }, [program?.settings]);
   const saveMutation = useMutation({
     mutationFn: saveProgram,
     onSuccess: async () => {
