@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
       db.from("affiliate_settings").select("*").eq("id", true).single(),
       db.from("affiliate_links").select("id,product_id,slug,is_active,products(name)").eq("affiliate_id", auth.user.id).order("created_at", { ascending: false }),
       db.from("affiliate_commissions").select("id,order_id,order_total,commission_rate,commission_amount,status,paid_at,payment_reference,created_at").eq("affiliate_user_id", auth.user.id).order("created_at", { ascending: false }).limit(100),
-      db.from("affiliate_points_ledger").select("points_type,points_delta").eq("affiliate_user_id", auth.user.id),
+      db.from("affiliate_points_ledger").select("points_type,points_delta,event_type,created_at").eq("affiliate_user_id", auth.user.id),
     ]);
     if (profile.error || settings.error || links.error || commissions.error || pointsLedger.error) return Response.json({ error: "Não foi possível carregar o painel." }, { status: 503 });
     const linkIds = (links.data ?? []).map((x) => x.id);
@@ -31,7 +31,14 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
       linkIds.length ? db.from("orders").select("id,affiliate_link_id,total,status,created_at,commission_pct_applied,commission_base_amount").in("affiliate_link_id", linkIds).eq("status", "paid").gte("created_at", since).order("created_at", { ascending: false }).limit(200) : Promise.resolve({ count: 0, error: null, data: [] }),
     ]);
     if (clicks.error || sales.error) return Response.json({ error: "Não foi possível calcular os indicadores." }, { status: 503 });
-    const points = (pointsLedger.data ?? []).reduce((balance, row) => { balance[row.points_type] = (balance[row.points_type] ?? 0) + Number(row.points_delta); return balance; }, { performance: 0, reward: 0 } as Record<string, number>);
+    const performanceSince = new Date(Date.now() - Number(settings.data.performance_window_days ?? 90) * 86400000).toISOString();
+    const performancePoints = (pointsLedger.data ?? []).filter((row) => row.points_type === "performance" && row.event_type === "sale" && row.created_at >= performanceSince).reduce((sum, row) => sum + Number(row.points_delta), 0);
+    const rewardPoints = (pointsLedger.data ?? []).filter((row) => row.points_type === "reward").reduce((sum, row) => sum + Number(row.points_delta), 0);
+    const points = { performance: performancePoints, reward: rewardPoints };
+    const levelRules = Array.isArray(settings.data.levels) ? [...settings.data.levels].sort((a,b) => Number(a.min_points)-Number(b.min_points)) : [];
+    const currentLevel = [...levelRules].reverse().find((level) => performancePoints >= Number(level.min_points)) ?? levelRules[0] ?? { name: "—", min_points: 0, commission_pct: Number(settings.data.default_commission_pct) };
+    const nextLevel = levelRules.find((level) => Number(level.min_points) > performancePoints) ?? null;
+    const salesToNextLevel = nextLevel ? (Number(settings.data.performance_points_per_real) > 0 ? Math.ceil((Number(nextLevel.min_points)-performancePoints)/Number(settings.data.performance_points_per_real)) : null) : 0;
     const pending = (commissions.data ?? []).filter((x) => x.status === "pending").reduce((sum, x) => sum + Number(x.commission_amount), 0);
     const totalClicks = clicks.count ?? 0, totalSales = sales.data?.length ?? 0;
     const linkById = new Map((links.data ?? []).map((link) => [link.id, link]));
@@ -45,7 +52,7 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
       link_slug: linkById.get(order.affiliate_link_id)?.slug ?? "",
     }));
     return Response.json({
-      profile: profile.data, settings: settings.data, points,
+      profile: profile.data, settings: settings.data, points, level: { name: currentLevel.name, min_points: Number(currentLevel.min_points), commission_pct: Number(currentLevel.commission_pct), next_name: nextLevel?.name ?? null, next_min_points: nextLevel ? Number(nextLevel.min_points) : null, sales_to_next_level: salesToNextLevel, performance_window_days: Number(settings.data.performance_window_days) },
       metrics: { clicks: totalClicks, sales: totalSales, conversion: totalClicks ? totalSales / totalClicks * 100 : 0, pendingCommission: pending },
       links: linksWithClicks,
       sales: attributedSales,
