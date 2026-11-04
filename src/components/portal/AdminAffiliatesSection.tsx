@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, BadgePercent, CheckCircle2, Clock3, Coins, Gift, Link2, RefreshCw, Search, Settings2, Trophy, Users, UserRoundX, Wallet } from "lucide-react";
+import { BadgePercent, CheckCircle2, Clock3, Coins, Gift, Link2, RefreshCw, Search, Settings2, Trophy, Users, UserRoundX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase";
 import { saveAffiliateSettings, useAffiliateSettings, type AffiliateSettings } from "@/hooks/useAffiliateSettings";
