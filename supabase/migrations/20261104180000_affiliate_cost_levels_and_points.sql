@@ -60,7 +60,7 @@ declare
 begin
   if new.attributed_at is null or new.affiliate_link_id is null then return new; end if;
   select * into v_settings from public.affiliate_settings where id = true;
-  select affiliate_id, product_id into v_affiliate, new.affiliate_link_id
+  select affiliate_id into v_affiliate
     from public.affiliate_links where id = new.affiliate_link_id;
   select p.affiliate_pct into v_product_pct
     from public.affiliate_links l join public.products p on p.id = l.product_id
