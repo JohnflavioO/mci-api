@@ -208,7 +208,7 @@ grant execute on function public.create_order_with_affiliate(uuid,uuid,jsonb,uui
 -- Register one pending commission only when an attributed order is confirmed paid.
 -- The order's commission percentage/base are immutable snapshots from order creation.
 create or replace function public.create_affiliate_commission_for_paid_order()
-returns trigger language plpgsql security definer set search_path = pg_catalog, public as $
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $affiliate_commission$
 begin
   if new.status = 'paid' and old.status is distinct from new.status
      and new.affiliate_link_id is not null
@@ -227,7 +227,7 @@ begin
     on conflict (order_id) do nothing;
   end if;
   return new;
-end $;
+end $affiliate_commission$;
 drop trigger if exists orders_affiliate_commission_paid on public.orders;
 create trigger orders_affiliate_commission_paid
   after update of status on public.orders
