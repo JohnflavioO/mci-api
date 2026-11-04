@@ -138,8 +138,19 @@ export const ORDER_STATUS_LABEL: Record<MyOrder["status"], string> = {
 };
 
 export const orderService = {
-  create: (_items: { slug: string; qty: number }[]) =>
-    Promise.reject(new ApiError("A finalização de pedidos ainda não está disponível na API.", 501)),
+  create: async (items: { slug: string; qty: number }[]) => {
+    const sb = getSupabase();
+    const { data, error } = await sb.auth.getSession();
+    if (error || !data.session) throw new ApiError("Entre na sua conta antes de finalizar a compra.", 401);
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${data.session.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ items: items.map((item) => ({ product_id: item.slug, qty: item.qty })) }),
+    });
+    const body = await response.json().catch(() => ({})) as { order_id?: string; error?: string };
+    if (!response.ok || !body.order_id) throw new ApiError(body.error || "Não foi possível criar o pedido.", response.status);
+    return body.order_id;
+  },
   /** Pedidos do próprio usuário (RLS da 0005). Antes da 0005, a tabela não existe => 501. */
   list: async (): Promise<MyOrder[]> => {
     const sb = getSupabase();
