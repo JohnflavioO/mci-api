@@ -15,7 +15,7 @@ async function authorize(request: Request) {
   const c = config();
   if (!c.url || !c.publishableKey || !c.serviceRoleKey) return { response: Response.json({ error: "Servidor Supabase não configurado." }, { status: 503 }) } as const;
   if (!token) return { response: Response.json({ error: "Autenticação necessária." }, { status: 401 }) } as const;
-  const user = createClient(c.url, c.publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const user = createClient(c.url, c.publishableKey, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
   const { data, error } = await user.auth.getUser(token);
   if (error || !data.user) return { response: Response.json({ error: "Sessão inválida." }, { status: 401 }) } as const;
   const [adminRole, affiliateRole] = await Promise.all([
