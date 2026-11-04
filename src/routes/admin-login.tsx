@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { PasswordField } from "@/components/auth/PasswordField";
 import { AlertCircle, ArrowLeft, Loader2, LockKeyhole, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,10 +57,7 @@ function AdminLogin() {
               <Label htmlFor="admin-email" className="text-white/80">E-mail administrativo</Label>
               <Input id="admin-email" type="email" autoComplete="username" required disabled={mutation.isPending} value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 border-white/15 bg-black/20 text-white placeholder:text-white/35 focus-visible:ring-[#ff6900]/40" placeholder="admin@empresa.com.br" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="admin-password" className="text-white/80">Senha</Label>
-              <Input id="admin-password" type="password" autoComplete="current-password" required disabled={mutation.isPending} value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 border-white/15 bg-black/20 text-white focus-visible:ring-[#ff6900]/40" placeholder="Sua senha" />
-            </div>
+            <div className="space-y-2"><PasswordField id="admin-password" label="Senha" autoComplete="current-password" required disabled={mutation.isPending} value={password} onChange={setPassword} className="border-white/15 bg-black/20 text-white focus-visible:ring-[#ff6900]/40" placeholder="Sua senha" showGenerator={false} /></div>
             {mutation.isError && <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-sm text-red-200"><AlertCircle className="mt-0.5 size-4 shrink-0" />{mutation.error.message}</div>}
             <Button type="submit" className="h-11 w-full bg-[#ff6900] font-semibold text-black hover:bg-[#ff8129]" disabled={mutation.isPending}>
               {mutation.isPending ? <><Loader2 className="size-4 animate-spin" /> Verificando acesso…</> : <><LockKeyhole className="size-4" /> Entrar na central administrativa</>}
