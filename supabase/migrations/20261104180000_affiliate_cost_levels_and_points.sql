@@ -16,6 +16,15 @@ alter table public.affiliate_settings
     {"name":"Diamante","min_points":40000,"commission_pct":1.75}
   ]'::jsonb;
 
+-- Bring the current legacy defaults to the agreed starting configuration once.
+update public.affiliate_settings
+set performance_points_per_real = 1,
+    reward_points_per_real = 1,
+    simulation_sale_value = 2500.00
+where id = true
+  and performance_points_per_real = 2
+  and coalesce(simulation_sale_value, 1000) = 1000;
+
 alter table public.affiliate_commissions
   add column if not exists eligible_at timestamptz,
   add column if not exists commission_base_amount numeric(12,2),
@@ -75,7 +84,7 @@ begin
     where coalesce((item->>'min_points')::numeric,0) <= v_performance_points
     order by (item->>'min_points')::numeric desc limit 1;
   v_level_pct := coalesce((v_level->>'commission_pct')::numeric, v_settings.default_commission_pct);
-  v_reward_cost_pct := v_settings.reward_points_per_real * v_settings.reward_point_value_brl * 100;
+  v_reward_cost_pct := case when v_settings.reward_points_enabled then v_settings.reward_points_per_real * v_settings.reward_point_value_brl * 100 else 0 end;
   v_commission_ceiling := greatest(0, v_settings.max_total_affiliate_cost_pct - v_reward_cost_pct);
   v_final_pct := least(coalesce(v_product_pct, v_level_pct), v_commission_ceiling);
   v_snapshot := coalesce(new.rules_snapshot, '{}'::jsonb) || jsonb_build_object(
