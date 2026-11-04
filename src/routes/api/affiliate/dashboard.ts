@@ -17,7 +17,7 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
     if (role !== true) return Response.json({ error: "Acesso restrito a afiliados." }, { status: 403 });
     const db = createClient(c.url, c.serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
-    const [profile, settings, links, commissions, pointsLedger] = await Promise.all([
+    const [profile, settings, links, commissions, pointsLedger, profiles, rankingLedger] = await Promise.all([
       db.from("affiliate_profiles").select("user_id,referral_code,commission_rate,commission_override_pct,status,display_name").eq("user_id", auth.user.id).single(),
       db.from("affiliate_settings").select("*").eq("id", true).single(),
       db.from("affiliate_links").select("id,product_id,slug,is_active,products(name)").eq("affiliate_id", auth.user.id).order("created_at", { ascending: false }),
