@@ -96,7 +96,12 @@ begin
     'performance_points_before_order', v_performance_points,
     'reward_cost_pct', v_reward_cost_pct,
     'commission_ceiling_pct', v_commission_ceiling,
-    'commission_pct_applied', v_final_pct
+    'commission_pct_applied', v_final_pct,
+    'commission_base_amount', new.commission_base_amount,
+    'commission_cap_per_order', v_settings.commission_cap_per_order,
+    'estimated_commission_amount', least(round(coalesce(new.commission_base_amount,0) * v_final_pct / 100,2), v_settings.commission_cap_per_order),
+    'performance_points_estimate', floor(greatest(0,coalesce(new.commission_base_amount,0)) * v_settings.performance_points_per_real),
+    'reward_points_estimate', case when v_settings.reward_points_enabled then floor(greatest(0,coalesce(new.commission_base_amount,0)) * v_settings.reward_points_per_real) else 0 end
   );
   new.commission_pct_applied := v_final_pct;
   new.rules_snapshot := v_snapshot;
