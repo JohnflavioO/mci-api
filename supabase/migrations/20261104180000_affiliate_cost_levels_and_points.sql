@@ -174,4 +174,65 @@ create trigger orders_affiliate_points_reversed after update of status on public
   for each row execute function public.reverse_affiliate_order_points();
 revoke all on function public.reverse_affiliate_order_points() from public, anon, authenticated;
 
+
+-- Grace-period processing: payment creates the commission with eligible_at; points are
+-- credited only after the configured grace period has elapsed.
+create or replace function public.apply_affiliate_paid_order_points()
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $
+declare v_settings jsonb;
+begin
+  if new.status = 'paid' and old.status is distinct from new.status
+     and new.affiliate_link_id is not null then
+    v_settings := coalesce(new.rules_snapshot, '{}'::jsonb);
+    update public.affiliate_commissions
+      set eligible_at = coalesce(eligible_at, now() + make_interval(days => coalesce((v_settings->>'grace_days')::integer,7))),
+          commission_amount = least(commission_amount, coalesce((v_settings->>'commission_cap_per_order')::numeric, commission_amount)),
+          commission_base_amount = new.commission_base_amount,
+          updated_at = now()
+      where order_id = new.id;
+  end if;
+  return new;
+end $;
+
+create or replace function public.process_mature_affiliate_order_points()
+returns integer language plpgsql security definer set search_path = pg_catalog, public as $
+declare r record; v_perf integer; v_reward integer; v_count integer := 0;
+begin
+  for r in
+    select o.id, o.commission_base_amount, o.rules_snapshot, l.affiliate_id
+    from public.orders o
+    join public.affiliate_links l on l.id = o.affiliate_link_id
+    join public.affiliate_commissions c on c.order_id = o.id
+    where o.status = 'paid' and c.eligible_at <= now()
+      and c.status not in ('reversed','cancelled')
+      and o.commission_base_amount is not null
+  loop
+    v_perf := floor(greatest(0,r.commission_base_amount) * coalesce((r.rules_snapshot->>'performance_points_per_real')::numeric,0))::integer;
+    v_reward := case when coalesce((r.rules_snapshot->>'reward_points_enabled')::boolean,false)
+      then floor(greatest(0,r.commission_base_amount) * coalesce((r.rules_snapshot->>'reward_points_per_real')::numeric,0))::integer else 0 end;
+    if v_perf > 0 then
+      insert into public.affiliate_points_ledger(affiliate_user_id,points_type,points_delta,event_type,source_order_id,idempotency_key,description,metadata)
+      values(r.affiliate_id,'performance',v_perf,'sale',r.id,'affiliate-performance:'||r.id::text,'Pontos de desempenho por venda após carência',r.rules_snapshot)
+      on conflict(idempotency_key) do nothing;
+    end if;
+    if v_reward > 0 then
+      insert into public.affiliate_points_ledger(affiliate_user_id,points_type,points_delta,event_type,source_order_id,idempotency_key,description,metadata)
+      values(r.affiliate_id,'reward',v_reward,'sale',r.id,'affiliate-reward:'||r.id::text,'Pontos de recompensa por venda após carência',
+        r.rules_snapshot || jsonb_build_object('expires_at', now() + make_interval(months => coalesce((r.rules_snapshot->>'reward_points_expiry_months')::integer,12))))
+      on conflict(idempotency_key) do nothing;
+    end if;
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end $;
+revoke all on function public.process_mature_affiliate_order_points() from public, anon, authenticated;
+grant execute on function public.process_mature_affiliate_order_points() to service_role;
+
+do $
+begin
+  if to_regprocedure('cron.schedule(text,text,text)') is not null then
+    perform cron.schedule('affiliate-matured-order-points','*/15 * * * *','select public.process_mature_affiliate_order_points()');
+  end if;
+end $;
+
 commit;
