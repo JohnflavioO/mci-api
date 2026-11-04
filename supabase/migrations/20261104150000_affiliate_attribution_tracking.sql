@@ -132,11 +132,10 @@ declare
   v_is_reseller boolean := false;
   v_rules jsonb;
 begin
+  -- An idempotent retry must never attach a later cookie or recalculate the original snapshot.
+  select id into v_order_id from public.orders where user_id = p_user_id and idempotency_key = p_idempotency_key;
+  if found then return v_order_id; end if;
   v_order_id := public.create_order(p_user_id, p_idempotency_key, p_items);
-  -- Idempotency: existing orders are immutable; do not re-attribute/recalculate them.
-  if exists (select 1 from public.orders where id = v_order_id and attributed_at is not null) then
-    return v_order_id;
-  end if;
   if p_affiliate_link_id is null or p_visitor_id is null then return v_order_id; end if;
 
   select * into v_settings from public.affiliate_settings where id = true;
@@ -205,5 +204,34 @@ begin
 end $$;
 revoke all on function public.create_order_with_affiliate(uuid,uuid,jsonb,uuid,text,boolean,boolean) from public, anon, authenticated;
 grant execute on function public.create_order_with_affiliate(uuid,uuid,jsonb,uuid,text,boolean,boolean) to service_role;
+
+-- Register one pending commission only when an attributed order is confirmed paid.
+-- The order's commission percentage/base are immutable snapshots from order creation.
+create or replace function public.create_affiliate_commission_for_paid_order()
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $
+begin
+  if new.status = 'paid' and old.status is distinct from new.status
+     and new.affiliate_link_id is not null
+     and new.commission_pct_applied is not null
+     and new.commission_base_amount is not null then
+    insert into public.affiliate_commissions (
+      affiliate_user_id, order_id, order_total, commission_rate,
+      commission_amount, status, idempotency_key
+    )
+    select l.affiliate_id, new.id, new.commission_base_amount,
+      new.commission_pct_applied,
+      round(new.commission_base_amount * new.commission_pct_applied / 100, 2),
+      'pending', 'affiliate-order:' || new.id::text
+    from public.affiliate_links l
+    where l.id = new.affiliate_link_id
+    on conflict (order_id) do nothing;
+  end if;
+  return new;
+end $;
+drop trigger if exists orders_affiliate_commission_paid on public.orders;
+create trigger orders_affiliate_commission_paid
+  after update of status on public.orders
+  for each row execute function public.create_affiliate_commission_for_paid_order();
+revoke all on function public.create_affiliate_commission_for_paid_order() from public, anon, authenticated;
 
 commit;
