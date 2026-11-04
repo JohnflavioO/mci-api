@@ -29,7 +29,7 @@ export const Route = createFileRoute("/api/admin/affiliates")({
         auth.admin.from("link_clicks").select("id,link_id").gte("created_at", since).limit(10000),
         auth.admin.from("orders").select("id,affiliate_link_id,status").not("affiliate_link_id", "is", null).gte("created_at", since).limit(10000),
         auth.admin.from("affiliate_commissions").select("id,affiliate_user_id,status,commission_amount").limit(5000),
-        auth.admin.from("affiliate_points_ledger").select("affiliate_user_id,points_type,points_delta").limit(5000),
+        auth.admin.from("affiliate_points_ledger").select("affiliate_user_id,points_type,points_delta,created_at,metadata").limit(20000),
         auth.admin.from("affiliate_reward_redemptions").select("id,status,points_cost").limit(1000),
       ]);
       const failed = [settings,profiles,links,clicks,orders,commissions,ledger,redemptions].find((x) => x.error);
@@ -39,16 +39,24 @@ export const Route = createFileRoute("/api/admin/affiliates")({
       for (const click of clicks.data ?? []) { const owner = linkOwner.get(click.link_id); if (owner) clickCounts.set(owner, (clickCounts.get(owner) ?? 0) + 1); }
       for (const sale of orders.data ?? []) { const owner = sale.status === "paid" && sale.affiliate_link_id ? linkOwner.get(sale.affiliate_link_id) : null; if (owner) salesCounts.set(owner, (salesCounts.get(owner) ?? 0) + 1); }
       for (const row of commissions.data ?? []) if (row.status === "pending") pending.set(row.affiliate_user_id, (pending.get(row.affiliate_user_id) ?? 0) + Number(row.commission_amount));
+      const performanceSince = new Date(Date.now() - Number(settings.data.performance_window_days ?? 90) * 86400000).toISOString();
       const balances = new Map<string, { performance: number; reward: number }>();
       for (const row of ledger.data ?? []) {
         const current = balances.get(row.affiliate_user_id) ?? { performance: 0, reward: 0 };
-        if (row.points_type === "performance") current.performance += row.points_delta;
-        if (row.points_type === "reward") current.reward += row.points_delta;
+        if (row.points_type === "performance" && row.created_at >= performanceSince) current.performance += Number(row.points_delta);
+        if (row.points_type === "reward" && (!row.metadata?.expires_at || new Date(row.metadata.expires_at).getTime() > Date.now())) current.reward += Number(row.points_delta);
         balances.set(row.affiliate_user_id, current);
       }
+      const levelRules = Array.isArray(settings.data.levels) ? [...settings.data.levels].sort((a,b) => Number(a.min_points)-Number(b.min_points)) : [];
+      const leaderboard = (profiles.data ?? []).filter((p) => p.status === "active").map((p) => {
+        const points = balances.get(p.user_id)?.performance ?? 0;
+        const level = [...levelRules].reverse().find((item) => points >= Number(item.min_points)) ?? levelRules[0] ?? { name: "Bronze", min_points: 0, commission_pct: 0 };
+        return { user_id: p.user_id, name: p.display_name || "Afiliado", points, level: level.name, commission_pct: Number(level.commission_pct), sales30d: salesCounts.get(p.user_id) ?? 0 };
+      }).sort((a,b) => b.points-a.points || b.sales30d-a.sales30d || a.name.localeCompare(b.name,"pt-BR")).map((item,index) => ({ ...item, position:index+1 }));
       const clickTotal = clicks.data?.length ?? 0;
       return Response.json({
         settings: settings.data,
+        leaderboard,
         affiliates: (profiles.data ?? []).map((p) => ({
           ...p, slug: (links.data ?? []).find((l) => l.affiliate_id === p.user_id)?.slug ?? null,
           clicks30d: clickCounts.get(p.user_id) ?? 0, sales30d: salesCounts.get(p.user_id) ?? 0,
