@@ -35,7 +35,7 @@ revoke all on public.affiliate_permission_grants from anon, authenticated;
 grant all on public.affiliate_permission_grants to service_role;
 
 create or replace function public.has_affiliate_permission(p_user_id uuid, p_permission text)
-returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$$
   select
     exists(select 1 from public.user_roles ur where ur.user_id = p_user_id and ur.role::text in ('super_admin','superadmin'))
     or exists(select 1 from public.affiliate_permission_grants g where g.user_id = p_user_id and g.permission_key = p_permission)
@@ -45,7 +45,7 @@ grant execute on function public.has_affiliate_permission(uuid,text) to service_
 
 -- Stamp the effective level rate and all financial/points inputs on the order.
 create or replace function public.apply_affiliate_level_snapshot()
-returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$$
 declare
   v_settings public.affiliate_settings;
   v_affiliate uuid;
@@ -116,7 +116,7 @@ revoke all on function public.apply_affiliate_level_snapshot() from public, anon
 
 -- Payment starts the grace period; the scheduled processor credits points only after it matures.
 create or replace function public.apply_affiliate_paid_order_points()
-returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$$
 declare
   v_settings jsonb;
 begin
@@ -139,7 +139,7 @@ revoke all on function public.apply_affiliate_paid_order_points() from public, a
 
 -- Reversals append negative entries; original ledger rows remain immutable.
 create or replace function public.reverse_affiliate_order_points()
-returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$$
 declare r record;
 begin
   if new.status in ('refunded','cancelled','chargeback') and old.status = 'paid' then
@@ -161,7 +161,7 @@ revoke all on function public.reverse_affiliate_order_points() from public, anon
 
 
 create or replace function public.process_mature_affiliate_order_points()
-returns integer language plpgsql security definer set search_path = pg_catalog, public as $
+returns integer language plpgsql security definer set search_path = pg_catalog, public as $$
 declare r record; v_perf integer; v_reward integer; v_count integer := 0;
 begin
   for r in
@@ -190,15 +190,15 @@ begin
     v_count := v_count + 1;
   end loop;
   return v_count;
-end $;
+end $$;
 revoke all on function public.process_mature_affiliate_order_points() from public, anon, authenticated;
 grant execute on function public.process_mature_affiliate_order_points() to service_role;
 
-do $
+do $$
 begin
   if to_regprocedure('cron.schedule(text,text,text)') is not null then
     perform cron.schedule('affiliate-matured-order-points','*/15 * * * *','select public.process_mature_affiliate_order_points()');
   end if;
-end $;
+end $$;
 
 commit;
