@@ -50,7 +50,6 @@ export const Route = createFileRoute("/r/$slug")({
       await db.rpc("record_affiliate_link_click", {
         p_link_id: link.id, p_visitor_id: visitorId, p_ip_hash: ipHash, p_user_agent_hash: uaHash,
       });
-      const secure = new URL(request.url).protocol === "https:";
       const maxAge = Math.max(1, settings.attribution_window_days) * 86400;
       const headers = new Headers();
       headers.append("Set-Cookie", `aff_ref=${encodeURIComponent(link.id)}; Max-Age=${maxAge}; Path=/; HttpOnly; Secure; SameSite=Lax`);
