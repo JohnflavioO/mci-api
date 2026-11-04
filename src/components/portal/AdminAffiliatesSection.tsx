@@ -107,12 +107,13 @@ export function AdminAffiliatesSection() {
     </nav>
 
     {tab === "overview" && <>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         {[
           { label: "Afiliados cadastrados", value: usersQuery.isPending ? "—" : affiliates.length, detail: "Contas com perfil de afiliado", icon: Users },
           { label: "Ativos", value: usersQuery.isPending ? "—" : active, detail: "E-mail confirmado e conta liberada", icon: CheckCircle2 },
           { label: "Pendentes", value: usersQuery.isPending ? "—" : unconfirmed, detail: "Aguardando confirmação de e-mail", icon: Clock3 },
-          { label: "Suspensos / bloqueados", value: usersQuery.isPending ? "—" : suspended + blocked, detail: "Acesso ou participação interrompidos", icon: UserRoundX },
+          { label: "Suspensos", value: usersQuery.isPending ? "—" : suspended, detail: "Participação suspensa no programa", icon: UserRoundX },
+          { label: "Bloqueados", value: usersQuery.isPending ? "—" : blocked, detail: "Conta bloqueada no acesso", icon: UserRoundX },
           { label: "Cliques rastreados (30d)", value: program?.metrics.clicks ?? "—", detail: "Cliques registrados nos últimos 30 dias", icon: Link2 },
         ].map(({label,value,detail,icon:Icon}) => <article key={label} className="rounded-xl border bg-card p-5"><div className="flex items-start justify-between gap-3"><p className="text-sm font-medium text-muted-foreground">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-secondary"><Icon className="size-4" /></span></div><p className="mt-3 text-2xl font-semibold tracking-tight">{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></article>)}
       </section>
