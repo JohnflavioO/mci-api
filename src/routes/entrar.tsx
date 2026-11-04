@@ -63,7 +63,7 @@ function Login() {
           <p className="mt-2 text-sm text-muted-foreground">{admin ? "Acesso exclusivo para a equipe MCI Xpress." : "Use o e-mail e a senha cadastrados para acessar seu portal."}</p>
           <form className="mt-8 space-y-5" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
             <div><Label htmlFor="email">E-mail</Label><Input id="email" type="email" autoComplete="username" required disabled={m.isPending} className={field} value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <PasswordField id="pw" label="Senha" autoComplete="current-password" required disabled={m.isPending} className={field} value={password} onChange={setPassword} showGenerator={false} />
+            <PasswordField id="pw" label="Senha" autoComplete="current-password" required disabled={m.isPending} className={field} value={password} onChange={setPassword} showGenerator={false} showStrength={false} />
             <div className="-mt-2 text-right"><Link to="/recuperar-senha" className="text-sm font-medium text-brand underline-offset-4 hover:underline">Esqueci minha senha</Link></div>
             {m.isError && <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" />{m.error.message}</div>}
             <Button type="submit" size="lg" className="h-12 w-full bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground" disabled={m.isPending}>
