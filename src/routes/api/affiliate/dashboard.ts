@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
       db.from("affiliate_settings").select("*").eq("id", true).single(),
       db.from("affiliate_links").select("id,product_id,slug,is_active,products(name)").eq("affiliate_id", auth.user.id).order("created_at", { ascending: false }),
       db.from("affiliate_commissions").select("id,order_id,order_total,commission_rate,commission_amount,status,paid_at,payment_reference,created_at").eq("affiliate_user_id", auth.user.id).order("created_at", { ascending: false }).limit(100),
-      db.from("affiliate_points_ledger").select("points_type,points_delta,event_type,created_at").eq("affiliate_user_id", auth.user.id),
+      db.from("affiliate_points_ledger").select("points_type,points_delta,event_type,created_at,metadata").eq("affiliate_user_id", auth.user.id),
     ]);
     if (profile.error || settings.error || links.error || commissions.error || pointsLedger.error) return Response.json({ error: "Não foi possível carregar o painel." }, { status: 503 });
     const linkIds = (links.data ?? []).map((x) => x.id);
@@ -32,8 +32,8 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
     ]);
     if (clicks.error || sales.error) return Response.json({ error: "Não foi possível calcular os indicadores." }, { status: 503 });
     const performanceSince = new Date(Date.now() - Number(settings.data.performance_window_days ?? 90) * 86400000).toISOString();
-    const performancePoints = (pointsLedger.data ?? []).filter((row) => row.points_type === "performance" && row.event_type === "sale" && row.created_at >= performanceSince).reduce((sum, row) => sum + Number(row.points_delta), 0);
-    const rewardPoints = (pointsLedger.data ?? []).filter((row) => row.points_type === "reward").reduce((sum, row) => sum + Number(row.points_delta), 0);
+    const performancePoints = (pointsLedger.data ?? []).filter((row) => row.points_type === "performance" && row.created_at >= performanceSince).reduce((sum, row) => sum + Number(row.points_delta), 0);
+    const rewardPoints = (pointsLedger.data ?? []).filter((row) => row.points_type === "reward" && (!row.metadata?.expires_at || new Date(row.metadata.expires_at).getTime() > Date.now())).reduce((sum, row) => sum + Number(row.points_delta), 0);
     const points = { performance: performancePoints, reward: rewardPoints };
     const levelRules = Array.isArray(settings.data.levels) ? [...settings.data.levels].sort((a,b) => Number(a.min_points)-Number(b.min_points)) : [];
     const currentLevel = [...levelRules].reverse().find((level) => performancePoints >= Number(level.min_points)) ?? levelRules[0] ?? { name: "—", min_points: 0, commission_pct: Number(settings.data.default_commission_pct) };
