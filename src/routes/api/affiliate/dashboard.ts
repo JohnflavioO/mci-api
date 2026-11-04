@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
     const linkIds = (links.data ?? []).map((x) => x.id);
     const [clicks, sales] = await Promise.all([
       linkIds.length ? db.from("link_clicks").select("id", { count: "exact", head: true }).in("link_id", linkIds).gte("created_at", since) : Promise.resolve({ count: 0, error: null }),
-      linkIds.length ? db.from("orders").select("id", { count: "exact", head: true }).in("affiliate_link_id", linkIds).gte("created_at", since) : Promise.resolve({ count: 0, error: null }),
+      linkIds.length ? db.from("orders").select("id", { count: "exact", head: true }).in("affiliate_link_id", linkIds).eq("status", "paid").gte("created_at", since) : Promise.resolve({ count: 0, error: null }),
     ]);
     if (clicks.error || sales.error) return Response.json({ error: "Não foi possível calcular os indicadores." }, { status: 503 });
     const pending = (commissions.data ?? []).filter((x) => x.status === "pending").reduce((sum, x) => sum + Number(x.commission_amount), 0);
