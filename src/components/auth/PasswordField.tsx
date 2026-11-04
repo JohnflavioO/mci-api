@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, Copy, Eye, EyeOff, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -78,7 +78,7 @@ export function PasswordField({
   };
 
   return <div className="space-y-2">
-    <label htmlFor={id} className="text-sm font-medium leading-none">{label}</label>
+    {label && <label htmlFor={id} className="text-sm font-medium leading-none">{label}</label>}
     <div className="relative">
       <Input id={id} name={name} type={visible ? "text" : "password"} autoComplete={autoComplete}
         required={required} disabled={disabled} minLength={minLength} value={value}
