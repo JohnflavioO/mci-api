@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ArrowRight, ClipboardList, PackageCheck, UserRound } from "lucide-react";
@@ -29,6 +29,7 @@ const brl = (n: number) => Number(n).toLocaleString("pt-BR", { style: "currency"
 
 function CustomerAccount() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const account = useQuery({
     queryKey: ["customer-account"],
     queryFn: async () => {
@@ -38,15 +39,24 @@ function CustomerAccount() {
       const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (!data.user) return null;
+      const { data: isAffiliate, error: roleError } = await supabase.rpc("has_role", { _role: "afiliado" });
+      if (roleError) throw roleError;
       return {
         email: data.user.email ?? "",
         name: String(data.user.user_metadata?.full_name ?? ""),
         phone: String(data.user.user_metadata?.phone ?? ""),
+        isAffiliate: isAffiliate === true,
       };
     },
     retry: false,
   });
   const orders = useQuery({ queryKey: ["my-orders"], queryFn: orderService.list, retry: false, enabled: Boolean(account.data) });
+  useEffect(() => {
+    if (account.data?.isAffiliate) {
+      void navigate({ to: "/afiliado", replace: true });
+    }
+  }, [account.data?.isAffiliate, navigate]);
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   useEffect(() => {
@@ -81,6 +91,7 @@ function CustomerAccount() {
         </div>
 
         {account.isPending ? <p className="mt-8 text-sm text-muted-foreground">Carregando sua conta…</p>
+          : account.data?.isAffiliate ? <p className="mt-8 text-sm text-muted-foreground">Abrindo seu portal de afiliado…</p>
           : signedOut ? (
             <div className="mt-8 rounded-xl border bg-card p-6">
               <h2 className="font-display text-xl font-semibold">Entre para acessar sua conta</h2>
