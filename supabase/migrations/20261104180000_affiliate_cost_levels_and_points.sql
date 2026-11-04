@@ -114,39 +114,19 @@ create trigger orders_affiliate_level_snapshot
   execute function public.apply_affiliate_level_snapshot();
 revoke all on function public.apply_affiliate_level_snapshot() from public, anon, authenticated;
 
--- Credit both point ledgers only on paid orders. Idempotency keys prevent duplicates.
+-- Payment starts the grace period; the scheduled processor credits points only after it matures.
 create or replace function public.apply_affiliate_paid_order_points()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_settings jsonb;
-  v_base numeric;
-  v_affiliate uuid;
-  v_perf integer;
-  v_reward integer;
-  v_reward_enabled boolean;
 begin
   if new.status = 'paid' and old.status is distinct from new.status
-     and new.affiliate_link_id is not null and new.commission_base_amount is not null then
-    select affiliate_id into v_affiliate from public.affiliate_links where id = new.affiliate_link_id;
+     and new.affiliate_link_id is not null then
     v_settings := coalesce(new.rules_snapshot, '{}'::jsonb);
-    v_base := greatest(0, new.commission_base_amount);
-    v_perf := floor(v_base * coalesce((v_settings->>'performance_points_per_real')::numeric,0))::integer;
-    v_reward_enabled := coalesce((v_settings->>'reward_points_enabled')::boolean,false);
-    v_reward := case when v_reward_enabled then floor(v_base * coalesce((v_settings->>'reward_points_per_real')::numeric,0))::integer else 0 end;
-    if v_perf > 0 then
-      insert into public.affiliate_points_ledger(affiliate_user_id,points_type,points_delta,event_type,source_order_id,idempotency_key,description,metadata)
-      values(v_affiliate,'performance',v_perf,'sale',new.id,'affiliate-performance:'||new.id::text,'Pontos de desempenho por venda paga',v_settings)
-      on conflict(idempotency_key) do nothing;
-    end if;
-    if v_reward > 0 then
-      insert into public.affiliate_points_ledger(affiliate_user_id,points_type,points_delta,event_type,source_order_id,idempotency_key,description,metadata)
-      values(v_affiliate,'reward',v_reward,'sale',new.id,'affiliate-reward:'||new.id::text,'Pontos de recompensa por venda paga',v_settings || jsonb_build_object('expires_at', now() + make_interval(months => coalesce((v_settings->>'reward_points_expiry_months')::integer,12))))
-      on conflict(idempotency_key) do nothing;
-    end if;
     update public.affiliate_commissions
-      set commission_amount = least(commission_amount, coalesce((v_settings->>'commission_cap_per_order')::numeric, commission_amount)),
-          commission_base_amount = v_base,
-          eligible_at = coalesce(eligible_at, now() + make_interval(days => coalesce((v_settings->>'grace_days')::integer,7))),
+      set eligible_at = coalesce(eligible_at, now() + make_interval(days => coalesce((v_settings->>'grace_days')::integer,7))),
+          commission_amount = least(commission_amount, coalesce((v_settings->>'commission_cap_per_order')::numeric, commission_amount)),
+          commission_base_amount = new.commission_base_amount,
           updated_at = now()
       where order_id = new.id;
   end if;
@@ -179,25 +159,6 @@ create trigger orders_affiliate_points_reversed after update of status on public
   for each row execute function public.reverse_affiliate_order_points();
 revoke all on function public.reverse_affiliate_order_points() from public, anon, authenticated;
 
-
--- Grace-period processing: payment creates the commission with eligible_at; points are
--- credited only after the configured grace period has elapsed.
-create or replace function public.apply_affiliate_paid_order_points()
-returns trigger language plpgsql security definer set search_path = pg_catalog, public as $
-declare v_settings jsonb;
-begin
-  if new.status = 'paid' and old.status is distinct from new.status
-     and new.affiliate_link_id is not null then
-    v_settings := coalesce(new.rules_snapshot, '{}'::jsonb);
-    update public.affiliate_commissions
-      set eligible_at = coalesce(eligible_at, now() + make_interval(days => coalesce((v_settings->>'grace_days')::integer,7))),
-          commission_amount = least(commission_amount, coalesce((v_settings->>'commission_cap_per_order')::numeric, commission_amount)),
-          commission_base_amount = new.commission_base_amount,
-          updated_at = now()
-      where order_id = new.id;
-  end if;
-  return new;
-end $;
 
 create or replace function public.process_mature_affiliate_order_points()
 returns integer language plpgsql security definer set search_path = pg_catalog, public as $
