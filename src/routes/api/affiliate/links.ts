@@ -31,6 +31,24 @@ export const Route = createFileRoute("/api/affiliate/links")({
       }));
       return Response.json({ links });
     },
+    DELETE: async ({ request }) => {
+      const auth = await authorize(request);
+      if ("response" in auth) return auth.response;
+      const linkId = new URL(request.url).searchParams.get("id") ?? "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(linkId)) {
+        return Response.json({ error: "Link inválido." }, { status: 400 });
+      }
+      const { data, error } = await auth.db.from("affiliate_links")
+        .update({ is_active: false })
+        .eq("id", linkId)
+        .eq("affiliate_id", auth.userId)
+        .eq("is_active", true)
+        .select("id")
+        .maybeSingle();
+      if (error) return Response.json({ error: "Não foi possível excluir o link." }, { status: 503 });
+      if (!data) return Response.json({ error: "Link não encontrado ou já excluído." }, { status: 404 });
+      return Response.json({ success: true });
+    },
     POST: async ({ request }) => {
       const auth = await authorize(request);
       if ("response" in auth) return auth.response;
@@ -44,7 +62,16 @@ export const Route = createFileRoute("/api/affiliate/links")({
       if (profile?.status !== "active") return Response.json({ error: "Seu cadastro de afiliado não está ativo." }, { status: 403 });
       if (product?.status !== "published") return Response.json({ error: "Produto não disponível para divulgação." }, { status: 404 });
       const { data: existing } = await auth.db.from("affiliate_links").select("id,slug,is_active").eq("affiliate_id", auth.userId).eq("product_id", productId).maybeSingle();
-      if (existing) return Response.json({ link: existing });
+      if (existing) {
+        if (!existing.is_active) {
+          const { data: restored, error: restoreError } = await auth.db.from("affiliate_links")
+            .update({ is_active: true }).eq("id", existing.id).eq("affiliate_id", auth.userId)
+            .select("id,slug,is_active").single();
+          if (restoreError) return Response.json({ error: "Não foi possível reativar seu link." }, { status: 503 });
+          return Response.json({ link: restored });
+        }
+        return Response.json({ link: existing });
+      }
       for (let attempt = 0; attempt < 4; attempt += 1) {
         const slug = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
         const { data, error } = await auth.db.from("affiliate_links").insert({ affiliate_id: auth.userId, product_id: productId, slug }).select("id,slug,is_active").single();
