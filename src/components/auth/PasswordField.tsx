@@ -16,6 +16,7 @@ type PasswordFieldProps = {
   className?: string;
   placeholder?: string;
   showGenerator?: boolean;
+  showStrength?: boolean;
   onGenerated?: (password: string) => void;
 };
 
@@ -45,7 +46,7 @@ export function generateSecurePassword(length = 16) {
 export function PasswordField({
   id, name, label, value, onChange, autoComplete = "new-password",
   required = true, disabled = false, minLength = 8, className = "",
-  placeholder = "Digite sua senha", showGenerator = false, onGenerated,
+  placeholder = "Digite sua senha", showGenerator = false, showStrength = true, onGenerated,
 }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -97,7 +98,7 @@ export function PasswordField({
         <Button type="button" variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={generate} disabled={disabled}><Sparkles className="mr-1 size-3.5" />Gerar senha</Button>
       </div>
     </div>}
-    {value && <div aria-live="polite" className="space-y-1.5">
+    {showStrength && value && <div aria-live="polite" className="space-y-1.5">
       <div className="flex gap-1" aria-hidden="true">{Array.from({length:5}, (_, index) => <span key={index} className={`h-1 flex-1 rounded-full ${index < strength ? (strength >= 4 ? "bg-emerald-500" : strength >= 3 ? "bg-amber-500" : "bg-rose-500") : "bg-muted"}`} />)}</div>
       <p className={`text-xs ${strength >= 4 ? "text-emerald-600" : "text-muted-foreground"}`}>Segurança da senha: {strengthLabel}</p>
     </div>}
