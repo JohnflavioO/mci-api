@@ -103,14 +103,14 @@ function Register() {
           >
             {fields[role].map((f) => (
               <div key={f} className={f === "Razão social" || f === "Nome completo" || f === "Senha" ? "sm:col-span-2" : ""}>
-                <Label htmlFor={f}>{f}{optional.has(f) && <span className="font-normal text-muted-foreground"> (opcional)</span>}</Label>
+                {f !== "Senha" && <Label htmlFor={f}>{f}{optional.has(f) && <span className="font-normal text-muted-foreground"> (opcional)</span>}</Label>}
                 {f === "UF" ? (
                   <select id={f} name={f} required defaultValue="" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:border-brand focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30">
                     <option value="" disabled>Selecione</option>
                     {UFS.map((u) => <option key={u}>{u}</option>)}
                   </select>
                 ) : f === "Senha" ? (
-                  <PasswordField id="Senha" name="Senha" label="" value={password} onChange={(value) => { setPassword(value); setPasswordError(""); }} showGenerator disabled={m.isPending} className={fieldCls} />
+                  <PasswordField id="Senha" name="Senha" label="Senha" value={password} onChange={(value) => { setPassword(value); setPasswordError(""); }} onGenerated={setConfirmation} showGenerator disabled={m.isPending} className={fieldCls} />
                 ) : (
                   <Input id={f} name={f} required={!optional.has(f)} placeholder={hints[f]} type={f === "E-mail" ? "email" : "text"} className={fieldCls} />
                 )}
