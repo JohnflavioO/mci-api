@@ -4,7 +4,7 @@ import { AdminAffiliatesSection } from "@/components/portal/AdminAffiliatesSecti
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { AdminProgressiveDiscounts } from "@/components/portal/AdminProgressiveDiscounts";
-import { AffiliateOverview } from "@/components/portal/AffiliateOverview";
+import { AffiliateOverview, AffiliateSectionView } from "@/components/portal/AffiliateOverview";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign, ImagePlus,
@@ -265,7 +265,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   if (portal === "admin" && (slug === "promocoes" || slug === "cupons")) return <AdminMarketingSection kind={slug} />;
   if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
 
-  if (portal === "revendedor" && slug === "aprovacao") {
+  if (portal === "afiliado" && ["link", "vendas", "comissoes", "pagamentos"].includes(slug)) return <AffiliateSectionView section={slug as "link" | "vendas" | "comissoes" | "pagamentos"} />;\n\n  if (portal === "revendedor" && slug === "aprovacao") {
     return <ResellerApprovalStatus />;
   }
 
