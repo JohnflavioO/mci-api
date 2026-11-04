@@ -46,9 +46,9 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
     const leaderboard = (profiles.data ?? []).map((item) => {
       const points = rankingBalances.get(item.user_id) ?? 0;
       const level = [...levelRules].reverse().find((rule) => points >= Number(rule.min_points)) ?? levelRules[0] ?? { name: "Bronze", commission_pct: 0 };
-      const nameParts = (item.display_name || "Afiliado").trim().split(/\\s+/);
+      const nameParts = (item.display_name || "Afiliado").trim().split(/\s+/);
       const publicName = nameParts.length > 1 ? nameParts[0] + " " + nameParts[nameParts.length - 1][0] + "." : nameParts[0];
-      return { user_id: item.user_id, name: publicName, points, level: level.name, commission_pct: Number(level.commission_pct) };
+      return { is_me: item.user_id === auth.user.id, name: publicName, points, level: level.name, commission_pct: Number(level.commission_pct) };
     }).sort((a,b) => b.points-a.points || a.name.localeCompare(b.name,"pt-BR")).map((item,index) => ({ ...item, position:index+1 }));
     const myPosition = leaderboard.find((item) => item.user_id === auth.user.id)?.position ?? null;
     const pending = (commissions.data ?? []).filter((x) => x.status === "pending").reduce((sum, x) => sum + Number(x.commission_amount), 0);
