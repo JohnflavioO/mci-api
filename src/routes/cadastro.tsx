@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { PasswordField, PasswordMatchHint } from "@/components/auth/PasswordField";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ErrorState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,9 @@ const fieldCls = "mt-2 h-11 focus-visible:border-brand focus-visible:ring-brand/
 function Register() {
   const { tipo } = Route.useSearch();
   const [role, setRole] = useState<Role>(tipo ?? "cliente");
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const m = useMutation({ mutationFn: (data: Record<string, string>) => authService.register(role, data) });
   if (m.isSuccess) {
     return (
@@ -70,7 +74,7 @@ function Register() {
           <p className="mt-2 text-sm text-muted-foreground">Escolha o tipo de conta que melhor descreve você.</p>
           <div role="radiogroup" aria-label="Tipo de conta" className="mt-6 grid gap-3 sm:grid-cols-3">
             {(Object.keys(fields) as Role[]).map((r) => (
-              <button key={r} type="button" role="radio" aria-checked={role === r} onClick={() => { setRole(r); m.reset(); }}
+              <button key={r} type="button" role="radio" aria-checked={role === r} onClick={() => { setRole(r); setPassword(""); setConfirmation(""); setPasswordError(""); m.reset(); }}
                 className={`rounded-lg border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${role === r ? "border-brand bg-brand/5 ring-1 ring-brand" : "border-border hover:border-foreground/30"}`}>
                 <span className="block font-semibold">{roleInfo[r].label}</span>
                 <span className="mt-1 block text-xs text-muted-foreground">{roleInfo[r].desc}</span>
@@ -88,7 +92,13 @@ function Register() {
             className="mt-7 grid gap-5 border-t border-border pt-7 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-              m.mutate(Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>);
+              if (password !== confirmation) { setPasswordError("As senhas não coincidem. Confira os dois campos."); return; }
+              if (password.length < 8) { setPasswordError("A senha precisa ter pelo menos 8 caracteres."); return; }
+              const data = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
+              data["Senha"] = password;
+              delete data["Confirmar senha"];
+              setPasswordError("");
+              m.mutate(data);
             }}
           >
             {fields[role].map((f) => (
@@ -99,11 +109,18 @@ function Register() {
                     <option value="" disabled>Selecione</option>
                     {UFS.map((u) => <option key={u}>{u}</option>)}
                   </select>
+                ) : f === "Senha" ? (
+                  <PasswordField id="Senha" name="Senha" label="" value={password} onChange={(value) => { setPassword(value); setPasswordError(""); }} showGenerator disabled={m.isPending} className={fieldCls} />
                 ) : (
-                  <Input id={f} name={f} required={!optional.has(f)} placeholder={hints[f]} type={f === "Senha" ? "password" : f === "E-mail" ? "email" : "text"} className={fieldCls} />
+                  <Input id={f} name={f} required={!optional.has(f)} placeholder={hints[f]} type={f === "E-mail" ? "email" : "text"} className={fieldCls} />
                 )}
               </div>
             ))}
+            <div className="sm:col-span-2">
+              <PasswordField id="Confirmar-senha" label="Confirmar senha" value={confirmation} onChange={(value) => { setConfirmation(value); setPasswordError(""); }} autoComplete="new-password" disabled={m.isPending} showGenerator={false} />
+              <PasswordMatchHint password={password} confirmation={confirmation} />
+              {passwordError && <p role="alert" className="mt-2 text-sm text-destructive">{passwordError}</p>}
+            </div>
             {m.isError && <div className="sm:col-span-2"><ErrorState message={m.error.message} /></div>}
             <Button type="submit" size="lg" className="h-12 bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:col-span-2" disabled={m.isPending}>
               {m.isPending ? <><Loader2 className="size-4 animate-spin" /> Enviando…</> : "Criar conta"}
