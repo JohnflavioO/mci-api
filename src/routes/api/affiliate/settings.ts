@@ -70,6 +70,11 @@ export const Route = createFileRoute("/api/affiliate/settings")({
             !Number.isFinite(withdrawal) || withdrawal < 0) {
           return Response.json({ error: "Comissões devem ficar entre 0 e 100%, dias entre 1 e 365 e saque mínimo não pode ser negativo." }, { status: 400 });
         }
+        const performancePoints = Number(values.performance_points_per_real ?? old.performance_points_per_real);
+        const rewardPoints = Number(values.reward_points_per_real ?? old.reward_points_per_real);
+        if (!Number.isFinite(performancePoints) || performancePoints < 0 || !Number.isFinite(rewardPoints) || rewardPoints < 0) {
+          return Response.json({ error: "A pontuação por real deve ser um número maior ou igual a zero." }, { status: 400 });
+        }
         if (values.attribution_model !== undefined && values.attribution_model !== "last_click") return Response.json({ error: "Modelo de atribuição inválido." }, { status: 400 });
         if (values.commission_base !== undefined && values.commission_base !== "net") return Response.json({ error: "Base de comissão inválida." }, { status: 400 });
         for (const key of ["block_self_referral","stack_with_coupon","stack_with_volume_discount","stack_with_reseller","enabled","reward_points_enabled"] as const) {

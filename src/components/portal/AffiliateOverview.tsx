@@ -9,6 +9,7 @@ import { useAffiliateSettings } from "@/hooks/useAffiliateSettings";
 type AffiliateDashboard = {
   profile: { user_id: string; referral_code: string; commission_rate: number; commission_override_pct: number | null; status: string; display_name: string | null };
   metrics: { clicks: number; sales: number; conversion: number; pendingCommission: number };
+  points: { performance: number; reward: number };
   links: Array<{ id: string; product_id: string; slug: string; is_active: boolean; clicks30d: number; products: { name: string } | null }>;
   sales: Array<{ id: string; affiliate_link_id: string; total: number; status: string; created_at: string; commission_pct_applied: number | null; commission_base_amount: number | null; product_name: string; link_slug: string }>;
   commissions: Array<{ id: string; order_id: string; order_total: number; commission_rate: number; commission_amount: number; status: string; paid_at: string | null; payment_reference: string | null; created_at: string }>;
@@ -90,6 +91,10 @@ export function AffiliateOverview() {
     </section>
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map(({label,value,detail,icon:Icon}) => <article key={label} className="rounded-xl border bg-card p-5"><div className="flex items-center justify-between gap-3"><p className="text-sm font-medium text-muted-foreground">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-secondary"><Icon className="size-4" /></span></div><p className="mt-3 text-2xl font-semibold tracking-tight">{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></article>)}
+    </section>
+    <section className="grid gap-3 sm:grid-cols-2">
+      <article className="rounded-xl border bg-card p-5"><h3 className="text-sm font-semibold">Pontos de desempenho</h3><p className="mt-3 text-2xl font-semibold">{Number(dashboard.data.points.performance).toLocaleString("pt-BR")} pts</p><p className="mt-1 text-xs text-muted-foreground">Saldo para metas e ranking. Regra atual: {Number(settings.performance_points_per_real).toLocaleString("pt-BR")} ponto(s) por R$ 1,00 elegível. Não é dinheiro e não pode ser sacado.</p></article>
+      <article className="rounded-xl border bg-card p-5"><h3 className="text-sm font-semibold">Pontos de recompensa</h3><p className="mt-3 text-2xl font-semibold">{Number(dashboard.data.points.reward).toLocaleString("pt-BR")} pts</p><p className="mt-1 text-xs text-muted-foreground">{settings.reward_points_enabled ? "Saldo para trocar por benefícios. Regra atual: " + Number(settings.reward_points_per_real).toLocaleString("pt-BR") + " ponto(s) por R$ 1,00 elegível." : "O acúmulo de pontos resgatáveis está temporariamente desabilitado."}</p></article>
     </section>
     <section className="rounded-xl border bg-card">
       <div className="border-b p-5"><div className="flex items-center gap-2"><Link2 className="size-5 text-[#f26a2c]" /><h3 className="font-semibold">Gerar link de indicação</h3></div><p className="mt-1 text-sm text-muted-foreground">Selecione um produto para criar ou reutilizar seu link exclusivo.</p></div>
