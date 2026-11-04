@@ -24,7 +24,7 @@ export const Route = createFileRoute("/api/admin/affiliates")({
       const since = new Date(Date.now() - 30 * 86400000).toISOString();
       const [settings, profiles, links, clicks, orders, commissions, ledger, redemptions] = await Promise.all([
         auth.admin.from("affiliate_settings").select("*").eq("id", true).single(),
-        auth.admin.from("affiliate_profiles").select("user_id,referral_code,commission_rate,commission_override_pct,status,created_at").order("created_at", { ascending: false }).limit(500),
+        auth.admin.from("affiliate_profiles").select("user_id,referral_code,commission_rate,commission_override_pct,status,created_at,display_name").order("created_at", { ascending: false }).limit(500),
         auth.admin.from("affiliate_links").select("id,affiliate_id,slug,is_active"),
         auth.admin.from("link_clicks").select("id,link_id").gte("created_at", since).limit(10000),
         auth.admin.from("orders").select("id,affiliate_link_id,status").not("affiliate_link_id", "is", null).gte("created_at", since).limit(10000),
