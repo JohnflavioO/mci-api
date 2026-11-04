@@ -265,7 +265,9 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   if (portal === "admin" && (slug === "promocoes" || slug === "cupons")) return <AdminMarketingSection kind={slug} />;
   if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
 
-  if (portal === "afiliado" && ["link", "vendas", "comissoes", "pagamentos"].includes(slug)) return <AffiliateSectionView section={slug as "link" | "vendas" | "comissoes" | "pagamentos"} />;\n\n  if (portal === "revendedor" && slug === "aprovacao") {
+  if (portal === "afiliado" && ["link", "vendas", "comissoes", "pagamentos"].includes(slug)) return <AffiliateSectionView section={slug as "link" | "vendas" | "comissoes" | "pagamentos"} />;
+
+  if (portal === "revendedor" && slug === "aprovacao") {
     return <ResellerApprovalStatus />;
   }
 
