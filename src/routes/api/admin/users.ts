@@ -71,7 +71,7 @@ export const Route = createFileRoute("/api/admin/users")({
             : roles.includes("gestor") ? "gestor"
             : roles.includes("vendedor") ? "vendedor"
             : roles.includes("revendedor") || roles.includes("reseller") || resellerIds.has(user.id) ? "revendedor"
-            : roles.includes("afiliado") || roles.includes("affiliate") ? "afiliado"
+            : roles.includes("afiliado") || roles.includes("affiliate") || user.user_metadata?.registration_type === "afiliado" ? "afiliado"
             : "cliente";
           return {
             id: user.id,
