@@ -33,6 +33,10 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
     const pending = (commissions.data ?? []).filter((x) => x.status === "pending").reduce((sum, x) => sum + Number(x.commission_amount), 0);
     const totalClicks = clicks.count ?? 0, totalSales = sales.data?.length ?? 0;
     const linkById = new Map((links.data ?? []).map((link) => [link.id, link]));
+    const linksWithClicks = await Promise.all((links.data ?? []).map(async (link) => {
+      const { count } = await db.from("link_clicks").select("id", { count: "exact", head: true }).eq("link_id", link.id).gte("created_at", since);
+      return { ...link, clicks30d: count ?? 0 };
+    }));
     const attributedSales = (sales.data ?? []).map((order) => ({
       ...order,
       product_name: linkById.get(order.affiliate_link_id)?.products?.name ?? "Produto indicado",
@@ -41,7 +45,7 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
     return Response.json({
       profile: profile.data, settings: settings.data,
       metrics: { clicks: totalClicks, sales: totalSales, conversion: totalClicks ? totalSales / totalClicks * 100 : 0, pendingCommission: pending },
-      links: links.data ?? [],
+      links: linksWithClicks,
       sales: attributedSales,
       commissions: (commissions.data ?? []).slice(0, 10),
     });
