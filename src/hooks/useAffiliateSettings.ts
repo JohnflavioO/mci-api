@@ -19,6 +19,14 @@ export type AffiliateSettings = {
   performance_points_per_real: number;
   reward_points_per_real: number;
   reward_points_enabled: boolean;
+  max_total_affiliate_cost_pct: number;
+  reward_point_value_brl: number;
+  reward_points_expiry_months: number;
+  reward_min_redeem_points: number;
+  performance_window_days: number;
+  simulation_sale_value: number;
+  commission_cap_per_order: number;
+  levels: Array<{ name: string; min_points: number; commission_pct: number }>;
 };
 
 async function token() {
