@@ -5,8 +5,6 @@ import { PasswordField, PasswordMatchHint } from "@/components/auth/PasswordFiel
 import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { authService } from "@/services";
 
 export const Route = createFileRoute("/redefinir-senha")({
@@ -32,7 +30,7 @@ function ResetPassword() {
     <h1 className="mt-3 font-display text-3xl font-bold">Criar nova senha</h1>
     <p className="mt-3 text-sm leading-6 text-muted-foreground">Use uma senha nova com pelo menos 8 caracteres. Depois, entre novamente com seu e-mail e a nova senha.</p>
     <form className="mt-7 space-y-5" onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
-      <PasswordField id="new-password" label="Nova senha" value={password} onChange={setPassword} autoComplete="new-password" minLength={8} showGenerator />
+      <PasswordField id="new-password" label="Nova senha" value={password} onChange={setPassword} onGenerated={setConfirm} autoComplete="new-password" minLength={8} showGenerator />
       <div><PasswordField id="confirm-password" label="Confirmar nova senha" value={confirm} onChange={setConfirm} autoComplete="new-password" minLength={8} showGenerator={false} /><PasswordMatchHint password={password} confirmation={confirm} /></div>
       {mutation.isError && <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" />{mutation.error.message}</div>}
       {mutation.isSuccess && <p className="flex items-center gap-2 text-sm text-emerald-600"><CheckCircle2 className="size-4" /> Senha atualizada.</p>}
