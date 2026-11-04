@@ -4,6 +4,7 @@ import { AdminAffiliatesSection } from "@/components/portal/AdminAffiliatesSecti
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { AdminProgressiveDiscounts } from "@/components/portal/AdminProgressiveDiscounts";
+import { AffiliateOverview } from "@/components/portal/AffiliateOverview";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight, ArrowUpRight, BadgePercent, Building2, Cable, CheckCircle2, CircleDollarSign, ImagePlus,
@@ -243,6 +244,8 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
       </div>
     );
   }
+  if (portal === "afiliado") return <AffiliateOverview />;
+
   return (
     <div className="rounded-xl border bg-card">
       <div className="border-b px-5 py-4"><h2 className="font-semibold">Visão geral</h2><p className="text-sm text-muted-foreground">Acesse uma área do seu portal.</p></div>
