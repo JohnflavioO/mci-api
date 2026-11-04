@@ -151,9 +151,9 @@ begin
       and c.created_at >= now() - make_interval(days => v_settings.attribution_window_days)
   ) then return v_order_id; end if;
 
-  select email, regexp_replace(coalesce(raw_user_meta_data->>'cpf',''), '\\D','','g')
+  select email, regexp_replace(coalesce(raw_user_meta_data->>'cpf',''), '[^0-9]','','g')
     into v_buyer_email, v_buyer_cpf from auth.users where id = p_user_id;
-  select email, regexp_replace(coalesce(raw_user_meta_data->>'cpf',''), '\\D','','g')
+  select email, regexp_replace(coalesce(raw_user_meta_data->>'cpf',''), '[^0-9]','','g')
     into v_affiliate_email, v_affiliate_cpf from auth.users where id = v_link.affiliate_id;
   if v_settings.block_self_referral and (
     (v_buyer_email is not null and lower(v_buyer_email) = lower(v_affiliate_email)) or
