@@ -142,6 +142,7 @@ export const orderService = {
     items: { slug: string; qty: number }[],
     delivery: { name: string; document: string; phone: string; email: string; cep: string; street: string; number: string; complement: string; district: string; city: string; state: string },
     idempotencyKey: string,
+    shipping: { provider: string; service: string; quote_token: string },
   ): Promise<{ order_id: string; checkout_url: string; total: number }> => {
     const sb = getSupabase();
     const { data, error } = await sb.auth.getSession();
@@ -154,6 +155,7 @@ export const orderService = {
         items: items.map((item) => ({ product_id: item.slug, qty: item.qty })),
         customer: { name: delivery.name, document: delivery.document, email: delivery.email, phone: delivery.phone },
         address: { cep: delivery.cep, street: delivery.street, number: delivery.number, complement: delivery.complement, district: delivery.district, city: delivery.city, state: delivery.state },
+        shipping,
       }),
     });
     const body = await response.json().catch(() => ({})) as { order_id?: string; checkout_url?: string; total?: number; error?: string };
