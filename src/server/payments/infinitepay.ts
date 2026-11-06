@@ -13,9 +13,9 @@ type CheckoutPayload = {
   order_nsu: string;
   items: CheckoutItem[];
   redirect_url: string;
-  webhook: { url: string; events: string[] };
+  webhook_url: string;
   customer?: { name: string; email: string; phone_number: string };
-  address?: { cep: string; street: string; number: string; neighborhood: string; city: string; state: string; complement?: string };
+  address?: { cep: string; street: string; number: string; neighborhood: string; complement?: string };
   options: {
     single_payment: true;
     require_delivery_address: false;
@@ -61,14 +61,14 @@ export async function createInfinitePayCheckout(
   if (input.shippingAmount > 0) {
     items.push({ quantity: 1, price: Math.round(input.shippingAmount * 100), description: "Frete" });
   }
-  if (!items.length || items.some((i) => !Number.isInteger(i.price) || i.price < 0 || !Number.isInteger(i.quantity) || i.quantity < 1)) {
+  if (!items.length || items.some((i) => !Number.isInteger(i.price) || i.price <= 0 || !Number.isInteger(i.quantity) || i.quantity < 1)) {
     throw new Error("infinitepay_invalid_order_items");
   }
   const payload: CheckoutPayload = {
     order_nsu: input.orderId,
     items,
     redirect_url: `${config.appBaseUrl}/pagamento-retorno`,
-    webhook: { url: `${config.appBaseUrl}/api/public/infinitepay-webhook`, events: ["paid", "refunded", "canceled", "payment_failed"] },
+    webhook_url: `${config.appBaseUrl}/api/public/infinitepay-webhook`,
     options: {
       single_payment: true,
       require_delivery_address: false,
@@ -79,14 +79,12 @@ export async function createInfinitePayCheckout(
   if (input.customer?.name && input.customer.email && input.customer.phone) {
     payload.customer = { name: input.customer.name, email: input.customer.email, phone_number: input.customer.phone };
   }
-  if (input.address?.cep && input.address.street && input.address.number && input.address.district && input.address.city && input.address.state) {
+  if (input.address?.cep && input.address.street && input.address.number && input.address.district) {
     payload.address = {
       cep: input.address.cep.replace(/\D/g, ""),
       street: input.address.street,
       number: input.address.number,
       neighborhood: input.address.district,
-      city: input.address.city,
-      state: input.address.state,
       ...(input.address.complement ? { complement: input.address.complement } : {}),
     };
   }
