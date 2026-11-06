@@ -76,12 +76,17 @@ export const Route = createFileRoute("/api/orders")({
         .select("id,total,status,provider,provider_checkout_url,shipping_amount")
         .eq("id", orderId).eq("user_id", auth.user.id).single();
       if (orderError || !order) return Response.json({ error: "Pedido criado, mas não foi possível carregar seus dados para pagamento." }, { status: 503 });
+      if (order.status !== "pending_payment") return Response.json({ error: "Este pedido não está mais aguardando pagamento." }, { status: 409 });
       const shippingAmount = Number(quote.price.toFixed(2));
       const updatedTotal = Number((Number(order.total) - Number(order.shipping_amount ?? 0) + shippingAmount).toFixed(2));
-      const { error: shippingSaveError } = await db.from("orders").update({ shipping_amount: shippingAmount, shipping_provider: quote.provider, shipping_service: quote.service, shipping_quote_token: selectedShipping.quote_token, total: updatedTotal }).eq("id", order.id).eq("user_id", auth.user.id).eq("status", "pending_payment");
-      if (shippingSaveError) return Response.json({ error: "Não foi possível registrar o frete no pedido." }, { status: 503 });
+      const { data: savedShipping, error: shippingSaveError } = await db.from("orders").update({
+        shipping_amount: shippingAmount, shipping_provider: quote.provider, shipping_service: quote.service,
+        shipping_quote_token: selectedShipping.quote_token, total: updatedTotal,
+        provider_checkout_url: null, payment_link_created_at: null,
+      }).eq("id", order.id).eq("user_id", auth.user.id).eq("status", "pending_payment").select("id").maybeSingle();
+      if (shippingSaveError || !savedShipping) return Response.json({ error: "Não foi possível registrar o frete no pedido. Nenhum pagamento foi iniciado." }, { status: 503 });
       order.total = updatedTotal;
-      if (order.status !== "pending_payment") return Response.json({ error: "Este pedido não está mais aguardando pagamento." }, { status: 409 });
+      order.provider_checkout_url = null;
       if (order.provider && order.provider !== "infinitepay") return Response.json({ error: "Este pedido já está vinculado a outro meio de pagamento." }, { status: 409 });
       if (order.provider_checkout_url) return Response.json({ order_id: order.id, checkout_url: order.provider_checkout_url, total: Number(order.total) }, { status: 200 });
       if (!order.provider) {
