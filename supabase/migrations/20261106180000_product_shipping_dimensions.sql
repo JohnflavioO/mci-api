@@ -60,11 +60,11 @@ begin
 
   if p_id is null then
     insert into public.products(name, brand, sku, category, description, status, weight_kg, height_cm, width_cm, length_cm)
-    values (btrim(p_name), coalesce(btrim(p_brand), ''), nullif(btrim(p_sku), ''), nullif(btrim(p_category), ''), nullif(btrim(p_description), ''), p_status, p_weight_kg, p_height_cm, p_width_cm, p_length_cm)
+    values (btrim(p_name), coalesce(btrim(p_brand), ''), nullif(btrim(p_sku), ''), nullif(btrim(p_category), ''), nullif(btrim(p_description), ''), p_status::public.product_status, p_weight_kg, p_height_cm, p_width_cm, p_length_cm)
     returning id into v_id;
   else
     update public.products set name = btrim(p_name), brand = coalesce(btrim(p_brand), ''), sku = nullif(btrim(p_sku), ''),
-      category = nullif(btrim(p_category), ''), description = nullif(btrim(p_description), ''), status = p_status,
+      category = nullif(btrim(p_category), ''), description = nullif(btrim(p_description), ''), status = p_status::public.product_status,
       weight_kg = p_weight_kg, height_cm = p_height_cm, width_cm = p_width_cm, length_cm = p_length_cm,
       row_version = row_version + 1, updated_at = now()
     where id = p_id returning id into v_id;
