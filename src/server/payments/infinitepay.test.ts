@@ -29,7 +29,7 @@ describe("InfinitePay Checkout Integrado", () => {
       order_nsu: string; items: { quantity: number; price: number; description: string }[];
       redirect_url: string; webhook_url: string;
       customer: { name: string; email: string; phone_number: string };
-      address: { cep: string; street: string; number: string; neighborhood: string; complement?: string };
+      address: { cep: string; street: string; number: string; neighborhood: string; city: string; state: string; complement?: string };
       options: { single_payment: boolean; payment_methods_enabled: string[] };
       webhook?: unknown;
     };
@@ -42,7 +42,7 @@ describe("InfinitePay Checkout Integrado", () => {
     expect(payload.webhook_url).toBe("https://storehouse.example/api/public/infinitepay-webhook");
     expect(payload.webhook).toBeUndefined();
     expect(payload.customer.phone_number).toBe("+5511999999999");
-    expect(payload.address).toMatchObject({ cep: "01001000", street: "Praça da Sé", number: "1", neighborhood: "Sé" });
+    expect(payload.address).toMatchObject({ cep: "01001000", street: "Praça da Sé", number: "1", neighborhood: "Sé", city: "São Paulo", state: "SP" });
     expect(payload.options.single_payment).toBe(true);
     expect(payload.options.payment_methods_enabled).toEqual(["credit_card", "pix"]);
   });
