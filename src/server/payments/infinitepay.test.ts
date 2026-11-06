@@ -10,7 +10,7 @@ const config: InfinitePayConfig = {
 };
 
 describe("InfinitePay Checkout Integrado", () => {
-  it("envia valores em centavos, itens calculados no servidor e opções de pagamento", async () => {
+  it("envia payload documentado, valores em centavos e webhook_url", async () => {
     const fetcher = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) =>
       new Response(JSON.stringify({ url: "https://checkout.infinitepay.io/pay/abc" }), { status: 200 }),
     );
@@ -27,17 +27,24 @@ describe("InfinitePay Checkout Integrado", () => {
     expect((init.headers as Record<string, string>)["X-Api-Key"]).toBe("inchk_test_secret");
     const payload = JSON.parse(String(init.body)) as {
       order_nsu: string; items: { quantity: number; price: number; description: string }[];
+      redirect_url: string; webhook_url: string;
+      customer: { name: string; email: string; phone_number: string };
+      address: { cep: string; street: string; number: string; neighborhood: string; complement?: string };
       options: { single_payment: boolean; payment_methods_enabled: string[] };
-      webhook: { url: string; events: string[] };
+      webhook?: unknown;
     };
     expect(payload.order_nsu).toBe("11111111-1111-1111-1111-111111111111");
     expect(payload.items).toEqual([
       { quantity: 1, price: 18000, description: "Luminária Amaran · 2 un." },
       { quantity: 1, price: 2000, description: "Frete" },
     ]);
+    expect(payload.redirect_url).toBe("https://storehouse.example/pagamento-retorno");
+    expect(payload.webhook_url).toBe("https://storehouse.example/api/public/infinitepay-webhook");
+    expect(payload.webhook).toBeUndefined();
+    expect(payload.customer.phone_number).toBe("+5511999999999");
+    expect(payload.address).toMatchObject({ cep: "01001000", street: "Praça da Sé", number: "1", neighborhood: "Sé" });
     expect(payload.options.single_payment).toBe(true);
     expect(payload.options.payment_methods_enabled).toEqual(["credit_card", "pix"]);
-    expect(payload.webhook.url).toBe("https://storehouse.example/api/public/infinitepay-webhook");
   });
 
   it("considera pago somente quando a consulta oficial retorna success e paid verdadeiros", async () => {
