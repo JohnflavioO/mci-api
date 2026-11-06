@@ -88,9 +88,10 @@ begin
           v_unit_total := 0;
           for v_position in 1..r.qty loop
             v_discount := 0;
-            select tier into v_tier
-            from jsonb_array_elements(v_rule.quantity_discounts) tier
-            where (tier->>'quantity')::integer = v_position
+            v_tier := null;
+            select value into v_tier
+            from jsonb_array_elements(v_rule.quantity_discounts) as tiers(value)
+            where (value->>'quantity')::integer = v_position
             limit 1;
             if v_tier is not null then
               if v_tier->>'discount_type' = 'percentage' then
