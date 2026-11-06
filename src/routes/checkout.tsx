@@ -32,9 +32,10 @@ function Checkout() {
       const { data, error } = await getSupabase().auth.getSession();
       if (error) throw error;
       const user = data.session?.user ?? null;
-      if (!user) return { name: "", document: "", phone: "", email: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" };
+      if (!user) return { authenticated: false, name: "", document: "", phone: "", email: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" };
       const meta = user.user_metadata ?? {};
       return {
+        authenticated: true,
         name: String(meta.full_name ?? ""),
         document: String(meta.cpf ?? meta.cnpj ?? ""),
         phone: String(meta.phone ?? ""),
@@ -102,13 +103,13 @@ function Checkout() {
           <div className="mt-8"><EmptyState title="Nenhum item para finalizar" /></div>
         ) : (
           <>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm">
+          {!profile.data?.authenticated && <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm">
             <span className="text-muted-foreground">Quer agilizar suas próximas compras?</span>
             <span className="flex gap-3 font-semibold">
               <Link to="/entrar" className="text-brand underline underline-offset-4">Entrar</Link>
               <Link to="/cadastro" className="text-brand underline underline-offset-4">Criar conta</Link>
             </span>
-          </div>
+          </div>}
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
             {profile.isError && <p role="status" className="text-sm text-muted-foreground">Não foi possível carregar seus dados salvos. Você pode preencher os campos manualmente.</p>}
             <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
@@ -152,10 +153,10 @@ function Checkout() {
             {m.isError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
               <p className="font-semibold text-foreground">Não foi possível continuar agora</p>
               <p className="mt-1 text-sm text-muted-foreground">{m.error.message}</p>
-              <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
+              {!profile.data?.authenticated && <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
                 <Link to="/entrar" className="text-brand underline underline-offset-4">Entrar na minha conta</Link>
                 <Link to="/cadastro" className="text-brand underline underline-offset-4">Criar conta gratuitamente</Link>
-              </div>
+              </div>}
               <p className="mt-2 text-xs text-muted-foreground">Seus dados preenchidos permanecem nesta tela. Você não precisa recomeçar o pedido.</p>
             </div>}
           </form>
