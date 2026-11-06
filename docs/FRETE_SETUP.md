@@ -2,34 +2,39 @@
 
 ## Dados iniciais confirmados
 
-- CEP de postagem/origem: 88313-000
+- CEP de origem: 88313-000
 - CNPJ remetente: 05.502.390/0002-00
 - Jamef: Sandbox
-- Correios: contrato informado como disponível
+- Correios: contrato disponível; credenciais CWS a cadastrar
 - Retirada: Armazém Sanco
 
-## Estado da integração
+## Correios — secrets necessários
 
-O módulo `src/server/shipping/config.ts` centraliza as configurações exclusivamente no servidor e informa a prontidão de cada modalidade. Nenhuma credencial é enviada ao navegador.
+Cadastrar diretamente como Environment Variables privadas na Vercel:
 
-- **Retirada no Armazém Sanco:** pode ser habilitada sem transportadora; ainda é necessário cadastrar endereço completo e instruções para exibição correta ao comprador.
-- **Correios:** requer token de API e os códigos dos serviços de encomenda habilitados no contrato (por exemplo, PAC/SEDEX conforme o contrato real). O manual oficial informa que a cotação nacional recebe CEP de origem/destino, peso em gramas, tipo de objeto e dimensões para pacote. Não presumir códigos de serviço.
-- **Jamef:** usar Sandbox até aprovação. A integração final depende do OpenAPI/Swagger e das credenciais emitidas no portal Jamef; não fixar endpoints ou payloads sem essa especificação.
+- `CORREIOS_USUARIO`: login do portal CWS
+- `CORREIOS_CODIGO_ACESSO`: código curto gerado em “Gerar código de acesso às API's”; não é a chave longa do portal
+- `CORREIOS_CARTAO_POSTAGEM`: número do cartão de postagem
+- `CORREIOS_CONTRATO`: número do contrato
+- `CORREIOS_DR`: diretoria regional (DR)
+- `CORREIOS_SERVICE_CODES`: códigos dos serviços contratados que serão cotados
 
-## Variáveis privadas
+O módulo lê esses nomes exatos e mantém os valores apenas no servidor. O fluxo de autenticação/token e a cotação só devem ser ativados após validar a especificação CWS correspondente à conta.
 
-Copiar as variáveis do arquivo `.env.example` para os Environment Variables do ambiente server-side (Vercel). Não adicionar prefixo `VITE_`, não commitar valores reais e não compartilhar tokens/senhas no chat.
+## Jamef
 
-## Dados ainda necessários para ativar as cotações
+- `JAMEF_USERNAME`: usuário do portal/API
+- `JAMEF_PASSWORD`: senha de acesso (somente em secret server-side)
+- `JAMEF_ENVIRONMENT=sandbox`
+- `JAMEF_API_BASE_URL`: URL de Sandbox indicada no portal
+- `JAMEF_ENABLED=false` até confirmar a API de cotação e testar autenticação
 
-1. Correios: token/API key (armazenado diretamente no Vercel), códigos de serviço habilitados no contrato e DR/contrato, se exigidos pelo método de autenticação contratado.
-2. Jamef: usuário e senha de Sandbox, URL base indicada pelo portal e arquivo OpenAPI/Swagger da API de cotação.
-3. Retirada: endereço completo do Armazém Sanco e instruções/horários que devem aparecer no checkout.
-4. Regra de embalagem: confirmar se cada produto será enviado em embalagem individual ou se haverá uma regra de consolidação em caixas. Não somar dimensões de produtos como se fossem uma única caixa sem regra logística.
+**Segurança:** a imagem enviada contém uma senha de acesso Jamef legível. Como ela foi compartilhada em uma conversa, recomendo alterá-la imediatamente no portal e cadastrar a nova senha somente nas variáveis privadas da Vercel. Não vou copiar a senha para o repositório, logs ou respostas.
 
-## Segurança e ativação
+## Ativação
 
-- Manter Jamef em `sandbox` até testes e aprovação formal para produção.
-- Não habilitar Correios enquanto token e serviços não estiverem validados.
-- A cotação precisa acontecer no servidor, com preço/prazo retornados pela transportadora; o checkout deve persistir a modalidade e o valor selecionados antes de gerar o link InfinitePay.
-- A migration de dimensões dos produtos e as migrations de dados de entrega devem estar aplicadas no projeto Supabase correto antes de depender desses campos em produção.
+- Correios permanece desabilitado até que os secrets e códigos de serviço sejam cadastrados e validados.
+- Jamef permanece em Sandbox e desabilitado até receber URL e especificação oficial da cotação.
+- Retirada precisa do endereço completo e instruções/horários do Armazém Sanco.
+- Confirmar regra de embalagem para combinar itens de um mesmo pedido.
+- A cotação deve ser calculada no servidor, persistida no pedido e somada ao total antes da criação do checkout InfinitePay.
