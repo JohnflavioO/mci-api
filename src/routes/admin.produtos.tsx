@@ -31,6 +31,7 @@ type ProductForm = {
   description: string;
   customerPrice: string;
   resellerPrice: string;
+  resellerPriceMode: "currency" | "discount_percent";
   images: string[];
   imageFiles: File[];
   stock: string;
@@ -40,7 +41,7 @@ type ProductForm = {
 
 const emptyForm: ProductForm = {
   name: "", brand: "", sku: "", category: "", description: "",
-  customerPrice: "", resellerPrice: "", images: [], imageFiles: [], stock: "", stockConfirmed: false, status: "draft",
+  customerPrice: "", resellerPrice: "", resellerPriceMode: "currency", images: [], imageFiles: [], stock: "", stockConfirmed: false, status: "draft",
 };
 
 const priceNumber = (v: string): number | null => {
@@ -61,9 +62,12 @@ function ProductsPage() {
     mutationFn: async (f: ProductForm) => {
       if (!f.name.trim()) throw new Error("Informe o nome do produto.");
       if (f.customerPrice.trim() && priceNumber(f.customerPrice) === null) throw new Error("Preço de venda inválido.");
-      if (f.resellerPrice.trim() && priceNumber(f.resellerPrice) === null) throw new Error("Preço de revenda inválido.");
       const customer = priceNumber(f.customerPrice);
-      const reseller = priceNumber(f.resellerPrice);
+      const resellerInput = priceNumber(f.resellerPrice);
+      if (f.resellerPrice.trim() && resellerInput === null) throw new Error(f.resellerPriceMode === "discount_percent" ? "Percentual de desconto inválido." : "Preço de revenda inválido.");
+      if (f.resellerPriceMode === "discount_percent" && resellerInput !== null && (customer === null || customer <= 0)) throw new Error("Informe primeiro um preço ao cliente válido para calcular o desconto percentual.");
+      if (f.resellerPriceMode === "discount_percent" && resellerInput !== null && resellerInput > 100) throw new Error("O desconto percentual deve ficar entre 0% e 100%.");
+      const reseller = resellerInput === null ? null : f.resellerPriceMode === "discount_percent" ? Math.round((customer as number) * (1 - resellerInput / 100) * 100) / 100 : resellerInput;
       if (customer !== null && reseller !== null && reseller > customer) throw new Error("O preço de revenda não pode ser maior que o preço ao cliente.");
       if (f.images.some((url) => !/^https:\/\//i.test(url.trim()))) throw new Error("Todas as URLs de imagens precisam usar HTTPS.");
       if (f.images.length + f.imageFiles.length > 10) throw new Error("Cada produto pode ter no máximo 10 imagens.");
@@ -119,11 +123,12 @@ function ProductsPage() {
     id: p.slug, name: p.name, brand: p.brand ?? "", sku: p.sku ?? "",
     category: p.category ?? "", description: p.description ?? "",
     customerPrice: p.customerPrice == null ? "" : String(p.customerPrice),
-    resellerPrice: p.resellerPrice == null ? "" : String(p.resellerPrice),
+    resellerPrice: p.resellerPrice == null ? "" : String(p.customerPrice != null && p.customerPrice > 0 ? Math.round((1 - p.resellerPrice / p.customerPrice) * 10000) / 100 : p.resellerPrice),
+    resellerPriceMode: p.resellerPrice != null && p.customerPrice != null && p.customerPrice > 0 ? "discount_percent" : "currency",
     images: [...p.images], imageFiles: [], stock: p.stock == null ? "" : String(p.stock), stockConfirmed: p.stockConfirmed, status: p.status,
   });
 
-  const field = (key: Exclude<keyof ProductForm, "id" | "status">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
+  const field = (key: Exclude<keyof ProductForm, "id" | "status" | "resellerPriceMode">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
 
   return (
     <div className="space-y-6">
@@ -164,7 +169,16 @@ function ProductsPage() {
             <div className="space-y-1.5"><Label htmlFor="product-sku">SKU / Código</Label><Input id="product-sku" maxLength={64} value={form.sku} onChange={(e) => field("sku", e.target.value)} /></div>
             <div className="space-y-1.5"><Label htmlFor="product-category">Categoria</Label><select id="product-category" value={form.category} onChange={(e) => field("category", e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">Selecione uma categoria</option>{["Iluminação", "Acessórios", "Áudio", "Vídeo", "Cabos e Conexões", "Suportes e Estruturas", "Outros"].map((category) => <option key={category} value={category}>{category}</option>)}{form.category && !["Iluminação", "Acessórios", "Áudio", "Vídeo", "Cabos e Conexões", "Suportes e Estruturas", "Outros"].includes(form.category) && <option value={form.category}>{form.category} (categoria atual)</option>}</select><p className="text-xs text-muted-foreground">A categoria define em qual seção do catálogo o produto será exibido.</p></div>
             <div className="space-y-1.5"><Label htmlFor="product-customer-price">Preço ao cliente (R$)</Label><Input id="product-customer-price" inputMode="decimal" value={form.customerPrice} onChange={(e) => field("customerPrice", e.target.value)} placeholder="0,00" /></div>
-            <div className="space-y-1.5"><Label htmlFor="product-reseller-price">Preço de revenda (R$)</Label><Input id="product-reseller-price" inputMode="decimal" value={form.resellerPrice} onChange={(e) => field("resellerPrice", e.target.value)} placeholder="0,00" /></div>
+            <div className="space-y-1.5">
+  <div className="flex flex-wrap items-center justify-between gap-2"><Label htmlFor="product-reseller-price">{form.resellerPriceMode === "currency" ? "Preço de revenda (R$)" : "Desconto sobre o preço ao cliente (%)"}</Label>
+    <div className="inline-flex rounded-md border p-0.5 text-xs">
+      <button type="button" aria-pressed={form.resellerPriceMode === "currency"} onClick={() => setForm((old) => { if (!old || old.resellerPriceMode === "currency") return old; const customer = priceNumber(old.customerPrice), pct = priceNumber(old.resellerPrice); return { ...old, resellerPriceMode: "currency", resellerPrice: customer != null && pct != null ? String(Math.round(customer * (1-pct/100) * 100)/100) : "" }; })} className={"rounded px-2.5 py-1.5 " + (form.resellerPriceMode === "currency" ? "bg-foreground text-background" : "text-muted-foreground")}>Valor em R$</button>
+      <button type="button" aria-pressed={form.resellerPriceMode === "discount_percent"} onClick={() => setForm((old) => { if (!old || old.resellerPriceMode === "discount_percent") return old; const customer = priceNumber(old.customerPrice), amount = priceNumber(old.resellerPrice); return { ...old, resellerPriceMode: "discount_percent", resellerPrice: customer != null && customer > 0 && amount != null ? String(Math.round((1-amount/customer)*10000)/100) : "" }; })} className={"rounded px-2.5 py-1.5 " + (form.resellerPriceMode === "discount_percent" ? "bg-foreground text-background" : "text-muted-foreground")}>Percentual (%)</button>
+    </div>
+  </div>
+  <Input id="product-reseller-price" inputMode="decimal" value={form.resellerPrice} onChange={(e) => field("resellerPrice", e.target.value)} placeholder={form.resellerPriceMode === "currency" ? "0,00" : "Ex.: 20"} />
+  {form.resellerPriceMode === "discount_percent" && <p className="text-xs text-muted-foreground">{priceNumber(form.customerPrice) != null && priceNumber(form.resellerPrice) != null ? "Preço final para revenda: " + formatPrice(Math.round((priceNumber(form.customerPrice)! * (1-priceNumber(form.resellerPrice)!/100))*100)/100, "BRL") : "Informe o preço ao cliente e o percentual de desconto. O sistema calcula o preço final de revenda."}</p>}
+</div>
             <div className="space-y-1.5"><Label htmlFor="product-stock">Quantidade em estoque</Label><Input id="product-stock" type="number" min={0} step={1} inputMode="numeric" value={form.stock} onChange={(e) => field("stock", e.target.value)} placeholder="Não informado" /></div>
             <label className="flex items-center gap-2 rounded-md border p-3 text-sm md:col-span-2"><input type="checkbox" checked={form.stockConfirmed} onChange={(e) => setForm((old) => old ? { ...old, stockConfirmed: e.target.checked } : old)} disabled={form.stock.trim() === "" || Number(form.stock) <= 0} /><span><span className="font-medium">Estoque confirmado pela MCI</span><span className="mt-0.5 block text-xs text-muted-foreground">Marque somente após confirmar a quantidade real. Importar produto nunca confirma o estoque automaticamente.</span></span></label>
             <div className="space-y-3 md:col-span-2 rounded-lg border p-4">
@@ -215,7 +229,7 @@ function ProductsPage() {
               {form.images.length + form.imageFiles.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma foto adicionada. Você poderá salvar o produto sem imagens e adicioná-las depois.</p>}
             </div>
             <div className="space-y-1.5 md:col-span-2"><Label htmlFor="product-description">Descrição</Label><textarea id="product-description" rows={4} maxLength={20000} value={form.description} onChange={(e) => field("description", e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" /></div>
-            <div className="space-y-1.5"><Label htmlFor="product-status">Status</Label><select id="product-status" value={form.status} onChange={(e) => setForm((old) => old ? { ...old, status: e.target.value as ProductForm["status"] } : old)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="draft">Rascunho</option><option value="published">Publicado</option></select></div>
+            <div className="space-y-1.5"><Label htmlFor="product-status">Visibilidade na vitrine</Label><select id="product-status" value={form.status} onChange={(e) => setForm((old) => old ? { ...old, status: e.target.value as ProductForm["status"] } : old)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="published">Ativo — visível na vitrine</option><option value="draft">Desativado — oculto na vitrine</option></select><p className="text-xs text-muted-foreground">Desativar oculta o produto da loja sem apagar seu cadastro, preços ou imagens.</p></div>
             <div className="flex items-end justify-end gap-2 md:col-span-2">
               <Button type="button" variant="outline" onClick={() => setForm(null)}>Cancelar</Button>
               <Button type="submit" disabled={save.isPending}>{save.isPending ? "Salvando…" : "Salvar produto"}</Button>
@@ -242,7 +256,7 @@ function ProductsPage() {
               <tbody className="divide-y">{list.map((p) => <tr key={p.slug} className="transition-colors hover:bg-muted/30">
                 <td className="px-5 py-3"><div className="flex items-center gap-3"><div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">{p.images[0] ? <img src={p.images[0]} alt="" className="size-full object-cover" /> : <ImageOff className="size-4 text-muted-foreground" />}</div><div className="min-w-0"><p className="max-w-[280px] truncate font-medium">{p.name}</p><p className="text-xs text-muted-foreground">{p.brand || "Sem marca"}</p></div></div></td>
                 <td className="px-4 py-3 text-muted-foreground">{p.sku || "—"}</td><td className="px-4 py-3">{p.category || "—"}</td><td className="px-4 py-3">{p.customerPrice != null ? formatPrice(p.customerPrice, p.currency) : "—"}</td>
-                <td className="px-4 py-3"><span className={p.status === "published" ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700" : "rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700"}>{p.status === "published" ? "Publicado" : "Rascunho"}</span></td>
+                <td className="px-4 py-3"><div className="flex flex-wrap items-center gap-1.5">{p.stock === 0 && <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-700">Sem estoque</span>}<span className={p.status === "published" ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700" : "rounded-full bg-slate-500/10 px-2.5 py-1 text-xs font-medium text-slate-600"}>{p.status === "published" ? "Publicado" : "Desativado"}</span></div></td>
                 <td className="px-5 py-3 text-right"><div className="inline-flex gap-2"><Link to="/produto/$slug" params={{ slug: p.slug }} className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted">Visualizar</Link><Button variant="outline" size="sm" className="gap-1.5" onClick={() => editProduct(p)}><Pencil className="size-3.5" /> Editar</Button></div></td>
               </tr>)}</tbody>
             </table></div>}
