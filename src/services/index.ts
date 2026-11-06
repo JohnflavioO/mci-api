@@ -152,7 +152,7 @@ export const orderService = {
       body: JSON.stringify({
         idempotency_key: idempotencyKey,
         items: items.map((item) => ({ product_id: item.slug, qty: item.qty })),
-        customer: { name: delivery.name, email: delivery.email, phone: delivery.phone },
+        customer: { name: delivery.name, document: delivery.document, email: delivery.email, phone: delivery.phone },
         address: { cep: delivery.cep, street: delivery.street, number: delivery.number, complement: delivery.complement, district: delivery.district, city: delivery.city, state: delivery.state },
       }),
     });
