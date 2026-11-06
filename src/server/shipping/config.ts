@@ -3,19 +3,16 @@ export type ShippingProviderStatus = "ready" | "missing_credentials" | "disabled
 export type StoreShippingConfig = {
   originCep: string;
   senderCnpj: string;
-  pickup: {
-    enabled: boolean;
-    name: string;
-    address: string;
-    instructions: string;
-  };
+  pickup: { enabled: boolean; name: string; address: string; instructions: string };
   correios: {
     enabled: boolean;
     apiBaseUrl: string;
-    token: string;
+    usuario: string;
+    codigoAcesso: string;
+    cartaoPostagem: string;
+    contrato: string;
+    dr: string;
     serviceCodes: string[];
-    contractNumber: string;
-    contractDr: string;
   };
   jamef: {
     enabled: boolean;
@@ -29,7 +26,6 @@ export type StoreShippingConfig = {
 const digits = (value: string) => value.replace(/\D/g, "");
 
 export function storeShippingConfig(env: NodeJS.ProcessEnv = process.env): StoreShippingConfig {
-  const jamefEnvironment = env["JAMEF_ENVIRONMENT"] === "production" ? "production" : "sandbox";
   return {
     originCep: digits(env["SHIPPING_ORIGIN_CEP"] ?? "88313000"),
     senderCnpj: digits(env["SHIPPING_SENDER_CNPJ"] ?? "05502390000200"),
@@ -42,14 +38,16 @@ export function storeShippingConfig(env: NodeJS.ProcessEnv = process.env): Store
     correios: {
       enabled: env["CORREIOS_ENABLED"] === "true",
       apiBaseUrl: (env["CORREIOS_API_BASE_URL"] ?? "https://api.correios.com.br").replace(/\/$/, ""),
-      token: env["CORREIOS_TOKEN"] ?? "",
+      usuario: env["CORREIOS_USUARIO"] ?? "",
+      codigoAcesso: env["CORREIOS_CODIGO_ACESSO"] ?? "",
+      cartaoPostagem: digits(env["CORREIOS_CARTAO_POSTAGEM"] ?? ""),
+      contrato: digits(env["CORREIOS_CONTRATO"] ?? ""),
+      dr: digits(env["CORREIOS_DR"] ?? ""),
       serviceCodes: (env["CORREIOS_SERVICE_CODES"] ?? "").split(",").map((code) => code.trim()).filter(Boolean),
-      contractNumber: env["CORREIOS_CONTRACT_NUMBER"] ?? "",
-      contractDr: env["CORREIOS_CONTRACT_DR"] ?? "",
     },
     jamef: {
       enabled: env["JAMEF_ENABLED"] === "true",
-      environment: jamefEnvironment,
+      environment: env["JAMEF_ENVIRONMENT"] === "production" ? "production" : "sandbox",
       apiBaseUrl: (env["JAMEF_API_BASE_URL"] ?? "").replace(/\/$/, ""),
       username: env["JAMEF_USERNAME"] ?? "",
       password: env["JAMEF_PASSWORD"] ?? "",
@@ -59,9 +57,9 @@ export function storeShippingConfig(env: NodeJS.ProcessEnv = process.env): Store
 
 export function shippingProviderStatus(config: StoreShippingConfig) {
   const correiosReady = config.correios.enabled
-    && Boolean(config.correios.token)
-    && config.correios.serviceCodes.length > 0;
+    && Boolean(config.correios.usuario && config.correios.codigoAcesso && config.correios.cartaoPostagem && config.correios.contrato && config.correios.dr && config.correios.serviceCodes.length);
   const jamefReady = config.jamef.enabled
+    && config.jamef.environment === "sandbox"
     && Boolean(config.jamef.apiBaseUrl && config.jamef.username && config.jamef.password);
   return {
     pickup: config.pickup.enabled ? "ready" as const : "disabled" as const,
