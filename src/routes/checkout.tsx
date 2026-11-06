@@ -66,9 +66,9 @@ function Checkout() {
         shipping_city: cleaned.city, shipping_state: cleaned.state,
       }});
       if (saveError) throw new Error("Não foi possível salvar os dados do cadastro. Tente novamente.");
-      // The order API is not active yet; this call must fail safely until server-side order creation is implemented.
-      return orderService.create(items.map((i) => ({ slug: i.slug, qty: i.qty })));
+      return orderService.create(items.map((i) => ({ slug: i.slug, qty: i.qty })), cleaned);
     },
+    onSuccess: (result) => { window.location.assign(result.checkout_url); },
   });
   useEffect(() => {
     if (profile.data) setDelivery(profile.data);
@@ -103,11 +103,11 @@ function Checkout() {
             </fieldset>
             <div>
               <p className="font-display text-lg font-semibold">Pagamento</p>
-              <p className="mt-1 text-sm text-muted-foreground">As formas de pagamento serão disponibilizadas quando a integração estiver pronta.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Pagamento seguro pela InfinitePay: Pix ou cartão de crédito. Você será direcionado ao ambiente oficial para concluir a transação.</p>
             </div>
             <p className="text-sm">{items.reduce((n, i) => n + i.qty, 0)} item(ns) · total calculado pela plataforma</p>
             {m.isError && <ErrorState message={m.error.message} />}
-            <Button type="submit" size="lg" disabled={m.isPending || !profile.data}>{m.isPending ? "Validando…" : "Salvar dados e continuar"}</Button>
+            <Button type="submit" size="lg" disabled={m.isPending || !profile.data}>{m.isPending ? "Preparando pagamento…" : "Continuar para pagamento"}</Button>
           </form>
         )}
       </div>
