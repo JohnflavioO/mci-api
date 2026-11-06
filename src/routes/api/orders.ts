@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/orders")({
       if (authError || !auth.user) return Response.json({ error: "Sessão inválida." }, { status: 401 });
       const body = await request.json().catch(() => null) as {
         items?: unknown; idempotency_key?: unknown;
-        customer?: { name?: unknown; email?: unknown; phone?: unknown };
+        customer?: { name?: unknown; document?: unknown; email?: unknown; phone?: unknown };
         address?: { cep?: unknown; street?: unknown; number?: unknown; complement?: unknown; district?: unknown; city?: unknown; state?: unknown };
       } | null;
       if (!Array.isArray(body?.items) || body.items.length < 1 || body.items.length > 50) return Response.json({ error: "Itens do pedido inválidos." }, { status: 400 });
@@ -75,9 +75,13 @@ export const Route = createFileRoute("/api/orders")({
 
       const customer = {
         name: clean(body?.customer?.name, 120) || clean(auth.user.user_metadata?.["full_name"], 120),
+        document: clean(body?.customer?.document, 20) || clean(auth.user.user_metadata?.["cpf"] ?? auth.user.user_metadata?.["cnpj"], 20),
         email: clean(body?.customer?.email, 254) || clean(auth.user.email, 254),
         phone: normalizeBrazilianPhone(clean(body?.customer?.phone, 30) || clean(auth.user.user_metadata?.["phone"], 30)),
       };
+      if (!customer.name || !customer.document || !customer.email || !customer.phone) {
+        return Response.json({ error: "Informe nome, CPF/CNPJ, e-mail e telefone para faturamento e contato." }, { status: 400 });
+      }
       const address = {
         cep: clean(body?.address?.cep, 12),
         street: clean(body?.address?.street, 180),
@@ -87,6 +91,21 @@ export const Route = createFileRoute("/api/orders")({
         city: clean(body?.address?.city, 100),
         state: clean(body?.address?.state, 2).toUpperCase(),
       };
+      const { error: customerDataError } = await db.from("orders").update({
+        customer_name: customer.name,
+        customer_document: customer.document.replace(/\D/g, ""),
+        customer_email: customer.email,
+        customer_phone: customer.phone,
+        shipping_cep: address.cep.replace(/\D/g, ""),
+        shipping_street: address.street,
+        shipping_number: address.number,
+        shipping_complement: address.complement || null,
+        shipping_district: address.district,
+        shipping_city: address.city,
+        shipping_state: address.state,
+      }).eq("id", order.id).eq("user_id", auth.user.id);
+      if (customerDataError) return Response.json({ error: "Não foi possível salvar os dados de faturamento e entrega. Seu carrinho foi preservado; tente novamente." }, { status: 503 });
+
       let checkoutUrl: string;
       try {
         checkoutUrl = await createInfinitePayCheckout(paymentConfig, {
