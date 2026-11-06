@@ -55,12 +55,20 @@ function Checkout() {
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const m = useMutation({
     mutationFn: async () => {
-      const { data, error } = await getSupabase().auth.getUser();
-      if (error || !data.user) throw new Error("Entre na sua conta antes de finalizar a compra.");
+      const supabase = getSupabase();
+      let { data, error } = await supabase.auth.getUser();
+      if (error) throw new Error("Não foi possível validar sua sessão. Atualize a página e tente novamente.");
+      if (!data.user) {
+        const anonymous = await supabase.auth.signInAnonymously();
+        if (anonymous.error || !anonymous.data.user) {
+          throw new Error("Não foi possível iniciar a compra rápida. O acesso de visitante precisa estar habilitado na autenticação do Supabase.");
+        }
+        data = { user: anonymous.data.user };
+      }
       const cleaned = Object.fromEntries(Object.entries(delivery).map(([k, v]) => [k, v.trim()]));
       const missing = ["name", "document", "phone", "email", "cep", "street", "number", "district", "city", "state"].find(k => !cleaned[k as keyof typeof cleaned]);
       if (missing) throw new Error("Preencha todos os campos obrigatórios de entrega e identificação.");
-      const { error: saveError } = await getSupabase().auth.updateUser({ data: {
+      const { error: saveError } = await supabase.auth.updateUser({ data: {
         full_name: cleaned.name, cpf: cleaned.document, phone: cleaned.phone,
         shipping_cep: cleaned.cep, shipping_street: cleaned.street, shipping_number: cleaned.number,
         shipping_complement: cleaned.complement, shipping_district: cleaned.district,
