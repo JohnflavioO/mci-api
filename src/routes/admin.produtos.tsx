@@ -128,7 +128,7 @@ function ProductsPage() {
     images: [...p.images], imageFiles: [], stock: p.stock == null ? "" : String(p.stock), stockConfirmed: p.stockConfirmed, status: p.status,
   });
 
-  const field = (key: Exclude<keyof ProductForm, "id" | "status">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
+  const field = (key: Exclude<keyof ProductForm, "id" | "status" | "resellerPriceMode">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
 
   return (
     <div className="space-y-6">
