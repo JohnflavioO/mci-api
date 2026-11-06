@@ -18,7 +18,7 @@ export async function reconcileInfinitePayPayment(
   if (orderError) return { http: 503, outcome: "order_lookup_failed" };
   if (!order) return { http: 200, outcome: "unknown_order" };
   if (order.status === "paid") return { http: 200, outcome: "already_paid" };
-  if (order.status !== "pending_payment") return { http: 200, outcome: "order_not_payable" };
+  if (order.status !== "pending_payment" && order.status !== "cancelled" && order.status !== "rejected") return { http: 200, outcome: "order_not_payable" };
 
   let verified;
   try {
@@ -39,7 +39,7 @@ export async function reconcileInfinitePayPayment(
     provider_transaction_nsu: input.transactionNsu,
     provider_capture_method: verified.captureMethod,
     provider_receipt_url: input.receiptUrl && /^https:\/\//i.test(input.receiptUrl) ? input.receiptUrl : null,
-  }).eq("id", order.id).eq("status", "pending_payment");
+  }).eq("id", order.id).in("status", ["pending_payment", "cancelled", "rejected"]);
   if (metadataError) return { http: 503, outcome: "payment_metadata_save_failed" };
 
   const { data, error } = await db.rpc("apply_payment_status", {
