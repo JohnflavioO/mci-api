@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { createInfinitePayCheckout } from "@/server/payments/infinitepay";
 import { infinitePayConfig } from "@/server/payments/infinitepay-config";
 
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/api/orders")({
         items?: unknown; idempotency_key?: unknown;
         customer?: { name?: unknown; document?: unknown; email?: unknown; phone?: unknown };
         address?: { cep?: unknown; street?: unknown; number?: unknown; complement?: unknown; district?: unknown; city?: unknown; state?: unknown };
+        shipping?: { provider?: unknown; service?: unknown; quote_token?: unknown };
       } | null;
       if (!Array.isArray(body?.items) || body.items.length < 1 || body.items.length > 50) return Response.json({ error: "Itens do pedido inválidos." }, { status: 400 });
       const items = body.items.map((item) => {
@@ -42,6 +44,20 @@ export const Route = createFileRoute("/api/orders")({
         return { product_id: row.product_id, qty: row.qty };
       });
       if (items.some((item) => typeof item.product_id !== "string" || !UUID.test(item.product_id) || !Number.isInteger(item.qty) || Number(item.qty) < 1 || Number(item.qty) > 999)) return Response.json({ error: "Revise os produtos e quantidades." }, { status: 400 });
+      const selectedShipping = body?.shipping;
+      if (!selectedShipping || typeof selectedShipping.provider !== "string" || typeof selectedShipping.service !== "string" || typeof selectedShipping.quote_token !== "string") return Response.json({ error: "Selecione uma modalidade de frete calculada antes de pagar." }, { status: 400 });
+      const quoteParts = selectedShipping.quote_token.split(".");
+      if (quoteParts.length !== 2) return Response.json({ error: "Cotação inválida. Calcule novamente." }, { status: 400 });
+      const quoteSecret = process.env["SHIPPING_QUOTE_SECRET"] || serviceRoleKey;
+      const expected = Buffer.from(createHmac("sha256", quoteSecret).update(quoteParts[0]).digest("base64url"));
+      const supplied = Buffer.from(quoteParts[1]);
+      if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) return Response.json({ error: "Cotação inválida. Calcule novamente." }, { status: 400 });
+      let quote: any;
+      try { quote = JSON.parse(Buffer.from(quoteParts[0], "base64url").toString("utf8")); } catch { return Response.json({ error: "Cotação inválida." }, { status: 400 }); }
+      const requested = body.items.map((item: any) => ({ id: String(item.product_id), qty: Number(item.qty) })).sort((a: any, b: any) => a.id.localeCompare(b.id));
+      const quoted = Array.isArray(quote.items) ? quote.items.map((item: any) => ({ id: item.id, qty: item.qty })).sort((a: any, b: any) => a.id.localeCompare(b.id)) : [];
+      const cep = clean(body?.address?.cep, 12).replace(/[^0-9]/g, "");
+      if (quote.exp < Date.now() || quote.cep !== cep || quote.provider !== selectedShipping.provider || quote.service !== selectedShipping.service || JSON.stringify(requested) !== JSON.stringify(quoted) || !Number.isFinite(quote.price) || quote.price < 0) return Response.json({ error: "Cotação expirada ou diferente do carrinho. Calcule novamente." }, { status: 409 });
       const idempotencyKey = typeof body?.idempotency_key === "string" && UUID.test(body.idempotency_key) ? body.idempotency_key : crypto.randomUUID();
       const db = createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
       const { data: orderId, error: createError } = await db.rpc("create_order_with_affiliate", {
@@ -60,6 +76,11 @@ export const Route = createFileRoute("/api/orders")({
         .select("id,total,status,provider,provider_checkout_url,shipping_amount")
         .eq("id", orderId).eq("user_id", auth.user.id).single();
       if (orderError || !order) return Response.json({ error: "Pedido criado, mas não foi possível carregar seus dados para pagamento." }, { status: 503 });
+      const shippingAmount = Number(quote.price.toFixed(2));
+      const updatedTotal = Number((Number(order.total) + shippingAmount).toFixed(2));
+      const { error: shippingSaveError } = await db.from("orders").update({ shipping_amount: shippingAmount, shipping_provider: quote.provider, shipping_service: quote.service, shipping_quote_token: selectedShipping.quote_token, total: updatedTotal }).eq("id", order.id).eq("user_id", auth.user.id).eq("status", "pending_payment");
+      if (shippingSaveError) return Response.json({ error: "Não foi possível registrar o frete no pedido." }, { status: 503 });
+      order.total = updatedTotal;
       if (order.status !== "pending_payment") return Response.json({ error: "Este pedido não está mais aguardando pagamento." }, { status: 409 });
       if (order.provider && order.provider !== "infinitepay") return Response.json({ error: "Este pedido já está vinculado a outro meio de pagamento." }, { status: 409 });
       if (order.provider_checkout_url) return Response.json({ order_id: order.id, checkout_url: order.provider_checkout_url, total: Number(order.total) }, { status: 200 });
