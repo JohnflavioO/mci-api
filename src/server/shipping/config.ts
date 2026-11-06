@@ -20,6 +20,7 @@ export type StoreShippingConfig = {
     apiBaseUrl: string;
     username: string;
     password: string;
+    originBranch: { name: string; cnpj: string; cep: string; address: string; district: string; city: string; state: string };
   };
 };
 
@@ -51,6 +52,11 @@ export function storeShippingConfig(env: NodeJS.ProcessEnv = process.env): Store
       apiBaseUrl: (env["JAMEF_API_BASE_URL"] ?? "").replace(/\/$/, ""),
       username: env["JAMEF_USERNAME"] ?? "",
       password: env["JAMEF_PASSWORD"] ?? "",
+      originBranch: {
+        name: "Itajaí", cnpj: "20147617005615", cep: "88318112",
+        address: "Rodovia Antônio Heil, 6250, KM 06, Galpão B, Blocos 29 e 30",
+        district: "Itaipava", city: "Itajaí", state: "SC",
+      },
     },
   };
 }
