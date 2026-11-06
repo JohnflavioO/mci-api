@@ -18,7 +18,7 @@ type CheckoutPayload = {
   address?: { cep: string; street: string; number: string; neighborhood: string; city: string; state: string; complement?: string };
   options: {
     single_payment: true;
-    assured_installments: 12;
+    assured_installments: 6;
     require_delivery_address: false;
     payment_methods_enabled: ["credit_card", "pix"];
     valid_until: string;
@@ -72,8 +72,8 @@ export async function createInfinitePayCheckout(
     webhook_url: `${config.appBaseUrl}/api/public/infinitepay-webhook`,
     options: {
       single_payment: true,
-      // O lojista assume as taxas de parcelamento em até 12x para o comprador não pagar juros.
-      assured_installments: 12,
+      // Limite comercial: até 6 parcelas sem juros.
+      assured_installments: 6,
       require_delivery_address: false,
       payment_methods_enabled: ["credit_card", "pix"],
       valid_until: new Date(Date.now() + 7 * 86400000).toISOString(),
