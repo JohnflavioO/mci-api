@@ -29,9 +29,9 @@ function Checkout() {
   const profile = useQuery({
     queryKey: ["checkout-profile"],
     queryFn: async () => {
-      const { data, error } = await getSupabase().auth.getUser();
+      const { data, error } = await getSupabase().auth.getSession();
       if (error) throw error;
-      const user = data.user;
+      const user = data.session?.user ?? null;
       if (!user) return { name: "", document: "", phone: "", email: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" };
       const meta = user.user_metadata ?? {};
       return {
@@ -101,6 +101,13 @@ function Checkout() {
         {profile.isPending ? <p className="mt-8 text-sm text-muted-foreground">Carregando seus dados…</p> : items.length === 0 ? (
           <div className="mt-8"><EmptyState title="Nenhum item para finalizar" /></div>
         ) : (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm">
+            <span className="text-muted-foreground">Quer agilizar suas próximas compras?</span>
+            <span className="flex gap-3 font-semibold">
+              <Link to="/entrar" className="text-brand underline underline-offset-4">Entrar</Link>
+              <Link to="/cadastro" className="text-brand underline underline-offset-4">Criar conta</Link>
+            </span>
+          </div>
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
             {profile.isError && <p role="status" className="text-sm text-muted-foreground">Não foi possível carregar seus dados salvos. Você pode preencher os campos manualmente.</p>}
             <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
@@ -108,6 +115,7 @@ function Checkout() {
                 <h2 className="font-display text-lg font-semibold">Identificação e contato</h2>
                 <p className="text-sm text-muted-foreground">Esses dados serão usados no pedido e na emissão da nota fiscal.</p>
               </div>
+              <div className="grid gap-4 sm:grid-cols-2">
               {([
                 ["name", "Nome completo", true], ["document", "CPF ou CNPJ", true], ["email", "E-mail", true],
                 ["phone", "Telefone/WhatsApp", true]
@@ -115,12 +123,14 @@ function Checkout() {
                 <Label htmlFor={key}>{label}</Label>
                 <Input id={key} type={key === "email" ? "email" : "text"} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} required={required} value={delivery[key]} onChange={e => setDelivery(p => ({ ...p, [key]: e.target.value }))} className="mt-1" />
               </div>)}
+              </div>
             </section>
             <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
               <div className="mb-4">
                 <h2 className="font-display text-lg font-semibold">Endereço de entrega</h2>
                 <p className="text-sm text-muted-foreground">Informe onde deseja receber sua compra.</p>
               </div>
+              <div className="grid gap-4 sm:grid-cols-2">
               {([
                 ["cep", "CEP", true], ["street", "Rua / Avenida", true], ["number", "Número", true],
                 ["complement", "Complemento", false], ["district", "Bairro", true], ["city", "Cidade", true], ["state", "Estado (UF)", true]
@@ -128,6 +138,7 @@ function Checkout() {
                 <Label htmlFor={key}>{label}{!required ? " (opcional)" : ""}</Label>
                 <Input id={key} required={required} maxLength={key === "state" ? 2 : undefined} autoComplete={key === "cep" ? "postal-code" : key === "street" ? "street-address" : undefined} value={delivery[key]} onChange={e => setDelivery(p => ({ ...p, [key]: e.target.value }))} className="mt-1" />
               </div>)}
+              </div>
             </section>
             <section className="rounded-xl border border-border bg-secondary/40 p-5 sm:p-6">
               <h2 className="font-display font-semibold">Pagamento protegido pela InfinitePay</h2>
