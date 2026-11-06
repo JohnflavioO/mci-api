@@ -5,6 +5,11 @@ import { infinitePayConfig } from "@/server/payments/infinitepay-config";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
+const readCookie = (request: Request, name: string) => {
+  const value = (request.headers.get("cookie") ?? "").split(";").map((part) => part.trim()).find((part) => part.startsWith(name + "="));
+  if (!value) return null;
+  try { return decodeURIComponent(value.slice(name.length + 1)); } catch { return null; }
+};
 
 export const Route = createFileRoute("/api/orders")({
   server: { handlers: {
@@ -37,8 +42,8 @@ export const Route = createFileRoute("/api/orders")({
         p_user_id: auth.user.id,
         p_idempotency_key: idempotencyKey,
         p_items: items,
-        p_affiliate_link_id: null,
-        p_visitor_id: null,
+        p_affiliate_link_id: readCookie(request, "aff_ref"),
+        p_visitor_id: readCookie(request, "aff_visitor"),
         p_has_coupon: false,
         p_has_volume_discount: false,
       });
@@ -54,7 +59,7 @@ export const Route = createFileRoute("/api/orders")({
       if (order.provider_checkout_url) return Response.json({ order_id: order.id, checkout_url: order.provider_checkout_url, total: Number(order.total) }, { status: 200 });
 
       const { data: orderItems, error: itemsError } = await db.from("order_items")
-        .select("name_snapshot,qty,unit_price").eq("order_id", order.id).order("name_snapshot");
+         .select("name_snapshot,qty,unit_price,line_total").eq("order_id", order.id).order("name_snapshot");
       if (itemsError || !orderItems?.length) return Response.json({ error: "Não foi possível montar os itens do pagamento." }, { status: 503 });
 
       const customer = {
@@ -75,7 +80,7 @@ export const Route = createFileRoute("/api/orders")({
       try {
         checkoutUrl = await createInfinitePayCheckout(paymentConfig, {
           orderId: order.id,
-          items: orderItems.map((item) => ({ name: item.name_snapshot, qty: item.qty, unitPrice: Number(item.unit_price) })),
+          items: orderItems.map((item) => ({ name: item.name_snapshot, qty: item.qty, unitPrice: Number(item.unit_price), lineTotal: item.line_total == null ? null : Number(item.line_total) })),
           shippingAmount: Number(order.shipping_amount ?? 0),
           customer,
           address,
