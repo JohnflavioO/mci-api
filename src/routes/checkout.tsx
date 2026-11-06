@@ -101,6 +101,7 @@ function Checkout() {
         {profile.isPending ? <p className="mt-8 text-sm text-muted-foreground">Carregando seus dados…</p> : items.length === 0 ? (
           <div className="mt-8"><EmptyState title="Nenhum item para finalizar" /></div>
         ) : (
+          <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm">
             <span className="text-muted-foreground">Quer agilizar suas próximas compras?</span>
             <span className="flex gap-3 font-semibold">
@@ -158,6 +159,7 @@ function Checkout() {
               <p className="mt-2 text-xs text-muted-foreground">Seus dados preenchidos permanecem nesta tela. Você não precisa recomeçar o pedido.</p>
             </div>}
           </form>
+          </>
         )}
       </div>
     </SiteShell>
