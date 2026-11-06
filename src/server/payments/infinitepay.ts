@@ -48,7 +48,7 @@ export async function createInfinitePayCheckout(
   config: InfinitePayConfig,
   input: {
     orderId: string;
-    items: { name: string; qty: number; unitPrice: number }[];
+    items: { name: string; qty: number; unitPrice: number; lineTotal?: number | null }[];
     shippingAmount: number;
     customer?: { name: string; email: string; phone: string };
     address?: { cep: string; street: string; number: string; district: string; city: string; state: string; complement?: string };
@@ -56,9 +56,9 @@ export async function createInfinitePayCheckout(
   fetchImpl: typeof fetch = fetch,
 ) {
   const items: CheckoutItem[] = input.items.map((item) => ({
-    quantity: item.qty,
-    price: Math.round(item.unitPrice * 100),
-    description: item.name.slice(0, 120),
+    quantity: 1,
+    price: Math.round((item.lineTotal ?? item.unitPrice * item.qty) * 100),
+    description: (item.qty > 1 ? `${item.name} · ${item.qty} un.` : item.name).slice(0, 120),
   }));
   if (input.shippingAmount > 0) {
     items.push({ quantity: 1, price: Math.round(input.shippingAmount * 100), description: "Frete" });
