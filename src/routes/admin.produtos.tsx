@@ -35,13 +35,17 @@ type ProductForm = {
   images: string[];
   imageFiles: File[];
   stock: string;
+  weightKg: string;
+  heightCm: string;
+  widthCm: string;
+  lengthCm: string;
   stockConfirmed: boolean;
   status: "draft" | "published";
 };
 
 const emptyForm: ProductForm = {
   name: "", brand: "", sku: "", category: "", description: "",
-  customerPrice: "", resellerPrice: "", resellerPriceMode: "currency", images: [], imageFiles: [], stock: "", stockConfirmed: false, status: "draft",
+  customerPrice: "", resellerPrice: "", resellerPriceMode: "currency", images: [], imageFiles: [], stock: "", weightKg: "", heightCm: "", widthCm: "", lengthCm: "", stockConfirmed: false, status: "draft",
 };
 
 const priceNumber = (v: string): number | null => {
@@ -83,13 +87,17 @@ function ProductsPage() {
       }
       const stock = f.stock.trim() === "" ? null : Number(f.stock);
       if (stock !== null && (!Number.isInteger(stock) || stock < 0)) throw new Error("Estoque disponível deve ser um número inteiro maior ou igual a zero.");
+      const dimensions = { weightKg: f.weightKg.trim() === "" ? null : Number(f.weightKg.replace(",", ".")), heightCm: f.heightCm.trim() === "" ? null : Number(f.heightCm.replace(",", ".")), widthCm: f.widthCm.trim() === "" ? null : Number(f.widthCm.replace(",", ".")), lengthCm: f.lengthCm.trim() === "" ? null : Number(f.lengthCm.replace(",", ".")) };
+      for (const [label, value] of Object.entries({ "Peso": dimensions.weightKg, "Altura": dimensions.heightCm, "Largura": dimensions.widthCm, "Comprimento": dimensions.lengthCm })) {
+        if (value !== null && (!Number.isFinite(value) || value <= 0)) throw new Error(label + " deve ser maior que zero.");
+      }
       // Produtos novos com fotos locais precisam ser criados como rascunho primeiro:
       // a galeria só pode ser gravada depois que o produto tiver um ID. Publicamos no final.
       const publishAfterImages = f.status === "published" && f.imageFiles.length > 0;
       const id = await catalog.saveAdmin({
         ...(f.id ? { id: f.id } : {}), name: f.name, brand: f.brand, sku: f.sku, category: f.category,
         description: f.description, status: publishAfterImages ? "draft" : f.status, customerPrice: customer,
-        resellerPrice: reseller, imageUrl: f.images[0] ?? "",
+        resellerPrice: reseller, imageUrl: f.images[0] ?? "", ...dimensions,
       });
       await catalog.setStock(id, stock, f.stockConfirmed);
       const savedImageUrls = await catalog.saveProductImages(id, f.images, f.imageFiles);
@@ -101,7 +109,7 @@ function ProductsPage() {
         await catalog.saveAdmin({
           id, name: f.name, brand: f.brand, sku: f.sku, category: f.category,
           description: f.description, status: "published", customerPrice: customer,
-          resellerPrice: reseller, imageUrl: savedImageUrls[0] ?? "",
+          resellerPrice: reseller, imageUrl: savedImageUrls[0] ?? "", ...dimensions,
         });
       }
       return id;
@@ -125,7 +133,7 @@ function ProductsPage() {
     customerPrice: p.customerPrice == null ? "" : String(p.customerPrice),
     resellerPrice: p.resellerPrice == null ? "" : String(p.customerPrice != null && p.customerPrice > 0 ? Math.round((1 - p.resellerPrice / p.customerPrice) * 10000) / 100 : p.resellerPrice),
     resellerPriceMode: p.resellerPrice != null && p.customerPrice != null && p.customerPrice > 0 ? "discount_percent" : "currency",
-    images: [...p.images], imageFiles: [], stock: p.stock == null ? "" : String(p.stock), stockConfirmed: p.stockConfirmed, status: p.status,
+    images: [...p.images], imageFiles: [], stock: p.stock == null ? "" : String(p.stock), weightKg: p.weightKg == null ? "" : String(p.weightKg), heightCm: p.heightCm == null ? "" : String(p.heightCm), widthCm: p.widthCm == null ? "" : String(p.widthCm), lengthCm: p.lengthCm == null ? "" : String(p.lengthCm), stockConfirmed: p.stockConfirmed, status: p.status,
   });
 
   const field = (key: Exclude<keyof ProductForm, "id" | "status" | "resellerPriceMode">, value: string) => setForm((old) => old ? { ...old, [key]: value } : old);
@@ -180,6 +188,15 @@ function ProductsPage() {
   {form.resellerPriceMode === "discount_percent" && <p className="text-xs text-muted-foreground">{priceNumber(form.customerPrice) != null && priceNumber(form.resellerPrice) != null ? "Preço final para revenda: " + formatPrice(Math.round((priceNumber(form.customerPrice)! * (1-priceNumber(form.resellerPrice)!/100))*100)/100, "BRL") : "Informe o preço ao cliente e o percentual de desconto. O sistema calcula o preço final de revenda."}</p>}
 </div>
             <div className="space-y-1.5"><Label htmlFor="product-stock">Quantidade em estoque</Label><Input id="product-stock" type="number" min={0} step={1} inputMode="numeric" value={form.stock} onChange={(e) => field("stock", e.target.value)} placeholder="Não informado" /></div>
+            <div className="space-y-3 rounded-lg border p-4 md:col-span-2">
+              <div><h4 className="text-sm font-semibold">Dados para transporte</h4><p className="mt-1 text-xs text-muted-foreground">Informe o peso e as dimensões da embalagem do produto. Essas informações serão usadas para calcular Jamef e Correios. Medidas em centímetros e peso em quilogramas.</p></div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1.5"><Label htmlFor="product-weight">Peso (kg)</Label><Input id="product-weight" type="number" min="0.001" step="0.001" value={form.weightKg} onChange={(e) => field("weightKg", e.target.value)} placeholder="Ex.: 2,500" /></div>
+                <div className="space-y-1.5"><Label htmlFor="product-height">Altura (cm)</Label><Input id="product-height" type="number" min="0.1" step="0.1" value={form.heightCm} onChange={(e) => field("heightCm", e.target.value)} placeholder="Ex.: 30" /></div>
+                <div className="space-y-1.5"><Label htmlFor="product-width">Largura (cm)</Label><Input id="product-width" type="number" min="0.1" step="0.1" value={form.widthCm} onChange={(e) => field("widthCm", e.target.value)} placeholder="Ex.: 25" /></div>
+                <div className="space-y-1.5"><Label htmlFor="product-length">Comprimento (cm)</Label><Input id="product-length" type="number" min="0.1" step="0.1" value={form.lengthCm} onChange={(e) => field("lengthCm", e.target.value)} placeholder="Ex.: 40" /></div>
+              </div>
+            </div>
             <label className="flex items-center gap-2 rounded-md border p-3 text-sm md:col-span-2"><input type="checkbox" checked={form.stockConfirmed} onChange={(e) => setForm((old) => old ? { ...old, stockConfirmed: e.target.checked } : old)} disabled={form.stock.trim() === "" || Number(form.stock) <= 0} /><span><span className="font-medium">Estoque confirmado pela MCI</span><span className="mt-0.5 block text-xs text-muted-foreground">Marque somente após confirmar a quantidade real. Importar produto nunca confirma o estoque automaticamente.</span></span></label>
             <div className="space-y-3 md:col-span-2 rounded-lg border p-4">
               <div className="flex items-start gap-3">
