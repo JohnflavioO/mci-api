@@ -7,11 +7,21 @@ alter table public.products
   add column if not exists width_cm numeric(10,2),
   add column if not exists length_cm numeric(10,2);
 
-alter table public.products
-  add constraint products_weight_kg_positive check (weight_kg is null or weight_kg > 0),
-  add constraint products_height_cm_positive check (height_cm is null or height_cm > 0),
-  add constraint products_width_cm_positive check (width_cm is null or width_cm > 0),
-  add constraint products_length_cm_positive check (length_cm is null or length_cm > 0);
+do $
+begin
+  if not exists (select 1 from pg_constraint where conname = 'products_weight_kg_positive' and conrelid = 'public.products'::regclass) then
+    alter table public.products add constraint products_weight_kg_positive check (weight_kg is null or weight_kg > 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'products_height_cm_positive' and conrelid = 'public.products'::regclass) then
+    alter table public.products add constraint products_height_cm_positive check (height_cm is null or height_cm > 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'products_width_cm_positive' and conrelid = 'public.products'::regclass) then
+    alter table public.products add constraint products_width_cm_positive check (width_cm is null or width_cm > 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'products_length_cm_positive' and conrelid = 'public.products'::regclass) then
+    alter table public.products add constraint products_length_cm_positive check (length_cm is null or length_cm > 0);
+  end if;
+end $;
 
 -- Troca a RPC por uma versão que grava também os dados de embalagem.
 drop function if exists public.admin_save_product(uuid,text,text,text,text,text,text,numeric,numeric,text);
