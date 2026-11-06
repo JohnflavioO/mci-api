@@ -57,8 +57,8 @@ function Checkout() {
     mutationFn: async () => {
       const { data, error } = await getSupabase().auth.getUser();
       if (error || !data.user) throw new Error("Entre na sua conta antes de finalizar a compra.");
-      const cleaned = Object.fromEntries(Object.entries(delivery).map(([k,v]) => [k, v.trim()]));
-      const missing = ["name","document","phone","email","cep","street","number","district","city","state"].find(k => !cleaned[k as keyof typeof cleaned]);
+      const cleaned = Object.fromEntries(Object.entries(delivery).map(([k, v]) => [k, v.trim()]));
+      const missing = ["name", "document", "phone", "email", "cep", "street", "number", "district", "city", "state"].find(k => !cleaned[k as keyof typeof cleaned]);
       if (missing) throw new Error("Preencha todos os campos obrigatórios de entrega e identificação.");
       const { error: saveError } = await getSupabase().auth.updateUser({ data: {
         full_name: cleaned.name, cpf: cleaned.document, phone: cleaned.phone,
@@ -82,24 +82,25 @@ function Checkout() {
           <div className="mt-8"><EmptyState title="Nenhum item para finalizar" /></div>
         ) : (
           <form className="mt-8 space-y-8" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+            {profile.isError && <p role="status" className="text-sm text-muted-foreground">Não foi possível carregar seus dados salvos. Você pode preencher os campos manualmente.</p>}
             <fieldset className="grid gap-4 sm:grid-cols-2">
               <legend className="mb-3 font-display text-lg font-semibold">Identificação e contato</legend>
               {([
-                ["name","Nome completo",true],["document","CPF ou CNPJ",true],["email","E-mail",true],
-                ["phone","Telefone/WhatsApp",true]
-              ] as const).map(([key,label,required]) => <div key={key}>
+                ["name", "Nome completo", true], ["document", "CPF ou CNPJ", true], ["email", "E-mail", true],
+                ["phone", "Telefone/WhatsApp", true]
+              ] as const).map(([key, label, required]) => <div key={key}>
                 <Label htmlFor={key}>{label}</Label>
-                <Input id={key} type={key === "email" ? "email" : "text"} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} required={required} value={delivery[key]} onChange={e=>setDelivery(p=>({...p,[key]:e.target.value}))} className="mt-1" />
+                <Input id={key} type={key === "email" ? "email" : "text"} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} required={required} value={delivery[key]} onChange={e => setDelivery(p => ({ ...p, [key]: e.target.value }))} className="mt-1" />
               </div>)}
             </fieldset>
             <fieldset className="grid gap-4 sm:grid-cols-2">
               <legend className="mb-3 font-display text-lg font-semibold">Endereço de entrega</legend>
               {([
-                ["cep","CEP",true],["street","Rua / Avenida",true],["number","Número",true],
-                ["complement","Complemento",false],["district","Bairro",true],["city","Cidade",true],["state","Estado (UF)",true]
-              ] as const).map(([key,label,required]) => <div key={key}>
+                ["cep", "CEP", true], ["street", "Rua / Avenida", true], ["number", "Número", true],
+                ["complement", "Complemento", false], ["district", "Bairro", true], ["city", "Cidade", true], ["state", "Estado (UF)", true]
+              ] as const).map(([key, label, required]) => <div key={key}>
                 <Label htmlFor={key}>{label}{!required ? " (opcional)" : ""}</Label>
-                <Input id={key} required={required} maxLength={key==="state"?2:undefined} autoComplete={key==="cep"?"postal-code":key==="street"?"street-address":undefined} value={delivery[key]} onChange={e=>setDelivery(p=>({...p,[key]:e.target.value}))} className="mt-1" />
+                <Input id={key} required={required} maxLength={key === "state" ? 2 : undefined} autoComplete={key === "cep" ? "postal-code" : key === "street" ? "street-address" : undefined} value={delivery[key]} onChange={e => setDelivery(p => ({ ...p, [key]: e.target.value }))} className="mt-1" />
               </div>)}
             </fieldset>
             <div>
@@ -108,7 +109,7 @@ function Checkout() {
             </div>
             <p className="text-sm">{items.reduce((n, i) => n + i.qty, 0)} item(ns) · total calculado pela plataforma</p>
             {m.isError && <ErrorState message={m.error.message} />}
-            <Button type="submit" size="lg" disabled={m.isPending || !profile.data}>{m.isPending ? "Preparando pagamento…" : "Continuar para pagamento"}</Button>
+            <Button type="submit" size="lg" disabled={m.isPending}>{m.isPending ? "Preparando pagamento…" : "Continuar para pagamento"}</Button>
           </form>
         )}
       </div>
