@@ -77,7 +77,7 @@ export const Route = createFileRoute("/api/orders")({
         .eq("id", orderId).eq("user_id", auth.user.id).single();
       if (orderError || !order) return Response.json({ error: "Pedido criado, mas não foi possível carregar seus dados para pagamento." }, { status: 503 });
       const shippingAmount = Number(quote.price.toFixed(2));
-      const updatedTotal = Number((Number(order.total) + shippingAmount).toFixed(2));
+      const updatedTotal = Number((Number(order.total) - Number(order.shipping_amount ?? 0) + shippingAmount).toFixed(2));
       const { error: shippingSaveError } = await db.from("orders").update({ shipping_amount: shippingAmount, shipping_provider: quote.provider, shipping_service: quote.service, shipping_quote_token: selectedShipping.quote_token, total: updatedTotal }).eq("id", order.id).eq("user_id", auth.user.id).eq("status", "pending_payment");
       if (shippingSaveError) return Response.json({ error: "Não foi possível registrar o frete no pedido." }, { status: 503 });
       order.total = updatedTotal;
