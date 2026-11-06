@@ -5,6 +5,12 @@ import { infinitePayConfig } from "@/server/payments/infinitepay-config";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
+const normalizeBrazilianPhone = (value: string) => {
+  const digits = value.replace(/\\D/g, "");
+  if (digits.startsWith("55")) return `+${digits}`;
+  if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
+  return value;
+};
 const readCookie = (request: Request, name: string) => {
   const value = (request.headers.get("cookie") ?? "").split(";").map((part) => part.trim()).find((part) => part.startsWith(name + "="));
   if (!value) return null;
@@ -70,7 +76,7 @@ export const Route = createFileRoute("/api/orders")({
       const customer = {
         name: clean(body?.customer?.name, 120) || clean(auth.user.user_metadata?.["full_name"], 120),
         email: clean(body?.customer?.email, 254) || clean(auth.user.email, 254),
-        phone: clean(body?.customer?.phone, 30) || clean(auth.user.user_metadata?.["phone"], 30),
+        phone: normalizeBrazilianPhone(clean(body?.customer?.phone, 30) || clean(auth.user.user_metadata?.["phone"], 30)),
       };
       const address = {
         cep: clean(body?.address?.cep, 12),
