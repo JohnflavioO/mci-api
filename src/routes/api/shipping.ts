@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { storeShippingConfig, shippingProviderStatus } from "@/server/shipping/config";
 
 type Product = { id: string; name: string; weight_kg: number | string | null; height_cm: number | string | null; width_cm: number | string | null; length_cm: number | string | null };
@@ -101,8 +102,14 @@ export const Route = createFileRoute("/api/shipping")({
           // A Jamef exige endpoint/contrato de autenticação e parâmetros específicos da unidade;
           // não apresentar preço fictício enquanto a integração autenticada não retornar cotação.
         }
+        const quoteSecret = process.env["SHIPPING_QUOTE_SECRET"] || serviceRoleKey;
+        const signedOptions = options.map((option) => {
+          const payload = Buffer.from(JSON.stringify({ id: option.id, provider: option.provider, service: option.service, price: option.price, cep: destinationCep, items: requested, exp: Date.now() + 15 * 60 * 1000 })).toString("base64url");
+          const signature = createHmac("sha256", quoteSecret).update(payload).digest("base64url");
+          return { ...option, quote_token: payload + "." + signature };
+        });
         return Response.json({
-          options,
+          options: signedOptions,
           package: { weight_kg: Number(weightKg.toFixed(3)), volume_cm3: Math.ceil(volumeCm3), ...packageDims },
           providers: { correios: providers.correios, jamef: providers.jamef, pickup: providers.pickup },
           notices: options.length ? [] : ["Nenhuma modalidade de envio retornou cotação. Verifique as configurações dos transportadores."],
