@@ -141,6 +141,7 @@ export const orderService = {
   create: async (
     items: { slug: string; qty: number }[],
     delivery: { name: string; document: string; phone: string; email: string; cep: string; street: string; number: string; complement: string; district: string; city: string; state: string },
+    idempotencyKey: string,
   ): Promise<{ order_id: string; checkout_url: string; total: number }> => {
     const sb = getSupabase();
     const { data, error } = await sb.auth.getSession();
@@ -149,7 +150,7 @@ export const orderService = {
       method: "POST",
       headers: { Authorization: `Bearer ${data.session.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        idempotency_key: crypto.randomUUID(),
+        idempotency_key: idempotencyKey,
         items: items.map((item) => ({ product_id: item.slug, qty: item.qty })),
         customer: { name: delivery.name, email: delivery.email, phone: delivery.phone },
         address: { cep: delivery.cep, street: delivery.street, number: delivery.number, complement: delivery.complement, district: delivery.district, city: delivery.city, state: delivery.state },
