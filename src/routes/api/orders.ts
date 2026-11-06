@@ -57,6 +57,11 @@ export const Route = createFileRoute("/api/orders")({
       if (order.status !== "pending_payment") return Response.json({ error: "Este pedido não está mais aguardando pagamento." }, { status: 409 });
       if (order.provider && order.provider !== "infinitepay") return Response.json({ error: "Este pedido já está vinculado a outro meio de pagamento." }, { status: 409 });
       if (order.provider_checkout_url) return Response.json({ order_id: order.id, checkout_url: order.provider_checkout_url, total: Number(order.total) }, { status: 200 });
+      if (!order.provider) {
+        const { error: providerError } = await db.from("orders").update({ provider: "infinitepay", provider_order_id: order.id })
+          .eq("id", order.id).eq("status", "pending_payment").is("provider", null);
+        if (providerError) return Response.json({ error: "Não foi possível reservar o pedido para o checkout InfinitePay." }, { status: 503 });
+      }
 
       const { data: orderItems, error: itemsError } = await db.from("order_items")
          .select("name_snapshot,qty,unit_price,line_total").eq("order_id", order.id).order("name_snapshot");
@@ -89,8 +94,6 @@ export const Route = createFileRoute("/api/orders")({
         return Response.json({ error: "Não foi possível gerar o checkout na InfinitePay. Seu pedido foi preservado; tente novamente." }, { status: 502 });
       }
       const { error: saveError } = await db.from("orders").update({
-        provider: "infinitepay",
-        provider_order_id: order.id,
         provider_checkout_url: checkoutUrl,
         payment_link_created_at: new Date().toISOString(),
       }).eq("id", order.id).eq("status", "pending_payment");
