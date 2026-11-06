@@ -6,7 +6,7 @@ import { infinitePayConfig } from "@/server/payments/infinitepay-config";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
 const normalizeBrazilianPhone = (value: string) => {
-  const digits = value.replace(/\\D/g, "");
+  const digits = value.replace(/\D/g, "");
   if (digits.startsWith("55")) return `+${digits}`;
   if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
   return value;
