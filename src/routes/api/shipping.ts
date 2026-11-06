@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { createHmac } from "node:crypto";
 import { storeShippingConfig, shippingProviderStatus } from "@/server/shipping/config";
 
 type Product = { id: string; name: string; weight_kg: number | string | null; height_cm: number | string | null; width_cm: number | string | null; length_cm: number | string | null };
@@ -72,8 +73,8 @@ export const Route = createFileRoute("/api/shipping")({
         if (weightKg > 30 || dims.some((v) => v > 100) || dims.reduce((a, b) => a + b, 0) > 200) {
           return Response.json({ error: "A embalagem consolidada excede os limites de cotação dos Correios. Solicite atendimento para esse pedido." }, { status: 422 });
         }
-        const options: Array<{ id: string; provider: string; service: string; price: number; delivery_days: number | null; description: string }> = [];
-        if (providers.pickup === "ready") options.push({ id: "pickup", provider: "pickup", service: config.pickup.name, price: 0, delivery_days: null, description: [config.pickup.address, config.pickup.instructions].filter(Boolean).join(" · ") || "Retirada no local" });
+        const options: Array<{ id: string; provider: string; service: string; price: number; delivery_days: number | null; description: string; quote_token: string }> = [];
+        if (providers.pickup === "ready") options.push({ id: "pickup", provider: "pickup", service: config.pickup.name, price: 0, delivery_days: null, description: [config.pickup.address, config.pickup.instructions].filter(Boolean).join(" · ") || "Retirada no local", quote_token: "" });
         if (providers.correios === "ready") {
           const token = await correiosToken(config);
           const codes = config.correios.serviceCodes;
@@ -92,7 +93,7 @@ export const Route = createFileRoute("/api/shipping")({
             if (!Number.isFinite(price) || price < 0) return null;
             const label = code === "03298" ? "PAC" : code === "03220" ? "SEDEX" : `Correios ${code}`;
             const days = Number(data.prazoEntrega ?? data.prazo ?? NaN);
-            return { id: `correios-${code}`, provider: "correios", service: label, price, delivery_days: Number.isFinite(days) ? days : null, description: "Cotação oficial dos Correios" };
+            return { id: `correios-${code}`, provider: "correios", service: label, price, delivery_days: Number.isFinite(days) ? days : null, description: "Cotação oficial dos Correios", quote_token: "" };
           }));
           options.push(...results.filter((v): v is NonNullable<typeof v> => v !== null));
         }
