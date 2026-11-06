@@ -142,7 +142,7 @@ function Checkout() {
                 ["phone", "Telefone/WhatsApp", true]
               ] as const).map(([key, label, required]) => <div key={key}>
                 <Label htmlFor={key}>{label}</Label>
-                <Input id={key} type={key === "email" ? "email" : "text"} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} required={required} value={delivery[key]} onChange={e => setDelivery(p => ({ ...p, [key]: e.target.value }))} className="mt-1" />
+                <Input id={key} type={key === "email" ? "email" : "text"} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} required={required} value={delivery[key]} onChange={e => { setDelivery(p => ({ ...p, [key]: e.target.value })); if (key === "cep") { setShippingOptions([]); setSelectedShipping(null); } }} className="mt-1" />
               </div>)}
               </div>
             </section>
