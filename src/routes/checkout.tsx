@@ -52,6 +52,7 @@ function Checkout() {
     retry: false,
   });
   const [delivery, setDelivery] = useState({ name: "", document: "", phone: "", email: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" });
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const m = useMutation({
     mutationFn: async () => {
       const { data, error } = await getSupabase().auth.getUser();
@@ -66,7 +67,7 @@ function Checkout() {
         shipping_city: cleaned.city, shipping_state: cleaned.state,
       }});
       if (saveError) throw new Error("Não foi possível salvar os dados do cadastro. Tente novamente.");
-      return orderService.create(items.map((i) => ({ slug: i.slug, qty: i.qty })), cleaned);
+      return orderService.create(items.map((i) => ({ slug: i.slug, qty: i.qty })), cleaned, idempotencyKey);
     },
     onSuccess: (result) => { window.location.assign(result.checkout_url); },
   });
