@@ -138,18 +138,27 @@ export const ORDER_STATUS_LABEL: Record<MyOrder["status"], string> = {
 };
 
 export const orderService = {
-  create: async (items: { slug: string; qty: number }[]) => {
+  create: async (
+    items: { slug: string; qty: number }[],
+    delivery: { name: string; document: string; phone: string; email: string; cep: string; street: string; number: string; complement: string; district: string; city: string; state: string },
+    idempotencyKey: string,
+  ): Promise<{ order_id: string; checkout_url: string; total: number }> => {
     const sb = getSupabase();
     const { data, error } = await sb.auth.getSession();
     if (error || !data.session) throw new ApiError("Entre na sua conta antes de finalizar a compra.", 401);
     const response = await fetch("/api/orders", {
       method: "POST",
       headers: { Authorization: `Bearer ${data.session.access_token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ items: items.map((item) => ({ product_id: item.slug, qty: item.qty })) }),
+      body: JSON.stringify({
+        idempotency_key: idempotencyKey,
+        items: items.map((item) => ({ product_id: item.slug, qty: item.qty })),
+        customer: { name: delivery.name, email: delivery.email, phone: delivery.phone },
+        address: { cep: delivery.cep, street: delivery.street, number: delivery.number, complement: delivery.complement, district: delivery.district, city: delivery.city, state: delivery.state },
+      }),
     });
-    const body = await response.json().catch(() => ({})) as { order_id?: string; error?: string };
-    if (!response.ok || !body.order_id) throw new ApiError(body.error || "Não foi possível criar o pedido.", response.status);
-    return body.order_id;
+    const body = await response.json().catch(() => ({})) as { order_id?: string; checkout_url?: string; total?: number; error?: string };
+    if (!response.ok || !body.order_id || !body.checkout_url) throw new ApiError(body.error || "Não foi possível iniciar o pagamento.", response.status);
+    return { order_id: body.order_id, checkout_url: body.checkout_url, total: Number(body.total ?? 0) };
   },
   /** Pedidos do próprio usuário (RLS da 0005). Antes da 0005, a tabela não existe => 501. */
   list: async (): Promise<MyOrder[]> => {
