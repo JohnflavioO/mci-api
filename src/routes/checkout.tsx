@@ -66,7 +66,9 @@ function Checkout() {
         }
         data = { session: anonymous.data.session };
       }
-      const cleaned = Object.fromEntries(Object.entries(delivery).map(([k, v]) => [k, v.trim()]));
+      const cleaned = Object.fromEntries(
+        Object.entries(delivery).map(([k, v]) => [k, typeof v === "string" ? v.trim() : ""]),
+      ) as typeof delivery;
       const missing = ["name", "document", "phone", "email", "cep", "street", "number", "district", "city", "state"].find(k => !cleaned[k as keyof typeof cleaned]);
       if (missing) throw new Error("Preencha todos os campos obrigatórios de entrega e identificação.");
       if (!data.session?.user) throw new Error("Não foi possível iniciar sua sessão de compra. Entre ou crie uma conta para continuar.");
@@ -82,7 +84,9 @@ function Checkout() {
     onSuccess: (result) => { window.location.assign(result.checkout_url); },
   });
   useEffect(() => {
-    if (profile.data) setDelivery(profile.data);
+    if (!profile.data) return;
+    const { name, document, phone, email, cep, street, number, complement, district, city, state } = profile.data;
+    setDelivery({ name, document, phone, email, cep, street, number, complement, district, city, state });
   }, [profile.data]);
   return (
     <SiteShell>
