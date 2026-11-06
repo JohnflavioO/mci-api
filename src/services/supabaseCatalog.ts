@@ -16,6 +16,10 @@ export type SbProductRow = {
   /** Só existe após a proposta 0004 (estoque). */
   stock_quantity?: number | null;
   stock_confirmed?: boolean | null;
+  weight_kg?: number | string | null;
+  height_cm?: number | string | null;
+  width_cm?: number | string | null;
+  length_cm?: number | string | null;
   product_prices?: { currency: string; customer_price: number | string | null } | { currency: string; customer_price: number | string | null }[] | null;
   product_reseller_prices?: { reseller_price: number | string | null } | { reseller_price: number | string | null }[] | null;
   product_specs?: { label: string; value: string | null }[] | null;
@@ -27,6 +31,10 @@ export type SupabaseCatalogProduct = CatalogProduct & {
   rowVersion: number;
   resellerPrice: number | null;
   stockConfirmed: boolean;
+  weightKg: number | null;
+  heightCm: number | null;
+  widthCm: number | null;
+  lengthCm: number | null;
 };
 
 const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null);
@@ -58,6 +66,10 @@ export function fromSupabase(row: SbProductRow): SupabaseCatalogProduct {
     inStock: row.stock_quantity == null ? null : row.stock_quantity > 0,
     stock: row.stock_quantity ?? null,
     stockConfirmed: row.stock_confirmed === true,
+    weightKg: row.weight_kg == null ? null : Number(row.weight_kg),
+    heightCm: row.height_cm == null ? null : Number(row.height_cm),
+    widthCm: row.width_cm == null ? null : Number(row.width_cm),
+    lengthCm: row.length_cm == null ? null : Number(row.length_cm),
     customerPrice: toPrice(price?.customer_price),
     currency: price?.currency?.trim() || null,
     resellerPrice: toPrice(reseller?.reseller_price),
@@ -69,7 +81,7 @@ export function fromSupabase(row: SbProductRow): SupabaseCatalogProduct {
 const BASE_SELECT =
   "id,name,brand,sku,category,description,status,row_version,product_prices(currency,customer_price),product_specs(label,value),product_images(url,position)";
 /** Com estoque (proposta 0004). Antes dela a coluna não existe e cai no BASE_SELECT. */
-const PUBLIC_SELECT = `${BASE_SELECT},stock_quantity,stock_confirmed`;
+const PUBLIC_SELECT = `${BASE_SELECT},stock_quantity,stock_confirmed,weight_kg,height_cm,width_cm,length_cm`;
 /** Preço de revenda: RLS só libera para papéis autorizados. */
 const ADMIN_SELECT = `${PUBLIC_SELECT},product_reseller_prices(reseller_price)`;
 const ADMIN_BASE_SELECT = `${BASE_SELECT},product_reseller_prices(reseller_price)`;
@@ -132,6 +144,10 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
       customerPrice: number | null;
       resellerPrice: number | null;
       imageUrl: string;
+      weightKg: number | null;
+      heightCm: number | null;
+      widthCm: number | null;
+      lengthCm: number | null;
     }): Promise<string> => {
       const { data, error } = await sb().rpc("admin_save_product", {
         p_id: input.id || null,
@@ -144,6 +160,10 @@ export function createSupabaseCatalog(sb: () => SupabaseClient = getSupabase) {
         p_customer_price: input.customerPrice,
         p_reseller_price: input.resellerPrice,
         p_image_url: input.imageUrl.trim() || null,
+        p_weight_kg: input.weightKg,
+        p_height_cm: input.heightCm,
+        p_width_cm: input.widthCm,
+        p_length_cm: input.lengthCm,
       });
       if (error) {
         const status = error.code === "23505" ? 409 : error.code === "42501" ? 403 : error.code === "23514" ? 422 : error.code === "PGRST202" ? 404 : 400;
