@@ -121,7 +121,7 @@ begin
   if (select count(*) from public.order_items where order_id = v_id) <> jsonb_array_length(p_items) then
     raise exception 'produto indisponível ou duplicado' using errcode = '23514';
   end if;
-  update public.orders set total = v_total, volume_discount_amount = v_volume_discount, updated_at = now() where id = v_id;
+  update public.orders set total = v_total + coalesce(shipping_amount, 0), volume_discount_amount = v_volume_discount, updated_at = now() where id = v_id;
   return v_id;
 end $$;
 
