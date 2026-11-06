@@ -1,5 +1,3 @@
-import type { NormalizedStatus } from "./types";
-
 export const INFINITEPAY_BASE = "https://api.checkout.infinitepay.io";
 
 export type InfinitePayConfig = {
@@ -132,13 +130,4 @@ export async function verifyInfinitePayPayment(
     captureMethod: capture === "pix" || capture === "credit_card" ? capture : null,
     paid: response["success"] === true && response["paid"] === true,
   };
-}
-
-export function infinitePayEventStatus(event: unknown): NormalizedStatus | null {
-  switch (event) {
-    case "paid": return "paid";
-    // InfinitePay webhook não tem assinatura e payment_check não autentica status de estorno/cancelamento.
-    // Esses estados não são aplicados a partir do corpo não assinado.
-    default: return null;
-  }
 }
