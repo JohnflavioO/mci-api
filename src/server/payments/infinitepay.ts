@@ -15,7 +15,7 @@ type CheckoutPayload = {
   redirect_url: string;
   webhook_url: string;
   customer?: { name: string; email: string; phone_number: string };
-  address?: { cep: string; street: string; number: string; neighborhood: string; complement?: string };
+  address?: { cep: string; street: string; number: string; neighborhood: string; city: string; state: string; complement?: string };
   options: {
     single_payment: true;
     require_delivery_address: false;
@@ -85,6 +85,8 @@ export async function createInfinitePayCheckout(
       street: input.address.street,
       number: input.address.number,
       neighborhood: input.address.district,
+      city: input.address.city,
+      state: input.address.state,
       ...(input.address.complement ? { complement: input.address.complement } : {}),
     };
   }
