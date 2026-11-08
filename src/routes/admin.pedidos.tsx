@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CalendarDays, CheckCircle2, Clock3, CreditCard, Package, RefreshCw, Search, ShoppingCart, WalletCards } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, CalendarDays, CheckCircle2, Clock3, CreditCard, Package, RefreshCw, Search, ShoppingCart, WalletCards, Trash2, Truck, UserRound, MapPin } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/pedidos")({
   head: () => ({
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/admin/pedidos")({
 
 type OrderStatus = "pending_payment" | "paid" | "rejected" | "cancelled" | "refund_required" | "refunded";
 type OrderItem = { id: string; name_snapshot: string; unit_price: number; qty: number };
+type OrderDetails = { id: string; user_id: string; status: OrderStatus; currency: string; total: number; provider: string | null; provider_order_id: string | null; provider_charge_id: string | null; provider_checkout_url: string | null; shipping_amount: number; shipping_provider: string | null; shipping_service: string | null; shipping_cep: string | null; shipping_street: string | null; shipping_number: string | null; shipping_complement: string | null; shipping_district: string | null; shipping_city: string | null; shipping_state: string | null; customer_name: string | null; customer_document: string | null; customer_email: string | null; customer_phone: string | null; refund_reason: string | null; created_at: string; updated_at: string; buyer: { id: string; email: string | null; name: string | null; phone: string | null }; items: (OrderItem & { product_id: string })[] };
 type Order = {
   id: string;
   user_id: string;
@@ -50,6 +52,46 @@ function OrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const queryClient = useQueryClient();
+  const detailsQuery = useQuery({
+    queryKey: ["admin", "order-details", selectedId],
+    enabled: Boolean(selectedId),
+    queryFn: async () => {
+      const { data: sessionData } = await getSupabase().auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Sessão administrativa expirada. Entre novamente.");
+      const response = await fetch(`/api/admin/orders/${selectedId}`, { headers: { Authorization: `Bearer ${token}` } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Não foi possível carregar o pedido.");
+      return payload.order as OrderDetails;
+    },
+    retry: false,
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!deleteTarget) throw new Error("Selecione um pedido.");
+      const { data: sessionData } = await getSupabase().auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Sessão administrativa expirada. Entre novamente.");
+      const response = await fetch(`/api/admin/orders/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, confirmation: deleteConfirmation }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Não foi possível excluir o pedido.");
+      return payload;
+    },
+    onSuccess: async () => {
+      setDeleteTarget(null); setAdminPassword(""); setDeleteConfirmation(""); setDeleteError(""); setSelectedId(null);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+    },
+    onError: (error) => setDeleteError(error instanceof Error ? error.message : "Falha ao excluir pedido."),
+  });
   const ordersQuery = useQuery({
     queryKey: ["admin", "orders"],
     queryFn: async () => {
@@ -71,7 +113,7 @@ function OrdersPage() {
     const matchesSearch = !term || order.id.toLowerCase().includes(term) || order.user_id.toLowerCase().includes(term) || (order.provider ?? "").toLowerCase().includes(term);
     return matchesSearch && (statusFilter === "all" || order.status === statusFilter);
   }), [orders, search, statusFilter]);
-  const selected = orders.find((order) => order.id === selectedId) ?? null;
+  const selected = detailsQuery.data ?? null;
   const totalPaid = orders.filter((order) => order.status === "paid").reduce((sum, order) => sum + Number(order.total), 0);
   const pending = orders.filter((order) => order.status === "pending_payment").length;
   const needsAttention = orders.filter((order) => order.status === "refund_required").length;
@@ -82,7 +124,7 @@ function OrdersPage() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sidebar-primary">Operação comercial</p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">Gestão de pedidos</h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Centralize pedidos, acompanhe os estados e identifique rapidamente o que exige atenção. A confirmação financeira continua bloqueada até a integração segura de pagamento.</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Consulte os dados do comprador, entrega, produtos e pagamento de cada pedido.</p>
         </div>
         <Button variant="outline" onClick={() => void ordersQuery.refetch()} disabled={ordersQuery.isFetching}>
           <RefreshCw className={`mr-2 size-4 ${ordersQuery.isFetching ? "animate-spin" : ""}`} /> Atualizar
@@ -121,7 +163,7 @@ function OrdersPage() {
 
       <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-          <div><h3 className="font-semibold">Lista de pedidos</h3><p className="mt-1 text-xs text-muted-foreground">A consulta é somente leitura; nenhuma alteração financeira é feita por esta tela.</p></div>
+          <div><h3 className="font-semibold">Lista de pedidos</h3><p className="mt-1 text-xs text-muted-foreground">Abra um pedido para ver os dados completos. Pedidos de teste sem pagamento podem ser excluídos com reautenticação.</p></div>
           <span className="text-sm text-muted-foreground">{filtered.length} resultado(s)</span>
         </div>
         <div className="grid gap-3 border-b p-4 md:grid-cols-[minmax(220px,1fr)_220px]">
@@ -161,12 +203,50 @@ function OrdersPage() {
         )}
       </section>
 
-      {selected ? <section className="rounded-xl border bg-card p-5 shadow-sm">
+      {selectedId ? <section className="rounded-xl border bg-card p-5 shadow-sm">
+        {detailsQuery.isPending ? <p className="py-8 text-center text-sm text-muted-foreground">Carregando detalhes do pedido…</p> : detailsQuery.isError ? <div className="flex items-center justify-between gap-3"><p className="text-sm text-destructive">{detailsQuery.error.message}</p><Button variant="outline" onClick={() => void detailsQuery.refetch()}>Tentar novamente</Button></div> : selected ? <>
         <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><p className="text-xs uppercase tracking-wider text-muted-foreground">Detalhes do pedido</p><h3 className="mt-1 text-lg font-semibold">#{selected.id.toUpperCase()}</h3><p className="mt-1 text-sm text-muted-foreground">Criado em {dateTime(selected.created_at)} · Última atualização {dateTime(selected.updated_at)}</p></div><span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${statusMeta[selected.status]?.className ?? "bg-muted"}`}>{statusMeta[selected.status]?.label ?? selected.status}</span></div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2"><Info label="ID do comprador" value={selected.user_id} /><Info label="Provedor de pagamento" value={selected.provider || "Ainda não definido"} /><Info label="Valor do pedido" value={money(selected.total)} /><Info label="Itens" value={String(selected.order_items?.length ?? 0)} /></div>
-        <div className="mt-5"><h4 className="mb-2 font-semibold">Produtos do pedido</h4><div className="divide-y rounded-lg border">{(selected.order_items ?? []).map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"><div><p className="font-medium">{item.name_snapshot}</p><p className="text-xs text-muted-foreground">{item.qty} × {money(item.unit_price)}</p></div><strong>{money(item.qty * item.unit_price)}</strong></div>)}</div></div>
-        <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground"><CreditCard className="mt-0.5 size-4 shrink-0" /> Ações de aprovar pagamento, cancelar ou estornar ficarão disponíveis somente após a integração do provedor e a confirmação do status pelo servidor/webhook. Esta tela não altera o status do pedido.</div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Info label="Comprador" value={selected.buyer?.name || selected.customer_name || "Nome não informado"} />
+          <Info label="E-mail" value={selected.buyer?.email || selected.customer_email || "Não informado"} />
+          <Info label="Telefone" value={selected.buyer?.phone || selected.customer_phone || "Não informado"} />
+          <Info label="CPF/CNPJ" value={selected.customer_document || "Não informado"} />
+          <Info label="ID da conta" value={selected.user_id} />
+          <Info label="Provedor de pagamento" value={selected.provider || "Ainda não definido"} />
+          <Info label="ID externo do pagamento" value={selected.provider_order_id || selected.provider_charge_id || "Não disponível"} />
+          <Info label="Valor dos produtos + frete" value={money(selected.total)} />
+          <Info label="Frete" value={money(selected.shipping_amount)} />
+          <Info label="Transportadora" value={selected.shipping_provider ? `${selected.shipping_provider} · ${selected.shipping_service || ""}` : "Não informado"} />
+        </div>
+        <div className="mt-4 rounded-lg border p-4">
+          <h4 className="mb-3 flex items-center gap-2 font-semibold"><MapPin className="size-4" /> Endereço de entrega</h4>
+          <p className="text-sm">{[selected.shipping_street, selected.shipping_number, selected.shipping_complement, selected.shipping_district, selected.shipping_city, selected.shipping_state, selected.shipping_cep].filter(Boolean).join(", ") || "Endereço não registrado neste pedido."}</p>
+        </div>
+        <div className="mt-5"><h4 className="mb-2 font-semibold">Produtos do pedido</h4><div className="divide-y rounded-lg border">{(selected.items ?? []).map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"><div><p className="font-medium">{item.name_snapshot}</p><p className="text-xs text-muted-foreground">{item.qty} × {money(item.unit_price)}</p></div><strong>{money(item.qty * item.unit_price)}</strong></div>)}</div></div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground"><CreditCard className="mt-0.5 size-4 shrink-0" /> A exclusão é bloqueada para pedidos com pagamento confirmado ou cobrança registrada.</div>
+          <Button variant="destructive" onClick={() => { setDeleteTarget(orders.find((o) => o.id === selected.id) ?? null); setDeleteError(""); }} disabled={selected.status === "paid" || selected.status === "refund_required" || selected.status === "refunded" || Boolean(selected.provider_charge_id)}><Trash2 className="mr-2 size-4" /> Excluir pedido</Button>
+        </div>
+        </> : null}
       </section> : null}
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => { if (!open && !deleteMutation.isPending) { setDeleteTarget(null); setAdminPassword(""); setDeleteConfirmation(""); setDeleteError(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir pedido de teste?</DialogTitle>
+            <DialogDescription>Esta ação é permanente e só é permitida para pedidos sem pagamento confirmado ou cobrança registrada. Informe sua senha administrativa atual para confirmar.</DialogDescription>
+          </DialogHeader>
+          {deleteTarget ? <div className="space-y-3">
+            <div className="rounded-md bg-muted p-3 text-sm"><strong>Pedido #{deleteTarget.id.slice(0, 8).toUpperCase()}</strong><p className="text-muted-foreground">{money(deleteTarget.total)} · {statusMeta[deleteTarget.status]?.label ?? deleteTarget.status}</p></div>
+            <div><label className="mb-1.5 block text-sm font-medium" htmlFor="admin-delete-password">Senha do administrador</label><Input id="admin-delete-password" type="password" autoComplete="current-password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-sm font-medium" htmlFor="admin-delete-confirmation">Digite EXCLUIR para confirmar</label><Input id="admin-delete-confirmation" value={deleteConfirmation} onChange={(e) => setDeleteConfirmation(e.target.value)} /></div>
+            {deleteError ? <p className="text-sm text-destructive">{deleteError}</p> : null}
+          </div> : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>Voltar</Button>
+            <Button variant="destructive" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending || !adminPassword || deleteConfirmation !== "EXCLUIR"}>{deleteMutation.isPending ? "Excluindo…" : "Confirmar exclusão"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <p className="flex items-center gap-2 text-xs text-muted-foreground"><CalendarDays className="size-3.5" /> Atualização automática a cada 30 segundos quando o banco está disponível. Exibe até 250 pedidos recentes.</p>
     </div>
   );
