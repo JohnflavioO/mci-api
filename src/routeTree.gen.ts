@@ -575,6 +575,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusPedidosRoute: MeusPedidosRoute,
   RevendedorRoute: RevendedorRouteWithChildren,
   ProdutoSlugRoute: ProdutoSlugRoute,
+  ApiAdminOrdersOrderIdRoute: ApiAdminOrdersOrderIdRoute,
   ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
   ApiPublicPagarmeWebhookRoute: ApiPublicPagarmeWebhookRoute,
 }
