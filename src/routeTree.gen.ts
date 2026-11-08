@@ -32,6 +32,7 @@ import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
 import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
 import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
+import { Route as ApiAdminOrdersOrderIdRouteImport } from './routes/api/admin/orders/$orderId'
 import { Route as ApiPublicPagarmeWebhookRouteImport } from './routes/api/public/pagarme-webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -144,6 +145,11 @@ const RevendedorSecaoRoute = RevendedorSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => RevendedorRoute,
 } as any)
+const ApiAdminOrdersOrderIdRoute = ApiAdminOrdersOrderIdRouteImport.update({
+  id: '/api/admin/orders/$orderId',
+  path: '/api/admin/orders/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminImportPreviewRoute = ApiAdminImportPreviewRouteImport.update({
   id: '/api/admin/import-preview',
   path: '/api/admin/import-preview',
@@ -178,6 +184,8 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
+  '/api/admin/orders/$orderId': typeof ApiAdminOrdersOrderIdRoute
+  '/api/admin/orders/$orderId': typeof ApiAdminOrdersOrderIdRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
 }
@@ -320,6 +328,7 @@ export interface RootRouteChildren {
   MeusPedidosRoute: typeof MeusPedidosRoute
   RevendedorRoute: typeof RevendedorRouteWithChildren
   ProdutoSlugRoute: typeof ProdutoSlugRoute
+  ApiAdminOrdersOrderIdRoute: typeof ApiAdminOrdersOrderIdRoute
   ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
   ApiPublicPagarmeWebhookRoute: typeof ApiPublicPagarmeWebhookRoute
 }
@@ -479,6 +488,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/revendedor/$secao'
       preLoaderRoute: typeof RevendedorSecaoRouteImport
       parentRoute: typeof RevendedorRoute
+    }
+    '/api/admin/orders/$orderId': {
+      id: '/api/admin/orders/$orderId'
+      path: '/api/admin/orders/$orderId'
+      fullPath: '/api/admin/orders/$orderId'
+      preLoaderRoute: typeof ApiAdminOrdersOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/admin/import-preview': {
       id: '/api/admin/import-preview'
