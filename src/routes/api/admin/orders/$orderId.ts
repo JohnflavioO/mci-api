@@ -21,6 +21,7 @@ async function authorize(request: Request) {
 
   const userClient = createClient(c.url, c.publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data, error } = await userClient.auth.getUser(token);
   if (error || !data.user?.email) return { response: Response.json({ error: "Sessão inválida ou expirada." }, { status: 401 }) } as const;
