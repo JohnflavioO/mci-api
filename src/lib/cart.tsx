@@ -21,6 +21,9 @@ type Cart = {
   setQty: (slug: string, qty: number) => void;
   remove: (slug: string) => void;
   count: number;
+  drawerOpen: boolean;
+  closeDrawer: () => void;
+  openDrawer: () => void;
 };
 
 const Ctx = createContext<Cart | null>(null);
@@ -28,6 +31,7 @@ const KEY = "mci-cart";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
@@ -43,6 +47,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value: Cart = {
     items,
     count: items.reduce((n, i) => n + i.qty, 0),
+    drawerOpen,
+    closeDrawer: () => setDrawerOpen(false),
+    openDrawer: () => setDrawerOpen(true),
     add: (item) => {
       const max = item.maxQty ?? null;
       const requestedQty = clampQty(item.qty ?? 1, max);
@@ -53,6 +60,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       save(found
         ? items.map((i) => (i.slug === item.slug ? { ...i, image: item.image ?? i.image, maxQty: max, qty: nextQty } : i))
         : [...items, { slug: item.slug, name: item.name, image: item.image ?? null, maxQty: max, qty: requestedQty }]);
+      setDrawerOpen(true);
       return true;
     },
     setQty: (slug, qty) => save(items.map((i) => (i.slug === slug ? { ...i, qty: clampQty(qty, i.maxQty) } : i))),
