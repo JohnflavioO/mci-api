@@ -5,7 +5,7 @@ import { getValidMelhorEnvioAccessToken, melhorEnvioConfig } from "@/server/ship
 import { storeShippingConfig } from "@/server/shipping/config";
 
 type Product = {
-  id: string; name: string; price: number | string | null;
+  id: string; name: string; product_prices: { customer_price: number | string | null } | { customer_price: number | string | null }[] | null;
   weight_kg: number | string | null; height_cm: number | string | null;
   width_cm: number | string | null; length_cm: number | string | null;
 };
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/shipping")({
         const db = createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
         const ids = [...new Set(requested.map((i) => i.id))];
         const { data: products, error: productsError } = await db.from("products")
-          .select("id,name,price,weight_kg,height_cm,width_cm,length_cm").in("id", ids).eq("status", "published");
+          .select("id,name,weight_kg,height_cm,width_cm,length_cm,product_prices(customer_price)").in("id", ids).eq("status", "published");
         if (productsError || !products || products.length !== ids.length) return Response.json({ error: "Não foi possível validar os produtos do carrinho." }, { status: 400 });
         const byId = new Map((products as Product[]).map((p) => [p.id, p]));
         const quoteProducts = requested.map((item) => {
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/api/shipping")({
             id: product.id,
             width: Math.ceil(width), height: Math.ceil(height), length: Math.ceil(length),
             weight: Number(weight.toFixed(3)),
-            insurance_value: Math.max(0.01, positive(product.price)),
+            insurance_value: Math.max(0.01, positive(Array.isArray(product.product_prices) ? product.product_prices[0]?.customer_price : product.product_prices?.customer_price)),
             quantity: item.qty,
           };
         });
