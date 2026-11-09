@@ -49,6 +49,7 @@ export async function createInfinitePayCheckout(
     orderId: string;
     items: { name: string; qty: number; unitPrice: number; lineTotal?: number | null }[];
     shippingAmount: number;
+    expectedTotal: number;
     customer?: { name: string; email: string; phone: string };
     address?: { cep: string; street: string; number: string; district: string; city: string; state: string; complement?: string };
   },
@@ -59,9 +60,19 @@ export async function createInfinitePayCheckout(
     price: Math.round((item.lineTotal ?? item.unitPrice * item.qty) * 100),
     description: (item.qty > 1 ? `${item.name} · ${item.qty} un.` : item.name).slice(0, 120),
   }));
-  if (input.shippingAmount > 0) {
-    items.push({ quantity: 1, price: Math.round(input.shippingAmount * 100), description: "Frete" });
+  const productSubtotalCents = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const expectedTotalCents = Math.round(input.expectedTotal * 100);
+  // Deriva o frete do total efetivamente gravado no pedido para impedir que
+  // uma divergência no campo shipping_amount gere cobrança apenas do subtotal.
+  const freightCents = expectedTotalCents - productSubtotalCents;
+  if (!Number.isSafeInteger(expectedTotalCents) || expectedTotalCents <= 0 || freightCents < 0) {
+    throw new Error("infinitepay_order_total_mismatch");
   }
+  if (freightCents > 0) {
+    items.push({ quantity: 1, price: freightCents, description: "Frete e entrega" });
+  }
+  const checkoutTotalCents = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  if (checkoutTotalCents !== expectedTotalCents) throw new Error("infinitepay_checkout_total_mismatch");
   if (!items.length || items.some((i) => !Number.isInteger(i.price) || i.price <= 0 || !Number.isInteger(i.quantity) || i.quantity < 1)) {
     throw new Error("infinitepay_invalid_order_items");
   }
