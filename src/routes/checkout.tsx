@@ -187,10 +187,9 @@ function Checkout() {
                   </label>;
                 })}
               </div>
-              {selectedShipping && productsSubtotal !== null && (() => {
-                const chosen = shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token);
-                if (!chosen) return null;
-                const total = Number((productsSubtotal + chosen.price).toFixed(2));
+              {productsSubtotal !== null && (() => {
+                const chosen = selectedShipping ? shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token) : null;
+                const total = chosen ? Number((productsSubtotal + chosen.price).toFixed(2)) : null;
                 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
                 return <div aria-live="polite" className="mt-5 overflow-hidden rounded-xl border border-primary/25 bg-card shadow-sm">
                   <div className="border-b border-border bg-muted/40 px-4 py-3 sm:px-5">
@@ -199,10 +198,10 @@ function Checkout() {
                   </div>
                   <div className="space-y-3 px-4 py-4 sm:px-5">
                     <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Produtos ({items.reduce((n, i) => n + i.qty, 0)} item(ns))</span><span className="font-medium tabular-nums">{money(productsSubtotal)}</span></div>
-                    <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Entrega · {chosen.provider === "pickup" ? "Retirada no local" : chosen.service}</span><span className="font-medium tabular-nums">{chosen.price === 0 ? "Grátis" : money(chosen.price)}</span></div>
+                    <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Entrega{chosen ? " · " + (chosen.provider === "pickup" ? "Retirada no local" : chosen.service) : ""}</span><span className="font-medium tabular-nums">{chosen ? (chosen.price === 0 ? "Grátis" : money(chosen.price)) : "Selecione uma modalidade"}</span></div>
                     <div className="border-t border-border pt-3">
-                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">Total estimado</span><span className="text-xl font-bold tabular-nums text-primary">{money(total)}</span></div>
-                      <p className="mt-1 text-xs text-muted-foreground">O frete selecionado já está incluído nesta estimativa. O valor final será confirmado ao criar o pedido.</p>
+                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">{chosen ? "Total estimado" : "Total parcial"}</span><span className="text-xl font-bold tabular-nums text-primary">{total === null ? money(productsSubtotal) : money(total)}</span></div>
+                      <p className="mt-1 text-xs text-muted-foreground">{chosen ? "Frete incluído no total estimado. O valor será confirmado ao criar o pedido." : "O valor da entrega será somado assim que você selecionar uma modalidade."}</p>
                     </div>
                   </div>
                 </div>;
