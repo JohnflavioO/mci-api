@@ -168,7 +168,7 @@ function Checkout() {
             </section>
             <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-lg font-semibold">Frete e entrega</h2><p className="text-sm text-muted-foreground">Calcule o valor para o CEP informado antes de pagar.</p></div>
-                <Button type="button" variant="outline" disabled={shippingMutation.isPending || delivery.cep.replace(/[^0-9]/g, "").length !== 8} onClick={() => shippingMutation.mutate()}>{shippingMutation.isPending ? "Calculando frete…" : "Calcular frete"}</Button></div>
+                <Button type="button" variant="default" className="min-w-52 shadow-sm" disabled={shippingMutation.isPending || delivery.cep.replace(/[^0-9]/g, "").length !== 8} onClick={() => shippingMutation.mutate()}>{shippingMutation.isPending ? "Consultando transportadoras…" : "Consultar opções de frete"}</Button></div>
               {shippingMutation.isError && <p role="alert" className="mt-3 text-sm text-destructive">{shippingMutation.error.message}</p>}
               <div className="mt-4 grid gap-3">
                 {shippingOptions.map((option) => {
@@ -178,8 +178,8 @@ function Checkout() {
                     <input type="radio" name="shipping" className="size-4 accent-primary" checked={selected} onChange={() => setSelectedShipping({ provider: option.provider, service: option.service, quote_token: option.quote_token })} />
                     <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">{isPickup ? "⌂" : "↗"}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-semibold">{option.service}</span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">{option.description}</span>
+                      <span className="block font-semibold">{option.provider === "pickup" ? "Retirada no local" : option.service.toLowerCase().includes("package") ? "Jadlog — Entrega padrão" : option.service.toLowerCase().includes(".com") ? "Jadlog — Entrega para e-commerce" : option.service.replace(/^\./, "")}</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">{option.provider === "pickup" ? "Armazém Sanco" : "Transportadora Jadlog"}</span>
                       {option.delivery_days ? <span className="mt-1 block text-xs text-muted-foreground">Prazo estimado: {option.delivery_days} dia(s) útil(eis)</span> : null}
                     </span>
                     <span className="shrink-0 text-right font-semibold tabular-nums">{option.price === 0 ? "Grátis" : option.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
@@ -197,7 +197,7 @@ function Checkout() {
                 <p className="mt-3 text-xs text-muted-foreground">Esses dados serão enviados à equipe do Armazém Sanco para autorização de acesso e conferência da retirada.</p>
               </div>}
               {shippingMutation.isSuccess && <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm"><p className="font-medium">Disponibilidade dos transportadores</p><p className="mt-1 text-muted-foreground">Melhor Envio: {shippingProviders.melhor_envio === "ready" ? "consultado" : "não conectado"} · Retirada: {shippingProviders.pickup === "ready" ? "disponível" : "indisponível"}</p>{shippingOptions.every((option) => option.provider === "pickup") && <p className="mt-2 text-destructive">Nenhuma transportadora retornou cotação. A retirada está disponível, mas o envio para endereço ainda não pode ser selecionado.</p>}</div>}
-              {!shippingOptions.length && !shippingMutation.isPending && <p className="mt-3 text-sm text-muted-foreground">Após preencher o CEP, clique em Calcular frete.</p>}
+              {!shippingOptions.length && !shippingMutation.isPending && <p className="mt-3 text-sm text-muted-foreground">Informe o CEP e consulte as opções de entrega disponíveis.</p>}
             </section>
             <section className="rounded-xl border border-border bg-secondary/40 p-5 sm:p-6">
               <h2 className="font-display font-semibold">Pagamento protegido pela InfinitePay</h2>
