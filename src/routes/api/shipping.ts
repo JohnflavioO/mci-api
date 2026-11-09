@@ -47,6 +47,11 @@ export const Route = createFileRoute("/api/shipping")({
           .select("id,name,weight_kg,height_cm,width_cm,length_cm,product_prices(customer_price)").in("id", ids).eq("status", "published");
         if (productsError || !products || products.length !== ids.length) return Response.json({ error: "Não foi possível validar os produtos do carrinho." }, { status: 400 });
         const byId = new Map((products as Product[]).map((p) => [p.id, p]));
+        const productsSubtotal = Number(requested.reduce((sum, item) => {
+          const product = byId.get(item.id)!;
+          const price = positive(Array.isArray(product.product_prices) ? product.product_prices[0]?.customer_price : product.product_prices?.customer_price);
+          return sum + price * item.qty;
+        }, 0).toFixed(2));
         const quoteProducts = requested.map((item) => {
           const product = byId.get(item.id)!;
           const weight = positive(product.weight_kg), height = positive(product.height_cm), width = positive(product.width_cm), length = positive(product.length_cm);
