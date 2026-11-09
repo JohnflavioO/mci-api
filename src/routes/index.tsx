@@ -169,10 +169,10 @@ function Index() {
             <Link to="/catalogo" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-[#e95b19]">Explorar produtos <ArrowRight className="size-4" /></Link>
           </div>
           {catalog.isPending ? (
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
           ) : featured.length > 0 ? (
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {featured.map((product) => <div key={product.slug} className="rounded-2xl border border-slate-200/80 bg-white p-3 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5 sm:p-4"><ProductCard product={product} /></div>)}
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
+              {featured.map((product) => <ProductCard key={product.slug} product={product} />)}
             </div>
           ) : (
             <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
