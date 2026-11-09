@@ -123,7 +123,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
               -{discountPercent}%
             </span>
           )}
-          {unavailable && <span className="absolute left-2 top-2 rounded-md bg-foreground/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-background">Indisponível</span>}
+          {unavailable && <span className={`absolute right-2 z-10 rounded-md bg-foreground/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-background shadow-sm ${hasResellerDiscount ? "top-11" : "top-2"}`}>Indisponível</span>}
         </div>
         <div className="flex flex-1 flex-col px-1 pt-4">
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{product.category}</p>
