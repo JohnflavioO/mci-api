@@ -119,22 +119,6 @@ function Index() {
               </div>
             )}
           </div>
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <div className="flex items-center gap-2 rounded-lg bg-[#f7f8f9] px-3 py-2.5"><ShieldCheck className="size-4 text-[#e95b19]"/><span className="text-xs font-medium text-slate-700">Compra com confiança</span></div>
-            <div className="flex items-center gap-2 rounded-lg bg-[#f7f8f9] px-3 py-2.5"><Headphones className="size-4 text-[#e95b19]"/><span className="text-xs font-medium text-slate-700">Atendimento especializado</span></div>
-            <div className="flex items-center gap-2 rounded-lg bg-[#f7f8f9] px-3 py-2.5"><ShoppingBag className="size-4 text-[#e95b19]"/><span className="text-xs font-medium text-slate-700">Programa de parceiros</span></div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b bg-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0 px-4 py-5">
-          <div className="flex items-center gap-3 py-3 sm:px-5 sm:py-1 sm:first:pl-0"><ShieldCheck className="size-5 text-[#ff681f]" /><div><p className="text-sm font-semibold">Compra com confiança</p><p className="mt-0.5 text-xs text-muted-foreground">Relacionamento direto com a MCI</p></div></div>
-          <div className="flex items-center gap-3 py-3 sm:px-5 sm:py-1"><Headphones className="size-5 text-[#ff681f]" /><div><p className="text-sm font-semibold">Atendimento especializado</p><p className="mt-0.5 text-xs text-muted-foreground">Suporte para encontrar a solução certa</p></div></div>
-          <div className="flex items-center gap-3 py-3 sm:px-5 sm:py-1"><ShoppingBag className="size-5 text-[#ff681f]" /><div><p className="text-sm font-semibold">Programa de parceiros</p><p className="mt-0.5 text-xs text-muted-foreground">Condições exclusivas após aprovação</p></div></div>
-        </div>
-      </section>
-
       <section className="bg-[#f1f2f4]">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
