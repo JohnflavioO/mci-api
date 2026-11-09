@@ -119,6 +119,9 @@ function Index() {
               </div>
             )}
           </div>
+        </div>
+      </section>
+
       <section className="bg-[#f1f2f4]">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
