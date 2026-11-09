@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Menu, X, ShieldCheck, UserRound, LayoutDashboard, LogOut, Loader2 } from "lucide-react";
+import { ShoppingBag, Menu, X, ShieldCheck, UserRound, LayoutDashboard, LogOut, Loader2, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -37,7 +37,7 @@ type AccountDestination = "/admin" | "/revendedor" | "/afiliado" | "/meus-pedido
 type AccountState = { user: User | null; destination: AccountDestination; loading: boolean };
 
 export function SiteShell({ children }: { children: ReactNode }) {
-  const { count } = useCart();
+  const { count, items, drawerOpen, closeDrawer, setQty, remove } = useCart();
   const [open, setOpen] = useState(false);
   const [account, setAccount] = useState<AccountState>({ user: null, destination: "/meus-pedidos", loading: true });
 
@@ -93,6 +93,14 @@ export function SiteShell({ children }: { children: ReactNode }) {
     window.location.assign("/");
   };
   useEffect(() => {
+    if (!drawerOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeDrawer(); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", onKey); };
+  }, [drawerOpen, closeDrawer]);
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
@@ -146,6 +154,60 @@ export function SiteShell({ children }: { children: ReactNode }) {
         )}
       </header>
       <main className="flex-1">{children}</main>
+      {drawerOpen && (
+        <div className="fixed inset-0 z-[80]" role="presentation">
+          <button type="button" aria-label="Fechar carrinho" onClick={closeDrawer} className="absolute inset-0 cursor-default bg-slate-950/55 backdrop-blur-[2px] animate-in fade-in duration-200" />
+          <aside role="dialog" aria-modal="true" aria-labelledby="slide-cart-title" className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5">
+              <div className="flex items-center gap-3">
+                <span className="grid size-11 place-items-center rounded-xl bg-orange-100 text-[#e95b19]"><ShoppingBag className="size-5" /></span>
+                <div><h2 id="slide-cart-title" className="text-lg font-extrabold text-slate-900">Seu carrinho</h2><p className="text-xs text-slate-500">{count} {count === 1 ? "item" : "itens"} adicionados</p></div>
+              </div>
+              <button type="button" onClick={closeDrawer} aria-label="Fechar carrinho" className="grid size-10 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"><X className="size-5" /></button>
+            </div>
+            {items.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
+                <ShoppingBag className="size-12 text-slate-300" /><p className="mt-4 font-bold text-slate-900">Seu carrinho está vazio</p><p className="mt-1 text-sm text-slate-500">Adicione produtos para continuar sua compra.</p>
+                <button type="button" onClick={closeDrawer} className="mt-5 rounded-lg bg-[#ff681f] px-5 py-3 text-sm font-bold text-white hover:bg-[#e95712]">Explorar produtos</button>
+              </div>
+            ) : (
+              <>
+                <div className="flex-1 overflow-y-auto px-5">
+                  <div className="flex items-center justify-between border-b border-slate-100 py-4 text-xs text-slate-500"><span>Produtos adicionados</span><Link to="/carrinho" onClick={closeDrawer} className="font-semibold text-[#e95b19] hover:underline">Ver carrinho completo</Link></div>
+                  <ul className="divide-y divide-slate-100">
+                    {items.map(item => (
+                      <li key={item.slug} className="flex gap-3 py-5">
+                        <div className="size-20 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                          {item.image ? <img src={item.image} alt={item.name} className="size-full object-contain" /> : <div className="grid size-full place-items-center"><ShoppingBag className="size-7 text-slate-300" /></div>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <Link to="/produto/$slug" params={{slug:item.slug}} onClick={closeDrawer} className="line-clamp-2 text-sm font-bold leading-5 text-slate-900 hover:text-[#e95b19]">{item.name}</Link>
+                          <p className="mt-1 text-xs text-slate-500">Preço e disponibilidade confirmados no checkout</p>
+                          <div className="mt-3 flex items-center justify-between gap-3">
+                            <div className="inline-flex h-9 items-center overflow-hidden rounded-lg border border-slate-200">
+                              <button type="button" aria-label="Diminuir quantidade" disabled={item.qty <= 1} onClick={() => setQty(item.slug,item.qty-1)} className="grid size-9 place-items-center text-slate-600 hover:bg-slate-50 disabled:opacity-30"><Minus className="size-3.5" /></button>
+                              <span className="min-w-8 text-center text-xs font-bold tabular-nums">{item.qty}</span>
+                              <button type="button" aria-label="Aumentar quantidade" disabled={item.maxQty != null && item.qty >= item.maxQty} onClick={() => setQty(item.slug,item.qty+1)} className="grid size-9 place-items-center text-slate-600 hover:bg-slate-50 disabled:opacity-30"><Plus className="size-3.5" /></button>
+                            </div>
+                            <button type="button" onClick={() => remove(item.slug)} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-red-600"><Trash2 className="size-3.5" /> Remover</button>
+                          </div>
+                          {item.maxQty != null && <p className="mt-1.5 text-[11px] text-slate-400">Estoque disponível: {item.maxQty}</p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="border-t border-slate-200 bg-slate-50 px-5 py-5">
+                  <p className="text-xs leading-5 text-slate-500">O valor final, descontos aplicáveis e opções de frete serão apresentados na finalização da compra.</p>
+                  <Link to="/carrinho" onClick={closeDrawer} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white text-sm font-bold text-slate-800 transition hover:border-[#ff681f] hover:text-[#e95b19]">Ver e editar carrinho</Link>
+                  <Link to="/checkout" onClick={closeDrawer} className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#ff681f] text-sm font-extrabold text-white shadow-lg shadow-orange-200 transition hover:bg-[#e95712]">Finalizar compra <ArrowRight className="size-4" /></Link>
+                  <button type="button" onClick={closeDrawer} className="mt-3 w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-900">Continuar comprando</button>
+                </div>
+              </>
+            )}
+          </aside>
+        </div>
+      )}
       <footer className="border-t-2 border-brand bg-graphite text-graphite-foreground">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:py-14">
           <div className="lg:col-span-2">
