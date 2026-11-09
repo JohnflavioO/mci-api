@@ -124,6 +124,7 @@ export const Route = createFileRoute("/api/shipping")({
         });
         return Response.json({
           options: signedOptions,
+          products_subtotal: productsSubtotal,
           providers: { melhor_envio: "ready", pickup: config.pickup.enabled ? "ready" : "disabled" },
           notices: signedOptions.length ? [] : ["O Melhor Envio não retornou modalidades para este CEP e pacote."],
         });
