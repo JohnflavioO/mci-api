@@ -41,3 +41,43 @@ export function shippingAdminClient() {
   if (!url || !key) throw new Error("Supabase não configurado no servidor.");
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
+
+
+type StoredCredential = {
+  access_token_encrypted: string;
+  refresh_token_encrypted: string;
+  token_expires_at: string;
+};
+
+export async function getValidMelhorEnvioAccessToken() {
+  const config = melhorEnvioConfig();
+  const db = shippingAdminClient();
+  const { data, error } = await db.from("shipping_provider_credentials")
+    .select("access_token_encrypted,refresh_token_encrypted,token_expires_at")
+    .eq("provider", "melhor_envio").maybeSingle();
+  if (error || !data) throw new Error("A conta Melhor Envio não está autorizada. Conecte novamente em Administração > Configurações.");
+  const stored = data as StoredCredential;
+  const expiresAt = new Date(stored.token_expires_at).getTime();
+  if (Number.isFinite(expiresAt) && expiresAt > Date.now() + 120_000) return decryptToken(stored.access_token_encrypted);
+  if (!config.clientId || !config.clientSecret) throw new Error("Credenciais do aplicativo Melhor Envio não configuradas.");
+  const refreshToken = decryptToken(stored.refresh_token_encrypted);
+  const response = await fetch(config.baseUrl + "/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": config.userAgent },
+    body: JSON.stringify({ grant_type: "refresh_token", client_id: config.clientId, client_secret: config.clientSecret, refresh_token: refreshToken, redirect_uri: config.redirectUri }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const payload = await response.json().catch(() => ({})) as Record<string, unknown>;
+  if (!response.ok || typeof payload.access_token !== "string" || typeof payload.refresh_token !== "string") throw new Error("A autorização do Melhor Envio expirou. Reconecte a conta nas configurações.");
+  const expiresIn = Number(payload.expires_in) || 2592000;
+  const update: Record<string, unknown> = {
+    access_token_encrypted: encryptToken(payload.access_token),
+    refresh_token_encrypted: encryptToken(payload.refresh_token),
+    token_expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof payload.scope === "string") update.scopes = payload.scope.split(/[ ,]+/).filter(Boolean);
+  const { error: saveError } = await db.from("shipping_provider_credentials").update(update).eq("provider", "melhor_envio");
+  if (saveError) throw new Error("Não foi possível renovar a autorização do Melhor Envio.");
+  return payload.access_token;
+}
