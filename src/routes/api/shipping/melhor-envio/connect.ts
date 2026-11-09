@@ -19,17 +19,15 @@ export const Route = createFileRoute("/api/shipping/melhor-envio/connect")({
       const config = melhorEnvioConfig();
       if (!config.clientId || !config.clientSecret) return Response.json({ error: "Cadastre MELHOR_ENVIO_CLIENT_ID e MELHOR_ENVIO_CLIENT_SECRET nas variáveis privadas da Vercel." }, { status: 503 });
       const state = randomBytes(32).toString("base64url");
-      const scopes = ["shipping-calculate", "shipping-companies", "ecommerce-shipping"];
+      const scopes = ["shipping-calculate"];
       const authorize = new URL("/oauth/authorize", config.baseUrl);
       authorize.searchParams.set("client_id", config.clientId);
       authorize.searchParams.set("redirect_uri", config.redirectUri);
       authorize.searchParams.set("response_type", "code");
       authorize.searchParams.set("state", state);
       authorize.searchParams.set("scope", scopes.join(" "));
-      return new Response(null, {
-        status: 302,
+      return Response.json({ authorizationUrl: authorize.toString() }, {
         headers: {
-          Location: authorize.toString(),
           "Set-Cookie": `me_oauth_state=${state}; Path=/api/shipping/melhor-envio/callback; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
           "Cache-Control": "no-store",
         },
