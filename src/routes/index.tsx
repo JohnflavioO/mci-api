@@ -65,90 +65,67 @@ function Index() {
 
   return (
     <SiteShell>
-      <div className="bg-[#171a1f] text-white">
-        <div className="border-b border-white/10 bg-white/[0.035]">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 py-2.5 text-[11px] font-medium tracking-wide text-white/70 sm:justify-start">
-            <span className="inline-flex items-center gap-2"><ShieldCheck className="size-3.5 text-[#ff681f]" /> Parceiro de marcas profissionais</span>
+      <section className="bg-white">
+        <div className="border-b border-slate-200 bg-[#202329] text-white">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 py-2 text-[11px] font-medium tracking-wide text-white/75 sm:justify-start">
+            <span className="inline-flex items-center gap-2"><ShieldCheck className="size-3.5 text-[#ff681f]" /> Compra segura e atendimento especializado</span>
             <span className="hidden h-3 w-px bg-white/20 sm:block" />
-            <span className="inline-flex items-center gap-2"><Truck className="size-3.5 text-[#ff681f]" /> Atendimento em todo o Brasil</span>
+            <span className="inline-flex items-center gap-2"><Truck className="size-3.5 text-[#ff681f]" /> Enviamos para todo o Brasil</span>
             <span className="hidden h-3 w-px bg-white/20 sm:block" />
             <span>Condições especiais para revendedores aprovados</span>
           </div>
         </div>
-
-        <section className="relative isolate overflow-hidden">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,104,31,0.12),_transparent_42%),linear-gradient(115deg,#111419_0%,#171a1f_58%,#20242a_100%)]" />
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#111419] via-[#171a1f]/95 to-[#171a1f]/75" />
-          <div className="pointer-events-none absolute -right-32 -top-24 -z-10 size-[34rem] rounded-full bg-[#ff681f]/10 blur-3xl" />
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-7 sm:py-9 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:py-10">
+        <div className="mx-auto max-w-7xl px-4 pb-5 pt-5 sm:pb-7 sm:pt-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="mt-3 max-w-2xl text-3xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-4xl lg:text-5xl">
-                Seu próximo equipamento,
-                <span className="mt-1 block text-[#ff762f]">sua próxima grande produção.</span>
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base sm:leading-7">
-                Encontre equipamentos profissionais de áudio, vídeo e iluminação com suporte especializado para escolher melhor e tirar seu projeto do papel.
-              </p>
-
-              <form onSubmit={searchCatalog} className="mt-4 flex max-w-xl items-center rounded-xl border border-white/15 bg-white p-1.5 shadow-2xl shadow-black/20 focus-within:border-[#ff762f]">
-                <Search className="ml-3 size-5 shrink-0 text-slate-500" />
-                <input
-                  value={term}
-                  onChange={(e) => setTerm(e.target.value)}
-                  placeholder="O que você procura? Produto, marca ou modelo"
-                  aria-label="Buscar produtos"
-                  className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm text-slate-900 outline-none placeholder:text-slate-500"
-                />
-                <button type="submit" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-[#ff681f] px-4 text-sm font-semibold text-white transition hover:bg-[#e95712]">
-                  Buscar <ArrowRight className="size-4" />
-                </button>
-              </form>
-
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Link to="/catalogo" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff681f] px-5 text-sm font-bold text-white shadow-lg shadow-orange-950/20 transition hover:bg-[#e95712]">
-                  Comprar equipamentos <ArrowRight className="size-4" />
-                </Link>
-                <Link to="/revendedor" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/20 px-4 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/5">
-                  Sou revendedor
-                </Link>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-white/55">
-                <span className="font-semibold text-white/75">Acesso rápido:</span>
-                {categories.slice(0, 4).map((category) => (
-                  <Link key={category} to="/catalogo" search={{ categoria: category }} className="rounded-full border border-white/15 px-3 py-1.5 transition hover:border-[#ff762f]/70 hover:text-white">{category}</Link>
-                ))}
-              </div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e95b19]">Explore a Store House</p>
+              <h1 className="mt-1 text-xl font-semibold tracking-tight text-[#171a1f] sm:text-2xl">Equipamentos profissionais para sua produção</h1>
             </div>
-
-            <div className="relative mx-auto w-full max-w-xl lg:pl-4">
-              <div key={activeSlide?.id ?? "mci-hero-fallback"} className="relative min-h-[300px] overflow-hidden rounded-2xl border border-white/10 bg-[#20242a] shadow-2xl shadow-black/30 sm:min-h-[360px]">
-                {activeSlide ? (
-                  <>
-                    <picture>
-                      {activeSlide.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeSlide.mobile_image_url} />}
-                      <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.02]" />
-                    </picture>
-                    {activeSlide.button_url.startsWith("https://") ? (
-                      <a href={activeSlide.button_url} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} aria-label={`Abrir banner: ${activeSlide.title}`} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ff681f]" />
-                    ) : (
-                      <Link to={activeSlide.button_url as "/catalogo"} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} aria-label={`Abrir banner: ${activeSlide.title}`} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ff681f]" />
-                    )}
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#111419]/95 via-[#111419]/35 to-transparent" />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-5 sm:p-7">
-                      {activeSlide.eyebrow && <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">{activeSlide.eyebrow}</p>}
-                      <h2 className="mt-2 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">{activeSlide.title}</h2>
-                      {activeSlide.description && <p className="mt-2 max-w-sm text-sm leading-6 text-white/75">{activeSlide.description}</p>}
-                      {activeSlide.button_url.startsWith("https://") ? <a href={activeSlide.button_url} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} className="pointer-events-auto relative z-30 mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">{activeSlide.button_label} <ArrowRight className="size-4" /></a> : <Link to={activeSlide.button_url as "/catalogo"} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} className="pointer-events-auto relative z-30 mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">{activeSlide.button_label} <ArrowRight className="size-4" /></Link>}
-                    </div>
-                    {slides.length > 1 && <div className="absolute right-3 top-3 z-30 flex items-center gap-2"><button type="button" aria-label="Banner anterior" onClick={() => setSlideIndex((i) => (i - 1 + slides.length) % slides.length)} className="grid size-9 place-items-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:bg-black/60"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Próximo banner" onClick={() => setSlideIndex((i) => (i + 1) % slides.length)} className="grid size-9 place-items-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:bg-black/60"><ChevronRight className="size-4" /></button></div>}
-                    {slides.length > 1 && <div className="absolute bottom-3 right-4 z-30 flex gap-1.5">{slides.map((slide, index) => <button key={slide.id} type="button" aria-label={`Mostrar banner ${index + 1}`} onClick={() => setSlideIndex(index)} className={`h-1.5 rounded-full transition-all ${index === slideIndex ? "w-6 bg-[#ff681f]" : "w-2 bg-white/60 hover:bg-white"}`} />)}</div>}
-                  </>
-                ) : <div className="absolute inset-0 flex flex-col justify-end bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#3a2b24] via-[#20242a] to-[#111419] p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">MCI Xpress · Equipamentos profissionais</p><h2 className="mt-3 max-w-sm text-2xl font-semibold leading-tight text-white sm:text-3xl">Encontre equipamentos para sua próxima produção.</h2><p className="mt-2 max-w-sm text-sm leading-6 text-white/70">Marcas, produtos e soluções profissionais para áudio, vídeo e iluminação.</p><Link to="/catalogo" className="mt-4 inline-flex w-fit items-center gap-2 rounded-lg bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#e95712]">Explorar catálogo <ArrowRight className="size-4" /></Link></div>}
-              </div>
-            </div>
+            <form onSubmit={searchCatalog} className="flex h-11 w-full max-w-md items-center rounded-lg border border-slate-200 bg-[#f7f8f9] px-3 transition focus-within:border-[#ff681f] focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-100">
+              <Search className="size-4 shrink-0 text-slate-500" />
+              <input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Buscar produto, marca ou modelo" aria-label="Buscar produtos" className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500" />
+              <button type="submit" className="rounded-md bg-[#ff681f] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#e95712]">Buscar</button>
+            </form>
           </div>
-        </section>
-      </div>
+          <nav aria-label="Departamentos" className="mb-4 flex gap-2 overflow-x-auto pb-1">
+            {categories.slice(0,6).map((category) => <Link key={category} to="/catalogo" search={{categoria:category}} className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#ff681f] hover:bg-orange-50 hover:text-[#c94b12]">{category}</Link>)}
+            <Link to="/revendedor" className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#ff681f] hover:bg-orange-50 hover:text-[#c94b12]">Seja revendedor</Link>
+          </nav>
+          <div className="relative isolate overflow-hidden rounded-xl border border-slate-200 bg-[#202329] shadow-sm">
+            {activeSlide ? (
+              <>
+                <picture>
+                  {activeSlide.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeSlide.mobile_image_url} />}
+                  <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="aspect-[4/5] w-full object-cover sm:aspect-[16/5] sm:max-h-[430px]" />
+                </picture>
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent sm:from-black/55 sm:via-black/10" />
+                <div className="absolute inset-y-0 left-0 flex max-w-[82%] flex-col justify-end p-5 sm:max-w-[48%] sm:justify-center sm:p-10 lg:p-12">
+                  {activeSlide.eyebrow && <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300 sm:text-xs">{activeSlide.eyebrow}</p>}
+                  <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">{activeSlide.title}</h2>
+                  {activeSlide.description && <p className="mt-2 max-w-md text-xs leading-5 text-white/85 sm:mt-3 sm:text-sm sm:leading-6">{activeSlide.description}</p>}
+                  <div className="mt-4">
+                    {activeSlide.button_url.startsWith("https://") ? <a href={activeSlide.button_url} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} className="inline-flex items-center gap-2 rounded-md bg-[#ff681f] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#e95712] sm:text-sm">{activeSlide.button_label}<ArrowRight className="size-4"/></a> : <Link to={activeSlide.button_url as "/catalogo"} target={activeSlide.open_in_new_tab ? "_blank" : undefined} rel={activeSlide.open_in_new_tab ? "noreferrer" : undefined} className="inline-flex items-center gap-2 rounded-md bg-[#ff681f] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#e95712] sm:text-sm">{activeSlide.button_label}<ArrowRight className="size-4"/></Link>}
+                  </div>
+                </div>
+                {slides.length > 1 && <div className="absolute right-3 top-3 flex items-center gap-1.5 sm:right-4 sm:top-4"><button type="button" aria-label="Banner anterior" onClick={() => setSlideIndex((i)=>(i-1+slides.length)%slides.length)} className="grid size-8 place-items-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur transition hover:bg-black/60"><ChevronLeft className="size-4"/></button><button type="button" aria-label="Próximo banner" onClick={() => setSlideIndex((i)=>(i+1)%slides.length)} className="grid size-8 place-items-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur transition hover:bg-black/60"><ChevronRight className="size-4"/></button></div>}
+                {slides.length > 1 && <div className="absolute bottom-3 right-4 flex gap-1.5">{slides.map((slide,index)=><button key={slide.id} type="button" aria-label={`Mostrar banner ${index+1}`} onClick={()=>setSlideIndex(index)} className={`h-1.5 rounded-full transition-all ${index===slideIndex?"w-6 bg-[#ff681f]":"w-2 bg-white/70"}`}/>)}</div>}
+              </>
+            ) : (
+              <div className="flex min-h-[250px] flex-col justify-center bg-[linear-gradient(110deg,#202329,#353a42)] px-6 py-10 sm:min-h-[360px] sm:px-12">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-300">Store House · Seleção profissional</p>
+                <h2 className="mt-3 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-4xl">Tecnologia para imagem, luz e som.</h2>
+                <p className="mt-3 max-w-lg text-sm leading-6 text-white/70">Explore nosso catálogo de equipamentos profissionais e encontre a solução para sua produção.</p>
+                <Link to="/catalogo" className="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#e95712]">Explorar produtos <ArrowRight className="size-4"/></Link>
+              </div>
+            )}
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="flex items-center gap-2 rounded-lg bg-[#f7f8f9] px-3 py-2.5"><ShieldCheck className="size-4 text-[#e95b19]"/><span className="text-xs font-medium text-slate-700">Compra com confiança</span></div>
+            <div className="flex items-center gap-2 rounded-lg bg-[#f7f8f9] px-3 py-2.5"><Headphones className="size-4 text-[#e95b19]"/><span className="text-xs font-medium text-slate-700">Atendimento especializado</span></div>
+            <div className="flex items-center gap-2 rounded-lg bg-[#f7f8f9] px-3 py-2.5"><ShoppingBag className="size-4 text-[#e95b19]"/><span className="text-xs font-medium text-slate-700">Programa de parceiros</span></div>
+          </div>
+        </div>
+      </section>
 
       <section className="border-b bg-white">
         <div className="mx-auto grid max-w-7xl grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0 px-4 py-5">
