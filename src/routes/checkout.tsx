@@ -54,6 +54,7 @@ function Checkout() {
   });
   const [delivery, setDelivery] = useState({ name: "", document: "", phone: "", email: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" });
   const [shippingOptions, setShippingOptions] = useState<Array<{ id: string; provider: string; service: string; price: number; delivery_days: number | null; description: string; quote_token: string }>>([]);
+  const [productsSubtotal, setProductsSubtotal] = useState<number | null>(null);
   const [selectedShipping, setSelectedShipping] = useState<{ provider: string; service: string; quote_token: string } | null>(null);
   const [pickupAuthorization, setPickupAuthorization] = useState({ name: "", cpf: "", plate: "" });
   const [shippingProviders, setShippingProviders] = useState<{ melhor_envio?: string; pickup?: string }>({});
@@ -63,11 +64,11 @@ function Checkout() {
       let { data } = await sb.auth.getSession();
       if (!data.session) { const signed = await sb.auth.signInAnonymously(); if (signed.error || !signed.data.session) throw new Error("Não foi possível iniciar sessão para cotar o frete."); data = { session: signed.data.session }; }
       const response = await fetch("/api/shipping", { method: "POST", headers: { Authorization: "Bearer " + data.session.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ cep: delivery.cep, items: items.map((i) => ({ product_id: i.slug, qty: i.qty })) }) });
-      const result = await response.json().catch(() => ({})) as { options?: typeof shippingOptions; providers?: { melhor_envio?: string; pickup?: string }; error?: string };
+      const result = await response.json().catch(() => ({})) as { options?: typeof shippingOptions; products_subtotal?: number; providers?: { melhor_envio?: string; pickup?: string }; error?: string };
       if (!response.ok) throw new Error(result.error || "Não foi possível calcular o frete.");
       return result;
     },
-    onSuccess: (result) => { setShippingOptions(result.options || []); setShippingProviders(result.providers || {}); setSelectedShipping(null); },
+    onSuccess: (result) => { setShippingOptions(result.options || []); setProductsSubtotal(Number.isFinite(result.products_subtotal) ? Number(result.products_subtotal) : null); setShippingProviders(result.providers || {}); setSelectedShipping(null); },
   });
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const m = useMutation({
@@ -147,7 +148,7 @@ function Checkout() {
                 ["phone", "Telefone/WhatsApp", true]
               ] as const).map(([key, label, required]) => <div key={key}>
                 <Label htmlFor={key}>{label}</Label>
-                <Input id={key} type={key === "email" ? "email" : "text"} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} required={required} value={delivery[key]} onChange={e => { setDelivery(p => ({ ...p, [key]: e.target.value })); if (key === "cep") { setShippingOptions([]); setSelectedShipping(null); } }} className="mt-1" />
+                <Input id={key} type={key === "email" ? "email" : "text"} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} required={required} value={delivery[key]} onChange={e => { setDelivery(p => ({ ...p, [key]: e.target.value })); if (key === "cep") { setShippingOptions([]); setProductsSubtotal(null); setSelectedShipping(null); } }} className="mt-1" />
               </div>)}
               </div>
             </section>
@@ -162,7 +163,7 @@ function Checkout() {
                 ["complement", "Complemento", false], ["district", "Bairro", true], ["city", "Cidade", true], ["state", "Estado (UF)", true]
               ] as const).map(([key, label, required]) => <div key={key}>
                 <Label htmlFor={key}>{label}{!required ? " (opcional)" : ""}</Label>
-                <Input id={key} required={required} maxLength={key === "state" ? 2 : undefined} autoComplete={key === "cep" ? "postal-code" : key === "street" ? "street-address" : undefined} value={delivery[key]} onChange={e => { setDelivery(p => ({ ...p, [key]: e.target.value })); if (key === "cep") { setShippingOptions([]); setSelectedShipping(null); setShippingProviders({}); } }} className="mt-1" />
+                <Input id={key} required={required} maxLength={key === "state" ? 2 : undefined} autoComplete={key === "cep" ? "postal-code" : key === "street" ? "street-address" : undefined} value={delivery[key]} onChange={e => { setDelivery(p => ({ ...p, [key]: e.target.value })); if (key === "cep") { setShippingOptions([]); setProductsSubtotal(null); setSelectedShipping(null); setShippingProviders({}); } }} className="mt-1" />
               </div>)}
               </div>
             </section>
@@ -186,6 +187,26 @@ function Checkout() {
                   </label>;
                 })}
               </div>
+              {selectedShipping && productsSubtotal !== null && (() => {
+                const chosen = shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token);
+                if (!chosen) return null;
+                const total = Number((productsSubtotal + chosen.price).toFixed(2));
+                const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+                return <div aria-live="polite" className="mt-5 overflow-hidden rounded-xl border border-primary/25 bg-card shadow-sm">
+                  <div className="border-b border-border bg-muted/40 px-4 py-3 sm:px-5">
+                    <h3 className="font-semibold">Resumo do pedido</h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">Confira os valores antes de seguir para o pagamento.</p>
+                  </div>
+                  <div className="space-y-3 px-4 py-4 sm:px-5">
+                    <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Produtos ({items.reduce((n, i) => n + i.qty, 0)} item(ns))</span><span className="font-medium tabular-nums">{money(productsSubtotal)}</span></div>
+                    <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Entrega · {chosen.provider === "pickup" ? "Retirada no local" : chosen.service}</span><span className="font-medium tabular-nums">{chosen.price === 0 ? "Grátis" : money(chosen.price)}</span></div>
+                    <div className="border-t border-border pt-3">
+                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">Total estimado</span><span className="text-xl font-bold tabular-nums text-primary">{money(total)}</span></div>
+                      <p className="mt-1 text-xs text-muted-foreground">O frete selecionado já está incluído nesta estimativa. O valor final será confirmado ao criar o pedido.</p>
+                    </div>
+                  </div>
+                </div>;
+              })()}
               {selectedShipping?.provider === "pickup" && <div className="mt-4 rounded-xl border border-amber-300/70 bg-amber-50/60 p-4 dark:bg-amber-950/20">
                 <h3 className="font-semibold">Autorização de entrada — Armazém Sanco</h3>
                 <p className="mt-1 text-sm text-muted-foreground">O acesso ao local exige identificação prévia. Informe os dados da pessoa que fará a retirada e do veículo.</p>
@@ -203,8 +224,14 @@ function Checkout() {
               <h2 className="font-display font-semibold">Pagamento protegido pela InfinitePay</h2>
               <p className="mt-1 text-sm text-muted-foreground">Você concluirá o pagamento no ambiente oficial da InfinitePay, com Pix ou cartão. Os dados do pedido ficam registrados no Store House.</p>
             </section>
-            <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">{items.reduce((n, i) => n + i.qty, 0)} item(ns) no carrinho · valores calculados pela plataforma</p>
+            <div className="flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm">
+                <p className="text-muted-foreground">{items.reduce((n, i) => n + i.qty, 0)} item(ns) no carrinho</p>
+                {selectedShipping && productsSubtotal !== null && (() => {
+                  const chosen = shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token);
+                  return chosen ? <p className="mt-1 font-semibold">Total com entrega: {(productsSubtotal + chosen.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p> : null;
+                })()}
+              </div>
               <Button type="submit" size="lg" disabled={m.isPending || !selectedShipping} className="min-w-64">{m.isPending ? "Preparando seu pagamento…" : "Continuar para pagamento"}</Button>
             </div>
             {m.isError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
