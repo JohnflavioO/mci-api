@@ -111,14 +111,14 @@ function Checkout() {
   }, [profile.data]);
   return (
     <SiteShell>
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-        <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-h-screen bg-[#f5f6f8]"><div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
+        <div className="mb-7 rounded-2xl bg-gradient-to-r from-[#171a1f] to-[#30343b] px-6 py-6 text-white shadow-lg sm:flex sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Store House · Compra segura</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight">Finalizar compra</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Só precisamos dos dados para identificar o comprador, emitir a nota fiscal e entregar seu pedido.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">Store House · Compra segura</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Finalizar sua compra</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">Falta pouco! Confirme seus dados, escolha como receber e revise o valor antes de pagar.</p>
           </div>
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-white/80 sm:mt-0">
             <span className="grid size-7 place-items-center rounded-full bg-brand text-brand-foreground">1</span>
             Seus dados <span className="h-px w-6 bg-border" />
             <span className="grid size-7 place-items-center rounded-full border border-border">2</span> Pagamento
@@ -137,7 +137,7 @@ function Checkout() {
           </div>}
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
             {profile.isError && <p role="status" className="text-sm text-muted-foreground">Não foi possível carregar seus dados salvos. Você pode preencher os campos manualmente.</p>}
-            <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
               <div className="mb-4">
                 <h2 className="font-display text-lg font-semibold">Identificação e contato</h2>
                 <p className="text-sm text-muted-foreground">Esses dados serão usados no pedido e na emissão da nota fiscal.</p>
@@ -152,7 +152,7 @@ function Checkout() {
               </div>)}
               </div>
             </section>
-            <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
               <div className="mb-4">
                 <h2 className="font-display text-lg font-semibold">Endereço de entrega</h2>
                 <p className="text-sm text-muted-foreground">Informe onde deseja receber sua compra.</p>
@@ -167,17 +167,17 @@ function Checkout() {
               </div>)}
               </div>
             </section>
-            <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <section className="rounded-2xl border border-orange-200 bg-gradient-to-br from-white to-orange-50/50 p-5 shadow-sm sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-lg font-semibold">Frete e entrega</h2><p className="text-sm text-muted-foreground">Calcule o valor para o CEP informado antes de pagar.</p></div>
-                <Button type="button" variant="default" className="min-w-52 shadow-sm" disabled={shippingMutation.isPending || delivery.cep.replace(/[^0-9]/g, "").length !== 8} onClick={() => shippingMutation.mutate()}>{shippingMutation.isPending ? "Consultando transportadoras…" : "Consultar opções de frete"}</Button></div>
+                <Button type="button" variant="default" className="min-w-52 bg-[#ff681f] text-white shadow-md shadow-orange-200 transition hover:bg-[#e95712]" disabled={shippingMutation.isPending || delivery.cep.replace(/[^0-9]/g, "").length !== 8} onClick={() => shippingMutation.mutate()}>{shippingMutation.isPending ? "Consultando transportadoras…" : "Consultar opções de frete"}</Button></div>
               {shippingMutation.isError && <p role="alert" className="mt-3 text-sm text-destructive">{shippingMutation.error.message}</p>}
               <div className="mt-4 grid gap-3">
                 {shippingOptions.map((option) => {
                   const selected = selectedShipping?.quote_token === option.quote_token;
                   const isPickup = option.provider === "pickup";
-                  return <label key={option.id} className={"flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors " + (selected ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-card hover:border-primary/50")}>
+                  return <label key={option.id} className={"flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors " + (selected ? "border-[#ff681f] bg-orange-50 ring-2 ring-[#ff681f]/25 shadow-sm" : "border-slate-200 bg-white hover:border-orange-300 hover:bg-orange-50/40")}>
                     <input type="radio" name="shipping" className="size-4 accent-primary" checked={selected} onChange={() => setSelectedShipping({ provider: option.provider, service: option.service, quote_token: option.quote_token })} />
-                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">{isPickup ? "⌂" : "↗"}</span>
+                    <span className={"grid size-11 shrink-0 place-items-center rounded-xl " + (selected ? "bg-[#ff681f] text-white" : "bg-orange-100 text-[#e95712]")}>{isPickup ? "⌂" : "↗"}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold">{option.provider === "pickup" ? "Retirada no local" : option.service.toLowerCase().includes("package") ? "Jadlog — Entrega padrão" : option.service.toLowerCase().includes(".com") ? "Jadlog — Entrega para e-commerce" : option.service.replace(/^\./, "")}</span>
                       <span className="mt-0.5 block text-xs text-muted-foreground">{option.provider === "pickup" ? "Armazém Sanco" : "Transportadora Jadlog"}</span>
@@ -191,8 +191,8 @@ function Checkout() {
                 const chosen = selectedShipping ? shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token) : null;
                 const total = chosen ? Number((productsSubtotal + chosen.price).toFixed(2)) : null;
                 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-                return <div aria-live="polite" className="mt-5 overflow-hidden rounded-xl border border-primary/25 bg-card shadow-sm">
-                  <div className="border-b border-border bg-muted/40 px-4 py-3 sm:px-5">
+                return <div aria-live="polite" className="mt-5 overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-md">
+                  <div className="border-b border-orange-100 bg-gradient-to-r from-orange-50 to-white px-5 py-4 sm:px-6">
                     <h3 className="font-semibold">Resumo do pedido</h3>
                     <p className="mt-0.5 text-xs text-muted-foreground">Confira os valores antes de seguir para o pagamento.</p>
                   </div>
@@ -200,7 +200,7 @@ function Checkout() {
                     <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Produtos ({items.reduce((n, i) => n + i.qty, 0)} item(ns))</span><span className="font-medium tabular-nums">{money(productsSubtotal)}</span></div>
                     <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Entrega{chosen ? " · " + (chosen.provider === "pickup" ? "Retirada no local" : chosen.service) : ""}</span><span className="font-medium tabular-nums">{chosen ? (chosen.price === 0 ? "Grátis" : money(chosen.price)) : "Selecione uma modalidade"}</span></div>
                     <div className="border-t border-border pt-3">
-                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">{chosen ? "Total estimado" : "Total parcial"}</span><span className="text-xl font-bold tabular-nums text-primary">{total === null ? money(productsSubtotal) : money(total)}</span></div>
+                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">{chosen ? "Total estimado" : "Total parcial"}</span><span className="text-2xl font-extrabold tabular-nums text-[#e95712]">{total === null ? money(productsSubtotal) : money(total)}</span></div>
                       <p className="mt-1 text-xs text-muted-foreground">{chosen ? "Frete incluído no total estimado. O valor será confirmado ao criar o pedido." : "O valor da entrega será somado assim que você selecionar uma modalidade."}</p>
                     </div>
                   </div>
@@ -219,11 +219,11 @@ function Checkout() {
               {shippingMutation.isSuccess && <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm"><p className="font-medium">Disponibilidade dos transportadores</p><p className="mt-1 text-muted-foreground">Melhor Envio: {shippingProviders.melhor_envio === "ready" ? "consultado" : "não conectado"} · Retirada: {shippingProviders.pickup === "ready" ? "disponível" : "indisponível"}</p>{shippingOptions.every((option) => option.provider === "pickup") && <p className="mt-2 text-destructive">Nenhuma transportadora retornou cotação. A retirada está disponível, mas o envio para endereço ainda não pode ser selecionado.</p>}</div>}
               {!shippingOptions.length && !shippingMutation.isPending && <p className="mt-3 text-sm text-muted-foreground">Informe o CEP e consulte as opções de entrega disponíveis.</p>}
             </section>
-            <section className="rounded-xl border border-border bg-secondary/40 p-5 sm:p-6">
+            <section className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-5 shadow-sm sm:p-6">
               <h2 className="font-display font-semibold">Pagamento protegido pela InfinitePay</h2>
               <p className="mt-1 text-sm text-muted-foreground">Você concluirá o pagamento no ambiente oficial da InfinitePay, com Pix ou cartão. Os dados do pedido ficam registrados no Store House.</p>
             </section>
-            <div className="flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="sticky bottom-0 z-20 -mx-4 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-4 py-4 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:border sm:px-5">
               <div className="text-sm">
                 <p className="text-muted-foreground">{items.reduce((n, i) => n + i.qty, 0)} item(ns) no carrinho</p>
                 {selectedShipping && productsSubtotal !== null && (() => {
@@ -231,7 +231,7 @@ function Checkout() {
                   return chosen ? <p className="mt-1 font-semibold">Total com entrega: {(productsSubtotal + chosen.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p> : null;
                 })()}
               </div>
-              <Button type="submit" size="lg" disabled={m.isPending || !selectedShipping} className="min-w-64">{m.isPending ? "Preparando seu pagamento…" : "Continuar para pagamento"}</Button>
+              <Button type="submit" size="lg" disabled={m.isPending || !selectedShipping} className="min-h-12 min-w-64 bg-[#ff681f] text-white shadow-lg shadow-orange-200 hover:bg-[#e95712]">{m.isPending ? "Preparando seu pagamento…" : "Continuar para pagamento"}</Button>
             </div>
             {m.isError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
               <p className="font-semibold text-foreground">Não foi possível continuar agora</p>
