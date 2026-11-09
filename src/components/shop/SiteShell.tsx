@@ -16,7 +16,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
     <Link
       to="/"
-      className="group inline-flex shrink-0 items-center rounded-md px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      className="group inline-flex w-[184px] min-w-[184px] shrink-0 items-center justify-start rounded-md py-1 pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       aria-label="Store House — início"
     >
       <img
@@ -24,7 +24,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
         alt="Store House"
         width={254}
         height={104}
-        className="h-auto w-[164px] sm:w-[176px]"
+        className="block h-auto w-full max-w-none"
         loading="eager"
       />
     </Link>
@@ -111,7 +111,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center gap-6 px-4 sm:px-6">
+        <div className="mx-auto flex h-[76px] max-w-7xl items-center gap-9 px-4 sm:px-6">
           <Logo />
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-1 md:flex">
             {nav.map((n) => "search" in n ? (
