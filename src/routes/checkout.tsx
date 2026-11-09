@@ -245,7 +245,7 @@ function Checkout() {
           </form>
           </>
         )}
-      </div>
+      </div></div>
     </SiteShell>
   );
 }
