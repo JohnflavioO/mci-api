@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertTriangle, Building2, CheckCircle2, ChevronRight, Info,
-  MapPin, PackageCheck, Save, Settings2, ShieldCheck, Store,
+  MapPin, PackageCheck, Save, Settings2, ShieldCheck, Store, Truck, Link2,
 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
@@ -48,6 +48,33 @@ function StockSettingsPage() {
   const qc = useQueryClient();
   const catalog = createSupabaseCatalog();
   const catalogClient = getSupabase();
+
+  const melhorEnvioStatus = useQuery({
+    queryKey: ["admin", "melhor-envio-status"],
+    queryFn: async () => {
+      const { data } = await catalogClient.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Sessão administrativa expirada.");
+      const response = await fetch("/api/shipping/melhor-envio/status", { headers: { Authorization: "Bearer " + token } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Não foi possível verificar a conexão.");
+      return payload as { connected: boolean; tokenExpiresAt: string | null; scopes: string[]; updatedAt: string | null };
+    },
+    retry: false,
+  });
+  const melhorEnvioConnect = useMutation({
+    mutationFn: async () => {
+      const { data } = await catalogClient.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Sessão administrativa expirada. Entre novamente.");
+      const response = await fetch("/api/shipping/melhor-envio/connect", { method: "POST", headers: { Authorization: "Bearer " + token } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.authorizationUrl) throw new Error(payload.error || "Não foi possível iniciar a autorização.");
+      return payload.authorizationUrl as string;
+    },
+    onSuccess: (url) => { window.location.assign(url); },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const companyQuery = useQuery({
     queryKey: ["admin", "platform-company-profile"],
@@ -223,6 +250,39 @@ function StockSettingsPage() {
             </section>
           </div>
         )}
+      </section>
+
+            <section aria-labelledby="shipping-provider-heading" className="space-y-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Logística</p>
+          <h3 id="shipping-provider-heading" className="mt-1 text-xl font-bold">Integração Melhor Envio</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Conecte a conta da MCI para consultar tarifas de Correios e transportadoras disponíveis no Melhor Envio.</p>
+        </div>
+        <div className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Truck className="size-5" /></span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="font-semibold">Conta Melhor Envio</h4>
+                {melhorEnvioStatus.data?.connected
+                  ? <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">Conectada</span>
+                  : <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">Não conectada</span>}
+              </div>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {melhorEnvioStatus.isPending ? "Verificando conexão…" : melhorEnvioStatus.isError ? melhorEnvioStatus.error.message : melhorEnvioStatus.data?.connected
+                  ? "Autorização registrada. Token válido até " + (melhorEnvioStatus.data.tokenExpiresAt ? new Date(melhorEnvioStatus.data.tokenExpiresAt).toLocaleString("pt-BR") : "data não informada") + "."
+                  : "Ao conectar, você será direcionado ao Melhor Envio para autorizar o acesso à conta. As credenciais ficam armazenadas criptografadas no servidor."}
+              </p>
+              {melhorEnvioStatus.data?.scopes?.length ? <p className="mt-1 text-xs text-muted-foreground">Permissões: {melhorEnvioStatus.data.scopes.join(", ")}</p> : null}
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 sm:min-w-52">
+            <Button onClick={() => melhorEnvioConnect.mutate()} disabled={melhorEnvioConnect.isPending || melhorEnvioStatus.isPending}>
+              <Link2 className="mr-2 size-4" />{melhorEnvioConnect.isPending ? "Preparando autorização…" : melhorEnvioStatus.data?.connected ? "Reconectar conta" : "Conectar Melhor Envio"}
+            </Button>
+            <Button variant="outline" onClick={() => void melhorEnvioStatus.refetch()} disabled={melhorEnvioStatus.isFetching}>Atualizar status</Button>
+          </div>
+        </div>
       </section>
 
       <section aria-labelledby="catalog-settings-heading" className="space-y-4">
