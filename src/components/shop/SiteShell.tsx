@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Menu, X, ShieldCheck, UserRound, LayoutDashboard, LogOut, Loader2, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import { ShoppingBag, Heart, Menu, X, ShieldCheck, UserRound, LayoutDashboard, LogOut, Loader2, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -24,7 +24,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
         alt="Store House"
         width={254}
         height={104}
-        className="h-auto w-[148px] sm:w-[156px]"
+        className="h-auto w-[164px] sm:w-[176px]"
         loading="eager"
       />
     </Link>
@@ -35,6 +35,7 @@ const linkBase = "relative rounded-md px-3 py-2 text-sm font-semibold transition
 
 type AccountDestination = "/admin" | "/revendedor" | "/afiliado" | "/meus-pedidos";
 type AccountState = { user: User | null; destination: AccountDestination; loading: boolean };
+const shortUserName = (user: User | null) => { const meta = user?.user_metadata ?? {}; const raw = String(meta.full_name || meta.name || meta.display_name || user?.email?.split("@")[0] || "").trim(); return raw.split(" ")[0] || "Minha conta"; };
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const { count, items, drawerOpen, closeDrawer, setQty, remove } = useCart();
@@ -83,7 +84,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const accountLabel = account.loading ? "Carregando" : account.user ? "Minha conta" : "Entrar";
+  const accountLabel = account.loading ? "Carregando" : account.user ? shortUserName(account.user) : "Entrar";
   const accountIcon = account.loading ? <Loader2 className="size-4 animate-spin" /> : account.user ? <LayoutDashboard className="size-4" /> : <UserRound className="size-4" />;
   const accountTo = account.user ? account.destination : "/entrar";
   const signOut = async () => {
@@ -110,7 +111,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-8 px-4 sm:px-6">
+        <div className="mx-auto flex h-[68px] max-w-7xl items-center gap-6 px-4 sm:px-6">
           <Logo />
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-1 md:flex">
             {nav.map((n) => "search" in n ? (
@@ -124,8 +125,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <Link to={accountTo} className="group hidden h-9 items-center gap-2 px-2 text-sm font-medium text-foreground/75 transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex">
-              {accountIcon} {accountLabel}
+            <Link to="/favoritos" className="relative grid size-10 place-items-center rounded-md text-foreground transition hover:bg-secondary hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" aria-label="Meus favoritos" title="Meus favoritos">
+              <Heart className="size-5" strokeWidth={1.8} />
+            </Link>
+            <Link to={accountTo} className="group hidden h-9 items-center gap-2 rounded-md px-2 text-sm font-medium text-foreground/75 transition-colors hover:bg-secondary hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex" title={account.user ? "Acessar minha conta" : "Entrar"}>
+              {accountIcon} <span className="max-w-[110px] truncate">{accountLabel}</span>
             </Link>
             {account.user && !account.loading && <button type="button" onClick={() => void signOut()} className="hidden h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-semibold text-foreground transition hover:bg-secondary sm:inline-flex" aria-label="Sair da conta"><LogOut className="size-4" /><span className="hidden lg:inline">Sair</span></button>}
             <Link to="/carrinho" className="relative grid size-10 place-items-center rounded-md text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" aria-label={count > 0 ? `Carrinho, ${count} ${count === 1 ? "item" : "itens"}` : "Carrinho"}>
@@ -146,7 +150,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ) : (
               <Link key={n.label} to={n.to} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-md px-3 text-base font-semibold text-foreground/80 hover:bg-secondary" activeProps={{ className: "flex min-h-12 items-center rounded-md border-l-2 border-brand bg-secondary px-3 text-base font-semibold text-foreground" }}>{n.label}</Link>
             ))}
-            <Link to={accountTo} onClick={() => setOpen(false)} className="mt-3 flex h-12 items-center gap-3 border-y border-border px-3 text-base font-medium text-foreground/80 transition-colors hover:text-brand">
+            <Link to="/favoritos" onClick={() => setOpen(false)} className="flex h-12 items-center gap-3 px-3 text-base font-medium text-foreground/80 hover:text-brand"><Heart className="size-4" /> Meus favoritos</Link>
+            <Link to={accountTo} onClick={() => setOpen(false)} className="mt-1 flex h-12 items-center gap-3 border-y border-border px-3 text-base font-medium text-foreground/80 transition-colors hover:text-brand">
               {accountIcon} {accountLabel}
             </Link>
             {account.user && !account.loading && <button type="button" onClick={() => void signOut()} className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-md border border-border text-base font-semibold" aria-label="Sair da conta"><LogOut className="size-4" /> Sair da conta</button>}
