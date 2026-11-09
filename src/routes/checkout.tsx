@@ -55,14 +55,14 @@ function Checkout() {
   const [delivery, setDelivery] = useState({ name: "", document: "", phone: "", email: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" });
   const [shippingOptions, setShippingOptions] = useState<Array<{ id: string; provider: string; service: string; price: number; delivery_days: number | null; description: string; quote_token: string }>>([]);
   const [selectedShipping, setSelectedShipping] = useState<{ provider: string; service: string; quote_token: string } | null>(null);
-  const [shippingProviders, setShippingProviders] = useState<{ correios?: string; jamef?: string }>({});
+  const [shippingProviders, setShippingProviders] = useState<{ melhor_envio?: string; pickup?: string }>({});
   const shippingMutation = useMutation({
     mutationFn: async () => {
       const sb = getSupabase();
       let { data } = await sb.auth.getSession();
       if (!data.session) { const signed = await sb.auth.signInAnonymously(); if (signed.error || !signed.data.session) throw new Error("Não foi possível iniciar sessão para cotar o frete."); data = { session: signed.data.session }; }
       const response = await fetch("/api/shipping", { method: "POST", headers: { Authorization: "Bearer " + data.session.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ cep: delivery.cep, items: items.map((i) => ({ product_id: i.slug, qty: i.qty })) }) });
-      const result = await response.json().catch(() => ({})) as { options?: typeof shippingOptions; providers?: { correios?: string; jamef?: string }; error?: string };
+      const result = await response.json().catch(() => ({})) as { options?: typeof shippingOptions; providers?: { melhor_envio?: string; pickup?: string }; error?: string };
       if (!response.ok) throw new Error(result.error || "Não foi possível calcular o frete.");
       return result;
     },
@@ -167,7 +167,7 @@ function Checkout() {
                 <Button type="button" variant="outline" disabled={shippingMutation.isPending || delivery.cep.replace(/[^0-9]/g, "").length !== 8} onClick={() => shippingMutation.mutate()}>{shippingMutation.isPending ? "Calculando frete…" : "Calcular frete"}</Button></div>
               {shippingMutation.isError && <p role="alert" className="mt-3 text-sm text-destructive">{shippingMutation.error.message}</p>}
               {shippingOptions.map((option) => <label key={option.id} className="mt-3 flex cursor-pointer items-start gap-3 rounded-lg border border-border p-4"><input type="radio" name="shipping" className="mt-1" checked={selectedShipping?.quote_token === option.quote_token} onChange={() => setSelectedShipping({ provider: option.provider, service: option.service, quote_token: option.quote_token })} /><span className="min-w-0 flex-1"><span className="flex justify-between gap-3 font-semibold"><span>{option.service}</span><span>{option.price === 0 ? "Grátis" : option.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span></span><span className="mt-1 block text-xs text-muted-foreground">{option.description}</span></span></label>)}
-              {shippingMutation.isSuccess && <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm"><p className="font-medium">Disponibilidade dos transportadores</p><p className="mt-1 text-muted-foreground">Correios: {shippingProviders.correios === "ready" ? "consultado" : "não configurado para cotação"} · Jamef: {shippingProviders.jamef === "ready" ? "consultado" : "não configurado para cotação"}</p>{shippingOptions.every((option) => option.provider === "pickup") && <p className="mt-2 text-destructive">Nenhuma transportadora retornou cotação. A retirada está disponível, mas o envio para endereço ainda não pode ser selecionado.</p>}</div>}
+              {shippingMutation.isSuccess && <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm"><p className="font-medium">Disponibilidade dos transportadores</p><p className="mt-1 text-muted-foreground">Melhor Envio: {shippingProviders.melhor_envio === "ready" ? "consultado" : "não conectado"} · Retirada: {shippingProviders.pickup === "ready" ? "disponível" : "indisponível"}</p>{shippingOptions.every((option) => option.provider === "pickup") && <p className="mt-2 text-destructive">Nenhuma transportadora retornou cotação. A retirada está disponível, mas o envio para endereço ainda não pode ser selecionado.</p>}</div>}
               {!shippingOptions.length && !shippingMutation.isPending && <p className="mt-3 text-sm text-muted-foreground">Após preencher o CEP, clique em Calcular frete.</p>}
             </section>
             <section className="rounded-xl border border-border bg-secondary/40 p-5 sm:p-6">
