@@ -99,7 +99,7 @@ function Index() {
                   <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="aspect-[4/5] w-full object-cover sm:aspect-[16/5] sm:max-h-[430px]" />
                 </picture>
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent sm:from-black/55 sm:via-black/10" />
-                <div className="absolute inset-y-0 left-0 flex max-w-[82%] flex-col justify-end p-5 sm:max-w-[48%] sm:justify-center sm:p-10 lg:p-12">
+                <div className="absolute inset-x-0 bottom-0 flex max-w-[88%] flex-col justify-end p-5 sm:inset-y-0 sm:left-0 sm:right-auto sm:max-w-[48%] sm:p-10 lg:p-12">
                   {activeSlide.eyebrow && <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300 sm:text-xs">{activeSlide.eyebrow}</p>}
                   <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">{activeSlide.title}</h2>
                   {activeSlide.description && <p className="mt-2 max-w-md text-xs leading-5 text-white/85 sm:mt-3 sm:text-sm sm:leading-6">{activeSlide.description}</p>}
