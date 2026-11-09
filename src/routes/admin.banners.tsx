@@ -30,6 +30,7 @@ function HomepageBannersPage() {
   const [draft, setDraft] = useState<SlideDraft>(emptySlide());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState<"desktop" | "mobile" | null>(null);
+  const [imageInfo, setImageInfo] = useState<{ desktop?: string; mobile?: string }>({});
   const slides = useQuery({
     queryKey: ["admin", "homepage-hero-slides"],
     queryFn: async () => {
@@ -48,6 +49,15 @@ function HomepageBannersPage() {
     if (file.size > 8 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 8 MB."); return; }
     setUploading(kind);
     try {
+      try {
+        const bitmap = await createImageBitmap(file);
+        const ratio = bitmap.width / bitmap.height;
+        const recommendedRatio = kind === "desktop" ? 16 / 5 : 4 / 5;
+        const ratioLabel = kind === "desktop" ? "16:5" : "4:5";
+        setImageInfo(current => ({ ...current, [kind]: `${bitmap.width} × ${bitmap.height}px` }));
+        if (Math.abs(ratio - recommendedRatio) / recommendedRatio > 0.12) toast.warning(`A imagem tem ${bitmap.width} × ${bitmap.height}px. Recomendamos proporção ${ratioLabel}; ela poderá sofrer corte na vitrine.`);
+        bitmap.close();
+      } catch { setImageInfo(current => ({ ...current, [kind]: "Dimensões não identificadas" })); }
       const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const path = `${kind}/${crypto.randomUUID()}.${extension}`;
       const { data, error } = await getSupabase().storage.from("homepage-banners").upload(path, file, {
@@ -68,7 +78,8 @@ function HomepageBannersPage() {
     <div className="space-y-2">
       <label className="block text-sm font-medium">{label}</label>
       <div className="rounded-lg border border-dashed p-3">
-        {url ? <div className="mb-3 overflow-hidden rounded-md bg-muted"><img src={url} alt={`Prévia da imagem ${kind}`} className={kind === "desktop" ? "h-36 w-full object-cover" : "mx-auto h-40 max-w-full object-contain"} /></div> : <div className="mb-3 flex h-24 items-center justify-center rounded-md bg-muted/60 text-sm text-muted-foreground">Nenhuma imagem selecionada</div>}
+        <div className="mb-3 flex items-center justify-between gap-2"><span className="rounded-md bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">{kind === "desktop" ? "Banner horizontal · 16:5" : "Banner vertical · 4:5"}</span><span className="text-[11px] text-muted-foreground">{imageInfo[kind] ?? "Aguardando imagem"}</span></div>
+        {url ? <div className={`mb-3 overflow-hidden rounded-md bg-muted ${kind === "desktop" ? "aspect-[16/5]" : "mx-auto aspect-[4/5] max-w-[220px]"}`}><img src={url} alt={`Prévia da imagem ${kind}`} onLoad={event => setImageInfo(current => ({ ...current, [kind]: `${event.currentTarget.naturalWidth} × ${event.currentTarget.naturalHeight}px` }))} className="h-full w-full object-cover" /></div> : <div className={`mb-3 flex items-center justify-center rounded-md bg-muted/60 text-sm text-muted-foreground ${kind === "desktop" ? "aspect-[16/5]" : "mx-auto aspect-[4/5] max-w-[220px]"}`}>Prévia da imagem</div>}
         <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading !== null} onChange={event => void uploadImage(kind, event)} className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-background" />
         <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
         {url && <div className="mt-2 flex items-center justify-between gap-2"><span className="truncate text-xs text-muted-foreground">{url}</span><Button type="button" size="sm" variant="ghost" onClick={() => setDraft(current => ({ ...current, [kind === "desktop" ? "image_url" : "mobile_image_url"]: "" }))}><X className="mr-1 size-3" />Remover</Button></div>}
@@ -121,7 +132,7 @@ function HomepageBannersPage() {
   const field = "mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
 
   return <div className="mx-auto max-w-5xl space-y-6">
-    <header><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Vitrine da loja</p><h2 className="mt-1 text-2xl font-bold">Banners da página inicial</h2><p className="mt-2 max-w-2xl text-sm text-muted-foreground">Gerencie os slides da home. Use imagens reais de produtos, marcas e campanhas autorizadas da MCI. As imagens devem estar hospedadas em URLs HTTPS.</p></header>
+    <header><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Vitrine da loja</p><h2 className="mt-1 text-2xl font-bold">Banners da página inicial</h2><p className="mt-2 max-w-2xl text-sm text-muted-foreground">Gerencie a vitrine principal da Store House. O banner desktop ocupa toda a largura da área comercial; cadastre também uma arte mobile para controlar o enquadramento em celulares. Use imagens de produtos, marcas e campanhas autorizadas. As imagens devem usar HTTPS.</p></header>
     <section className="rounded-xl border bg-card p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-2"><ImagePlus className="size-5 text-brand"/><h3 className="font-semibold">{editingId ? "Editar banner" : "Adicionar banner"}</h3></div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -129,8 +140,8 @@ function HomepageBannersPage() {
         <label className="text-sm font-medium">Texto de apoio<input className={field} value={draft.description ?? ""} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Frase curta da campanha"/></label>
         <label className="text-sm font-medium">Etiqueta superior<input className={field} value={draft.eyebrow} onChange={e=>setDraft({...draft,eyebrow:e.target.value})} placeholder="Lançamento, marca ou categoria"/></label>
         <div className="sm:col-span-2 grid gap-4 lg:grid-cols-2">
-          <ImageUploadField kind="desktop" label="Imagem desktop *" url={draft.image_url} hint="Recomendado: 1600 × 1000 px (proporção 16:10). JPG, PNG, WebP ou AVIF; até 8 MB." />
-          <ImageUploadField kind="mobile" label="Imagem mobile (opcional)" url={draft.mobile_image_url ?? ""} hint="Recomendado: 900 × 1200 px (proporção 3:4). A área visível é vertical em celulares; até 8 MB." />
+          <ImageUploadField kind="desktop" label="Imagem desktop *" url={draft.image_url} hint="Tamanho recomendado: 1920 × 600 px (proporção 16:5). Arte horizontal para a vitrine em largura total. JPG, PNG, WebP ou AVIF; até 8 MB." />
+          <ImageUploadField kind="mobile" label="Imagem mobile (opcional)" url={draft.mobile_image_url ?? ""} hint="Tamanho recomendado: 900 × 1125 px (proporção 4:5). Usada em celulares para evitar cortes da arte desktop; até 8 MB." />
         </div>
         <label className="text-sm font-medium">Texto do botão<input className={field} value={draft.button_label} onChange={e=>setDraft({...draft,button_label:e.target.value})} placeholder="Ver produtos"/></label>
         <label className="min-w-0 text-sm font-medium xl:col-span-2">Link de destino do banner (página do produto)<input className={field} value={draft.button_url} onChange={e=>setDraft({...draft,button_url:e.target.value})} placeholder="/produto/slug-do-produto"/><span className="mt-1 block text-xs font-normal text-muted-foreground">Informe a URL legível do produto, por exemplo /produto/amaran-ray-360c. Os links dos produtos usam o nome do produto na URL. A imagem e o botão abrirão este destino. Também aceita /catalogo ou uma URL HTTPS.</span></label>
@@ -139,6 +150,7 @@ function HomepageBannersPage() {
         <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={draft.is_mini_banner} onChange={e=>setDraft({...draft,is_mini_banner:e.target.checked, sort_order: e.target.checked ? 999 : draft.sort_order})}/> Usar como mini banner na seção de categorias</label>
         {draft.is_mini_banner && <p className="text-xs text-muted-foreground sm:col-span-2">Este banner será exibido ao lado de Iluminação e Acessórios. Não será exibido no carrossel principal. Mantenha apenas um banner marcado com esta opção.</p>}
       </div>
+      <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-950"><strong>Padrão visual da nova homepage:</strong> desktop 1920 × 600 px (16:5); mobile 900 × 1125 px (4:5). A prévia mostra a proporção de exibição. Imagens fora da proporção serão sinalizadas para evitar cortes inesperados.</div>
       <div className="mt-5 flex flex-wrap gap-2"><Button onClick={()=>save.mutate()} disabled={save.isPending || uploading !== null}>{save.isPending || uploading !== null ? <Loader2 className="mr-2 size-4 animate-spin"/> : <Save className="mr-2 size-4"/>}{editingId ? "Salvar alterações" : "Cadastrar banner"}</Button>{editingId && <Button variant="outline" onClick={()=>{setDraft(emptySlide());setEditingId(null);}}>Cancelar edição</Button>}</div>
     </section>
     <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="font-semibold">Slides cadastrados</h3><span className="text-xs text-muted-foreground">{slides.data?.length ?? 0} banner(s)</span></div>
