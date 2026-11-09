@@ -114,9 +114,6 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
               Comprar agora
             </span>
           </div>
-          <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); if (!userId) { toast.info("Entre na sua conta para salvar seus favoritos."); window.location.assign("/entrar"); return; } favoriteMutation.mutate(); }} disabled={favoriteMutation.isPending} aria-label={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"} title={favorite ? "Remover dos favoritos" : "Salvar nos favoritos"} className="absolute left-2 top-2 z-10 grid size-9 place-items-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-sm transition hover:scale-105 hover:text-[#ff681f] disabled:opacity-50">
-            <Heart className={favorite ? "size-4 fill-[#ff681f] text-[#ff681f]" : "size-4"} />
-          </button>
           {hasResellerDiscount && (
             <span
               className="absolute right-2 top-2 inline-flex min-h-9 min-w-9 items-center justify-center rounded-full border border-white/80 bg-orange-500 px-2 text-xs font-extrabold leading-none text-white shadow-sm"
@@ -146,6 +143,9 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           </div>
         </div>
       </Link>
+      <button type="button" onClick={() => { if (!userId) { toast.info("Entre na sua conta para salvar seus favoritos."); window.location.assign("/entrar"); return; } favoriteMutation.mutate(); }} disabled={favoriteMutation.isPending} aria-label={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"} title={favorite ? "Remover dos favoritos" : "Salvar nos favoritos"} className="absolute left-5 top-5 z-20 grid size-9 place-items-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-sm transition hover:scale-105 hover:text-[#ff681f] disabled:opacity-50">
+        <Heart className={favorite ? "size-4 fill-[#ff681f] text-[#ff681f]" : "size-4"} />
+      </button>
       <button type="button" disabled={!canSell(product)} onClick={addToCart}
         className="mt-3 h-10 w-full shrink-0 rounded-lg bg-orange-500 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-orange-600 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100">
         {unavailable ? "Indisponível" : "Adicionar ao carrinho"}
