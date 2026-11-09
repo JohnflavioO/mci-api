@@ -152,6 +152,7 @@ export const Route = createFileRoute("/api/orders")({
           orderId: order.id,
           items: orderItems.map((item) => ({ name: item.name_snapshot, qty: item.qty, unitPrice: Number(item.unit_price), lineTotal: item.line_total == null ? null : Number(item.line_total) })),
           shippingAmount: Number(order.shipping_amount ?? 0),
+          expectedTotal: Number(order.total),
           customer,
           address,
         });
