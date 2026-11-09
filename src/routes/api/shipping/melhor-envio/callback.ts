@@ -14,7 +14,7 @@ export const Route = createFileRoute("/api/shipping/melhor-envio/callback")({
       const state = current.searchParams.get("state") || "";
       const expectedState = cookieValue(request, "me_oauth_state");
       const clearCookie = "me_oauth_state=; Path=/api/shipping/melhor-envio/callback; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
-      const appUrl = (process.env["APP_BASE_URL"] || "https://mci-xpress.vercel.app").replace(/\\/$/, "");
+      const appUrl = (process.env["APP_BASE_URL"] || "https://mci-xpress.vercel.app").replace(/\/$/, "");
       const finish = (result: string, status = 303) => new Response(null, { status, headers: { Location: `${appUrl}/admin/pedidos?melhor_envio=${encodeURIComponent(result)}`, "Set-Cookie": clearCookie, "Cache-Control": "no-store" } });
       if (!code || !state || !expectedState || state !== expectedState) return finish("state_invalid");
       const config = melhorEnvioConfig();
