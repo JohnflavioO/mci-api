@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Package } from "lucide-react";
+import { Heart, Package } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { catalogSource } from "@/lib/api";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
@@ -30,6 +30,7 @@ export const priceLabel = (p: CatalogProduct) =>
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const cart = useCart();
   const unavailable = !canSell(product);
+  const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
 
   // A sessão faz parte da chave para que os preços sejam recalculados ao entrar/sair
@@ -43,6 +44,38 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
     });
     return () => listener.subscription.unsubscribe();
   }, []);
+
+
+  const favoriteQuery = useQuery({
+    queryKey: ["storefront-favorite", userId, product.slug],
+    enabled: !!userId && catalogSource() === "supabase",
+    queryFn: async () => {
+      const { data, error } = await getSupabase().from("user_favorites").select("product_id").eq("product_id", product.slug).maybeSingle();
+      if (error) throw error;
+      return !!data;
+    },
+    staleTime: 15_000,
+  });
+  const favoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (!userId) throw new Error("Entre na sua conta para salvar produtos favoritos.");
+      if (favoriteQuery.data) {
+        const { error } = await getSupabase().from("user_favorites").delete().eq("user_id", userId).eq("product_id", product.slug);
+        if (error) throw error;
+        return false;
+      }
+      const { error } = await getSupabase().from("user_favorites").insert({ user_id: userId, product_id: product.slug });
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: async (saved) => {
+      await queryClient.invalidateQueries({ queryKey: ["storefront-favorite", userId] });
+      await queryClient.invalidateQueries({ queryKey: ["storefront-favorites", userId] });
+      toast.success(saved ? "Produto salvo nos favoritos." : "Produto removido dos favoritos.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const favorite = favoriteQuery.data === true;
 
   const resellerPriceQuery = useQuery({
     queryKey: ["storefront-reseller-price", userId, product.slug],
@@ -81,6 +114,9 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
               Comprar agora
             </span>
           </div>
+          <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); if (!userId) { toast.info("Entre na sua conta para salvar seus favoritos."); window.location.assign("/entrar"); return; } favoriteMutation.mutate(); }} disabled={favoriteMutation.isPending} aria-label={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"} title={favorite ? "Remover dos favoritos" : "Salvar nos favoritos"} className="absolute left-2 top-2 z-10 grid size-9 place-items-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-sm transition hover:scale-105 hover:text-[#ff681f] disabled:opacity-50">
+            <Heart className={favorite ? "size-4 fill-[#ff681f] text-[#ff681f]" : "size-4"} />
+          </button>
           {hasResellerDiscount && (
             <span
               className="absolute right-2 top-2 inline-flex min-h-9 min-w-9 items-center justify-center rounded-full border border-white/80 bg-orange-500 px-2 text-xs font-extrabold leading-none text-white shadow-sm"
