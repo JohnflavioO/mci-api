@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const CALLBACK_PATH = "/api/shipping/melhor-envio/callback";
 export const melhorEnvioCallbackUrl = () =>
-  (process.env["MELHOR_ENVIO_REDIRECT_URI"] || `${(process.env["APP_BASE_URL"] || "https://mci-xpress.vercel.app").replace(/\\/$/, "")}${CALLBACK_PATH}`);
+  (process.env["MELHOR_ENVIO_REDIRECT_URI"] || `${(process.env["APP_BASE_URL"] || "https://mci-xpress.vercel.app").replace(/\/$/, "")}${CALLBACK_PATH}`);
 
 export function melhorEnvioConfig() {
   return {
