@@ -37,6 +37,7 @@ export const Route = createFileRoute("/api/orders")({
         customer?: { name?: unknown; document?: unknown; email?: unknown; phone?: unknown };
         address?: { cep?: unknown; street?: unknown; number?: unknown; complement?: unknown; district?: unknown; city?: unknown; state?: unknown };
         shipping?: { provider?: unknown; service?: unknown; quote_token?: unknown };
+        pickup_authorization?: { name?: unknown; cpf?: unknown; plate?: unknown } | null;
       } | null;
       if (!Array.isArray(body?.items) || body.items.length < 1 || body.items.length > 50) return Response.json({ error: "Itens do pedido inválidos." }, { status: 400 });
       const items = body.items.map((item) => {
@@ -46,6 +47,16 @@ export const Route = createFileRoute("/api/orders")({
       if (items.some((item) => typeof item.product_id !== "string" || !UUID.test(item.product_id) || !Number.isInteger(item.qty) || Number(item.qty) < 1 || Number(item.qty) > 999)) return Response.json({ error: "Revise os produtos e quantidades." }, { status: 400 });
       const selectedShipping = body?.shipping;
       if (!selectedShipping || typeof selectedShipping.provider !== "string" || typeof selectedShipping.service !== "string" || typeof selectedShipping.quote_token !== "string") return Response.json({ error: "Selecione uma modalidade de frete calculada antes de pagar." }, { status: 400 });
+      const isPickup = selectedShipping?.provider === "pickup";
+      const pickupAuthorization = {
+        name: clean(body?.pickup_authorization?.name, 120),
+        cpf: clean(body?.pickup_authorization?.cpf, 20).replace(/\D/g, ""),
+        plate: clean(body?.pickup_authorization?.plate, 10).toUpperCase().replace(/[^A-Z0-9]/g, ""),
+      };
+      if (isPickup && (!pickupAuthorization.name || pickupAuthorization.cpf.length !== 11 || !/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$|^[A-Z]{3}[0-9]{4}$/.test(pickupAuthorization.plate))) {
+        return Response.json({ error: "Para retirada no Armazém Sanco, informe nome completo, CPF válido e placa do veículo." }, { status: 400 });
+      }
+      if (!isPickup && body?.pickup_authorization) return Response.json({ error: "Dados de autorização de retirada não se aplicam a envio por transportadora." }, { status: 400 });
       const quoteParts = selectedShipping.quote_token.split(".");
       if (quoteParts.length !== 2) return Response.json({ error: "Cotação inválida. Calcule novamente." }, { status: 400 });
       const quoteSecret = process.env["SHIPPING_QUOTE_SECRET"] || serviceRoleKey;
@@ -129,6 +140,9 @@ export const Route = createFileRoute("/api/orders")({
         shipping_district: address.district,
         shipping_city: address.city,
         shipping_state: address.state,
+        pickup_contact_name: isPickup ? pickupAuthorization.name : null,
+        pickup_contact_cpf: isPickup ? pickupAuthorization.cpf : null,
+        pickup_vehicle_plate: isPickup ? pickupAuthorization.plate : null,
       }).eq("id", order.id).eq("user_id", auth.user.id);
       if (customerDataError) return Response.json({ error: "Não foi possível salvar os dados de faturamento e entrega. Seu carrinho foi preservado; tente novamente." }, { status: 503 });
 
