@@ -20,8 +20,10 @@ async function portalFor(): Promise<"/revendedor" | "/afiliado" | "/"> {
 }
 
 export const Route = createFileRoute("/entrar")({
-  validateSearch: (search: Record<string, unknown>): { admin?: boolean } =>
-    search["admin"] === true || search["admin"] === "true" ? { admin: true } : {},
+  validateSearch: (search: Record<string, unknown>): { admin?: boolean; redirect?: "/checkout" } => ({
+    ...(search["admin"] === true || search["admin"] === "true" ? { admin: true } : {}),
+    ...(search["redirect"] === "/checkout" ? { redirect: "/checkout" } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Entrar | MCI Xpress" },
@@ -38,7 +40,7 @@ export const Route = createFileRoute("/entrar")({
 const field = "mt-2 h-11 focus-visible:border-brand focus-visible:ring-brand/30";
 
 function Login() {
-  const { admin } = Route.useSearch();
+  const { admin, redirect } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,6 +49,7 @@ function Login() {
     onSuccess: async () => {
       setPassword("");
       if (admin) await navigate({ to: "/admin/importar" });
+      else if (redirect === "/checkout") await navigate({ to: "/checkout" });
       else await navigate({ to: await portalFor().catch(() => "/" as const) });
     },
     onError: () => setPassword(""),
