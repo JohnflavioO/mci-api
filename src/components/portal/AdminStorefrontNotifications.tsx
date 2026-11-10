@@ -32,7 +32,7 @@ export function AdminStorefrontNotifications() {
   const notifications = useQuery({
     queryKey: ["admin-storefront-notifications"],
     queryFn: async () => {
-      const { data, error } = await getSupabase().from("storefront_notifications").select("*").order("sort_order").order("created_at", { ascending: false });
+      const { data, error } = await getSupabase().from("storefront_notifications").select("id,kind,title,message,product_id,product_name,image_url,cta_label,cta_url,audience,interval_seconds,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at").order("sort_order").order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Notification[];
     },
