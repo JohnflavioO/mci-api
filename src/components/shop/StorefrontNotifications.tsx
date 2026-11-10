@@ -67,6 +67,17 @@ export function StorefrontNotifications() {
     refetchInterval: 60_000,
     retry: 1,
   });
+  const settingsQuery = useQuery({
+    queryKey: ["storefront-notification-settings"],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().from("storefront_notification_settings").select("real_sales_enabled").eq("id", true).single();
+      if (error) throw error;
+      return Boolean(data?.real_sales_enabled);
+    },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    retry: 1,
+  });
   const salesQuery = useQuery({
     queryKey: ["storefront-recent-paid-sales"],
     queryFn: async () => {
@@ -74,6 +85,7 @@ export function StorefrontNotifications() {
       if (error) throw error;
       return (data ?? []) as RecentSale[];
     },
+    enabled: settingsQuery.data === true,
     staleTime: 60_000,
     refetchInterval: 120_000,
     retry: 1,
