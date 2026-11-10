@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { PasswordField, PasswordMatchHint } from "@/components/auth/PasswordField";
@@ -12,7 +12,10 @@ import { UFS } from "@/lib/br-docs";
 import { CheckCircle2, Info, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/cadastro")({
-  validateSearch: (search: Record<string, unknown>): { tipo?: Role } => ({ tipo: search["tipo"] === "afiliado" || search["tipo"] === "revendedor" || search["tipo"] === "cliente" ? search["tipo"] : undefined }),
+  validateSearch: (search: Record<string, unknown>): { tipo?: Role; redirect?: "/checkout" } => ({
+    tipo: search["tipo"] === "afiliado" || search["tipo"] === "revendedor" || search["tipo"] === "cliente" ? search["tipo"] : undefined,
+    ...(search["redirect"] === "/checkout" ? { redirect: "/checkout" } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Cadastro | MCI Comercial" },
@@ -42,7 +45,7 @@ const roleInfo: Record<Role, { label: string; desc: string }> = {
 const fieldCls = "mt-2 h-11 focus-visible:border-brand focus-visible:ring-brand/30";
 
 function Register() {
-  const { tipo } = Route.useSearch();
+  const { tipo, redirect } = Route.useSearch();
   const [role, setRole] = useState<Role>(tipo ?? "cliente");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -60,6 +63,7 @@ function Register() {
                 ? "Seu cadastro de revendedor está Pendente. Confirme seu e-mail; o Portal do Revendedor será liberado após a aprovação do administrador."
                 : "Confirme seu e-mail para acessar sua conta."}
             </p>
+            {redirect === "/checkout" && <Link to="/checkout" className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#ff681f] px-4 text-sm font-bold text-white transition hover:bg-[#e95712]">Voltar ao checkout</Link>}
           </div>
         </div>
       </SiteShell>
