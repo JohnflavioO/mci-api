@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle2, LockKeyhole, UserRound } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { EmptyState, ErrorState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
@@ -52,6 +54,7 @@ function Checkout() {
     staleTime: 60_000,
     retry: false,
   });
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [delivery, setDelivery] = useState({ name: "", document: "", phone: "", email: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" });
   const [shippingOptions, setShippingOptions] = useState<Array<{ id: string; provider: string; service: string; price: number; delivery_days: number | null; description: string; quote_token: string }>>([]);
   const [productsSubtotal, setProductsSubtotal] = useState<number | null>(null);
@@ -62,7 +65,7 @@ function Checkout() {
     mutationFn: async () => {
       const sb = getSupabase();
       let { data } = await sb.auth.getSession();
-      if (!data.session) { const signed = await sb.auth.signInAnonymously(); if (signed.error || !signed.data.session) throw new Error("Não foi possível iniciar sessão para cotar o frete."); data = { session: signed.data.session }; }
+      if (!data.session) throw new Error("Entre ou crie sua conta para consultar o frete e concluir a compra.");
       const response = await fetch("/api/shipping", { method: "POST", headers: { Authorization: "Bearer " + data.session.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ cep: delivery.cep, items: items.map((i) => ({ product_id: i.slug, qty: i.qty })) }) });
       const result = await response.json().catch(() => ({})) as { options?: typeof shippingOptions; products_subtotal?: number; providers?: { melhor_envio?: string; pickup?: string }; error?: string };
       if (!response.ok) throw new Error(result.error || "Não foi possível calcular o frete.");
@@ -76,13 +79,7 @@ function Checkout() {
       const supabase = getSupabase();
       let { data, error } = await supabase.auth.getSession();
       if (error) throw new Error("Não foi possível iniciar a compra agora. Confira sua conexão ou entre na sua conta para continuar.");
-      if (!data.session) {
-        const anonymous = await supabase.auth.signInAnonymously();
-        if (anonymous.error || !anonymous.data.session) {
-          throw new Error("A compra rápida está temporariamente indisponível. Você pode entrar na sua conta ou criar uma gratuitamente para continuar.");
-        }
-        data = { session: anonymous.data.session };
-      }
+      if (!data.session) throw new Error("Entre ou crie sua conta para concluir a compra.");
       const cleaned = Object.fromEntries(
         Object.entries(delivery).map(([k, v]) => [k, typeof v === "string" ? v.trim() : ""]),
       ) as typeof delivery;
@@ -106,12 +103,34 @@ function Checkout() {
   });
   useEffect(() => {
     if (!profile.data) return;
+    if (!profile.data.authenticated) setAuthDialogOpen(true);
     const { name, document, phone, email, cep, street, number, complement, district, city, state } = profile.data;
     setDelivery({ name, document, phone, email, cep, street, number, complement, district, city, state });
   }, [profile.data]);
   return (
     <SiteShell>
-      <div className="min-h-screen bg-[#f5f6f8]"><div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
+      <div className="min-h-screen bg-[#f5f6f8]">
+        <Dialog open={authDialogOpen && profile.data?.authenticated === false} onOpenChange={setAuthDialogOpen}>
+          <DialogContent className="max-w-md overflow-hidden rounded-2xl border-0 p-0 shadow-2xl">
+            <div className="bg-gradient-to-br from-[#171a1f] via-[#252a31] to-[#353b44] px-6 py-7 text-white">
+              <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-[#ff681f] shadow-lg shadow-orange-950/30"><LockKeyhole className="size-6" /></div>
+              <DialogHeader>
+                <DialogTitle className="text-left text-2xl font-bold text-white">Entre para concluir sua compra</DialogTitle>
+                <DialogDescription className="mt-2 text-left leading-6 text-white/75">Para consultar as opções de entrega e finalizar o pedido com segurança, entre na sua conta ou crie uma gratuitamente.</DialogDescription>
+              </DialogHeader>
+            </div>
+            <div className="space-y-3 px-6 py-5">
+              <div className="flex items-start gap-3 rounded-xl bg-orange-50 p-3 text-sm text-slate-700">
+                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[#e95712]" />
+                <span>Seu carrinho será mantido. Depois de entrar, você poderá continuar o checkout sem adicionar os produtos novamente.</span>
+              </div>
+              <Link to="/entrar" search={{ redirect: "/checkout" }} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff681f] px-4 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition hover:bg-[#e95712]">Entrar na minha conta <ArrowRight className="size-4" /></Link>
+              <Link to="/cadastro" search={{ tipo: "cliente", redirect: "/checkout" }} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:border-orange-300 hover:bg-orange-50"><UserRound className="size-4" /> Criar conta gratuitamente</Link>
+              <p className="text-center text-xs text-muted-foreground">É rápido e gratuito. Seus dados ficam protegidos.</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
         <div className="mb-7 rounded-2xl bg-gradient-to-r from-[#171a1f] to-[#30343b] px-6 py-6 text-white shadow-lg sm:flex sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a50]">Store House · Compra segura</p>
@@ -128,7 +147,7 @@ function Checkout() {
           <div className="mt-8"><EmptyState title="Nenhum item para finalizar" /></div>
         ) : (
           <>
-          {!profile.data?.authenticated && <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm">
+          {!profile.data?.authenticated && <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm">
             <span className="text-muted-foreground">Quer agilizar suas próximas compras?</span>
             <span className="flex gap-3 font-semibold">
               <Link to="/entrar" className="text-brand underline underline-offset-4">Entrar</Link>
@@ -169,7 +188,7 @@ function Checkout() {
             </section>
             <section className="rounded-2xl border border-orange-200 bg-gradient-to-br from-white to-orange-50/50 p-5 shadow-sm sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-lg font-semibold">Frete e entrega</h2><p className="text-sm text-muted-foreground">Calcule o valor para o CEP informado antes de pagar.</p></div>
-                <Button type="button" variant="default" className="min-w-52 bg-[#ff681f] text-white shadow-md shadow-orange-200 transition hover:bg-[#e95712]" disabled={shippingMutation.isPending || delivery.cep.replace(/[^0-9]/g, "").length !== 8} onClick={() => shippingMutation.mutate()}>{shippingMutation.isPending ? "Consultando transportadoras…" : "Consultar opções de frete"}</Button></div>
+                <Button type="button" variant="default" className="min-w-52 bg-[#ff681f] text-white shadow-md shadow-orange-200 transition hover:bg-[#e95712]" disabled={!profile.data?.authenticated || shippingMutation.isPending || delivery.cep.replace(/[^0-9]/g, "").length !== 8} onClick={() => shippingMutation.mutate()}>{!profile.data?.authenticated ? "Entre para consultar o frete" : shippingMutation.isPending ? "Consultando transportadoras…" : "Consultar opções de frete"}</Button></div>
               {shippingMutation.isError && <p role="alert" className="mt-3 text-sm text-destructive">{shippingMutation.error.message}</p>}
               <div className="mt-4 grid gap-3">
                 {shippingOptions.map((option) => {
@@ -231,7 +250,7 @@ function Checkout() {
                   return chosen ? <p className="mt-1 font-semibold">Total com entrega: {(productsSubtotal + chosen.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p> : null;
                 })()}
               </div>
-              <Button type="submit" size="lg" disabled={m.isPending || !selectedShipping} className="min-h-12 min-w-64 bg-[#ff681f] text-white shadow-lg shadow-orange-200 hover:bg-[#e95712]">{m.isPending ? "Preparando seu pagamento…" : "Continuar para pagamento"}</Button>
+              <Button type="submit" size="lg" disabled={!profile.data?.authenticated || m.isPending || !selectedShipping} className="min-h-12 min-w-64 bg-[#ff681f] text-white shadow-lg shadow-orange-200 hover:bg-[#e95712]">{m.isPending ? "Preparando seu pagamento…" : "Continuar para pagamento"}</Button>
             </div>
             {m.isError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
               <p className="font-semibold text-foreground">Não foi possível continuar agora</p>
