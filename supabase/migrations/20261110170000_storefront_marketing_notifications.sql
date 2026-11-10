@@ -116,4 +116,10 @@ create policy "storefront notification settings admin manage"
 grant select on public.storefront_notification_settings to anon, authenticated;
 grant insert, update on public.storefront_notification_settings to authenticated;
 
+revoke select on public.storefront_notifications from anon, authenticated;
+grant select (id, kind, title, message, product_id, product_name, image_url, cta_label, cta_url, audience, interval_seconds, starts_at, ends_at, is_active, sort_order, impressions, clicks, created_at, updated_at)
+  on public.storefront_notifications to anon, authenticated;
+revoke select on public.storefront_notification_settings from anon, authenticated;
+grant select (id, real_sales_enabled) on public.storefront_notification_settings to anon, authenticated;
+
 commit;
