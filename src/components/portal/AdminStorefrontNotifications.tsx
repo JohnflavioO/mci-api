@@ -47,6 +47,22 @@ export function AdminStorefrontNotifications() {
     },
     staleTime: 60_000,
   });
+  const settings = useQuery({
+    queryKey: ["admin-storefront-notification-settings"],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().from("storefront_notification_settings").select("id,real_sales_enabled").eq("id", true).single();
+      if (error) throw error;
+      return data as { id: boolean; real_sales_enabled: boolean };
+    },
+  });
+  const setRealSales = async (enabled: boolean) => {
+    const { data: auth } = await getSupabase().auth.getUser();
+    const { error } = await getSupabase().from("storefront_notification_settings")
+      .upsert({ id: true, real_sales_enabled: enabled, updated_by: auth.user?.id ?? null, updated_at: new Date().toISOString() });
+    if (error) toast.error(error.message);
+    else { toast.success(enabled ? "Prova social de compras reais ativada." : "Prova social de compras reais pausada."); await qc.invalidateQueries({ queryKey: ["admin-storefront-notification-settings"] }); await qc.invalidateQueries({ queryKey: ["storefront-notification-settings"] }); }
+  };
+
   const rows = notifications.data ?? [];
   const metrics = useMemo(() => ({
     active: rows.filter(row => row.is_active && (!row.starts_at || new Date(row.starts_at) <= new Date()) && (!row.ends_at || new Date(row.ends_at) >= new Date())).length,
@@ -127,6 +143,14 @@ export function AdminStorefrontNotifications() {
     </div>
 
     <section className="rounded-xl border bg-card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-emerald-50 text-emerald-700"><ShoppingBag className="size-5"/></span><div><h3 className="font-semibold">Prova social de compras reais</h3><p className="mt-1 max-w-2xl text-sm text-muted-foreground">Quando ativada, a loja consulta pedidos pagos nas últimas 48 horas e mostra somente produto e cidade/UF. Nenhum dado pessoal do comprador é exposto.</p></div></div>
+        <button type="button" disabled={settings.isPending || settings.isError} onClick={() => void setRealSales(!settings.data?.real_sales_enabled)} className={`h-10 rounded-lg px-4 text-sm font-semibold ${settings.data?.real_sales_enabled ? "bg-emerald-600 text-white" : "border bg-background"} disabled:opacity-50`}>{settings.data?.real_sales_enabled ? "Ativada" : "Desativada"}</button>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">{settings.isError ? "Não foi possível carregar a configuração." : settings.data?.real_sales_enabled ? "Ativa: só aparecem compras com pagamento confirmado." : "Desativada por padrão. Ative quando quiser exibir compras confirmadas."}</p>
+    </section>
+
+    <section className="hidden rounded-xl border bg-card p-5">
       <div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-emerald-50 text-emerald-700"><ShoppingBag className="size-5"/></span><div><h3 className="font-semibold">Prova social de compras reais</h3><p className="mt-1 text-sm text-muted-foreground">A loja consulta automaticamente os últimos pedidos com pagamento confirmado nas últimas 48 horas. Exibe somente o produto e, quando disponível, cidade/UF. Nenhum nome, telefone, e-mail ou documento é publicado.</p></div></div>
       <p className="mt-3 text-xs text-muted-foreground">Se não houver pedidos pagos recentes, esta modalidade simplesmente não aparece.</p>
     </section>
