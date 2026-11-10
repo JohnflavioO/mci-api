@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Plus, Save, Trash2, Eye, MousePointerClick, LoaderCircle, X, ExternalLink, ShoppingBag, Tag, BellRing } from "lucide-react";
+import { Plus, Save, Trash2, LoaderCircle, X, ShoppingBag, Tag, BellRing } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase";
 
