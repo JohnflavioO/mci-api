@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BellRing, CheckCircle2, ShoppingBag, Tag, X } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
@@ -151,7 +151,7 @@ export function StorefrontNotifications() {
           {!current.cta_url && <p className="mt-1.5 text-[10px] text-slate-400">{current.source === "sale" ? "Pedido com pagamento confirmado" : current.demo ? "Conteúdo ilustrativo" : "Store House · MCI"}</p>}
         </div>
       </div>
-      <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-slate-100"><div key={current.id} className="h-full origin-left animate-[notification-progress_var(--notification-duration)_linear_forwards] bg-orange-500" style={{ "--notification-duration": `${current.interval_seconds}s` } as React.CSSProperties}/></div>
+      <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-slate-100"><div key={current.id} className="h-full origin-left animate-[notification-progress_var(--notification-duration)_linear_forwards] bg-orange-500" style={{ "--notification-duration": `${current.interval_seconds}s` } as CSSProperties}/></div>
     </div>
   </aside>;
 }
