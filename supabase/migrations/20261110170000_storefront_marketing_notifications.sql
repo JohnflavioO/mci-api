@@ -95,4 +95,25 @@ comment on table public.storefront_notifications is
   'Campanhas de notificações de conversão exibidas na loja. Mensagens demo_purchase devem ser identificadas como demonstração.';
 comment on function public.get_storefront_recent_sales() is
   'Retorna apenas nome do produto e localização aproximada de pedidos pagos recentes; nunca retorna dados pessoais do comprador.';
+
+create table if not exists public.storefront_notification_settings (
+  id boolean primary key default true check (id = true),
+  real_sales_enabled boolean not null default false,
+  updated_by uuid references auth.users(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+insert into public.storefront_notification_settings (id, real_sales_enabled)
+values (true, false) on conflict (id) do nothing;
+alter table public.storefront_notification_settings enable row level security;
+drop policy if exists "storefront notification settings public read" on public.storefront_notification_settings;
+create policy "storefront notification settings public read"
+  on public.storefront_notification_settings for select to anon, authenticated using (true);
+drop policy if exists "storefront notification settings admin manage" on public.storefront_notification_settings;
+create policy "storefront notification settings admin manage"
+  on public.storefront_notification_settings for all to authenticated
+  using (public.has_role('admin'::public.app_role))
+  with check (public.has_role('admin'::public.app_role));
+grant select on public.storefront_notification_settings to anon, authenticated;
+grant insert, update on public.storefront_notification_settings to authenticated;
+
 commit;
