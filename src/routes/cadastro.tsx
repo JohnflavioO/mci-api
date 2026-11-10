@@ -63,7 +63,7 @@ function Register() {
                 ? "Seu cadastro de revendedor está Pendente. Confirme seu e-mail; o Portal do Revendedor será liberado após a aprovação do administrador."
                 : "Confirme seu e-mail para acessar sua conta."}
             </p>
-            {redirect === "/checkout" && <Link to="/checkout" className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#ff681f] px-4 text-sm font-bold text-white transition hover:bg-[#e95712]">Voltar ao checkout</Link>}
+            {redirect === "/checkout" && <Link to="/entrar" search={{ redirect: "/checkout" }} className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#ff681f] px-4 text-sm font-bold text-white transition hover:bg-[#e95712]">Entrar e continuar a compra</Link>}
           </div>
         </div>
       </SiteShell>
