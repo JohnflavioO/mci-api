@@ -108,7 +108,7 @@ export function StorefrontNotifications() {
     return [...sales, ...campaigns];
   }, [campaignsQuery.data, salesQuery.data, audience]);
 
-  const visibleFeed = useMemo(() => feed.filter(item => !dismissed.includes(item.id)), [feed, dismissed]);
+  const visibleFeed = useMemo(() => feed.filter(item => !dismissed.includes(item.id) && !getSessionFlag(`mci-notification-clicked-${item.id}`)), [feed, dismissed]);
   const current = visibleFeed.length ? visibleFeed[index % visibleFeed.length] : null;
 
   useEffect(() => {
@@ -134,6 +134,10 @@ export function StorefrontNotifications() {
     setIndex(value => visibleFeed.length > 1 ? (value + 1) % (visibleFeed.length - 1) : 0);
   };
   const click = () => {
+    // A notification that opened its destination must not reappear during this browser session,
+    // including after route changes, component remounts, or returning to the product page.
+    setSessionFlag(`mci-notification-clicked-${current.id}`);
+    setDismissed(previous => previous.includes(current.id) ? previous : [...previous, current.id]);
     if (current.source === "campaign") {
       void getSupabase().rpc("track_storefront_notification_event", { p_notification_id: current.id, p_event_type: "click" });
     }
