@@ -201,3 +201,9 @@
   .store-house-route-loader__trace { animation: none; stroke-dashoffset: 0; }
   .store-house-route-loader { animation: none; }
 }
+
+
+@keyframes notification-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
