@@ -91,12 +91,14 @@ export function AdminStorefrontNotifications() {
       if (form.image_url && !form.image_url.startsWith("https://")) throw new Error("A imagem precisa usar uma URL HTTPS.");
       if (form.cta_url && !(form.cta_url.startsWith("/") || form.cta_url.startsWith("https://"))) throw new Error("O link deve ser uma rota interna ou URL HTTPS.");
       if (form.starts_at && form.ends_at && new Date(form.ends_at) <= new Date(form.starts_at)) throw new Error("O encerramento precisa ser posterior ao início.");
-      if (form.kind === "demo_purchase" && !form.message.toLocaleLowerCase("pt-BR").includes("demonstra")) {
-        throw new Error("Para transparência, a mensagem de compra demonstrativa precisa informar que é uma demonstração.");
-      }
       const selectedProduct = products.data?.find(product => product.id === form.product_id);
+      // Keep demo notifications easy to publish without allowing them to look like verified sales.
+      const message = form.kind === "demo_purchase" && !form.message.toLocaleLowerCase("pt-BR").includes("demonstra")
+        ? `Demonstração: ${form.message.trim()}`
+        : form.message.trim();
+      if (message.length > 240) throw new Error("A mensagem ultrapassa o limite de 240 caracteres. Reduza o texto para incluir a identificação de demonstração.");
       const payload = {
-        kind: form.kind, title: form.title.trim(), message: form.message.trim(),
+        kind: form.kind, title: form.title.trim(), message,
         product_id: form.product_id || null, product_name: selectedProduct?.name || form.product_name.trim() || null,
         image_url: form.image_url.trim() || null, cta_label: form.cta_label.trim() || null, cta_url: form.cta_url.trim() || null,
         audience: form.audience, interval_seconds: Math.max(15, Math.min(180, Number(form.interval_seconds) || 30)),
