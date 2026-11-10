@@ -150,11 +150,6 @@ export function AdminStorefrontNotifications() {
       <p className="mt-3 text-xs text-muted-foreground">{settings.isError ? "Não foi possível carregar a configuração." : settings.data?.real_sales_enabled ? "Ativa: só aparecem compras com pagamento confirmado." : "Desativada por padrão. Ative quando quiser exibir compras confirmadas."}</p>
     </section>
 
-    <section className="hidden rounded-xl border bg-card p-5">
-      <div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-emerald-50 text-emerald-700"><ShoppingBag className="size-5"/></span><div><h3 className="font-semibold">Prova social de compras reais</h3><p className="mt-1 text-sm text-muted-foreground">A loja consulta automaticamente os últimos pedidos com pagamento confirmado nas últimas 48 horas. Exibe somente o produto e, quando disponível, cidade/UF. Nenhum nome, telefone, e-mail ou documento é publicado.</p></div></div>
-      <p className="mt-3 text-xs text-muted-foreground">Se não houver pedidos pagos recentes, esta modalidade simplesmente não aparece.</p>
-    </section>
-
     {formOpen && <form onSubmit={save} className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">{editingId ? "Editar notificação" : "Cadastrar notificação"}</h3><p className="text-xs text-muted-foreground">A notificação será exibida no canto inferior esquerdo da loja.</p></div><button type="button" onClick={reset} className="rounded-md p-2 hover:bg-secondary" aria-label="Fechar"><X className="size-4"/></button></div>
       <div className="grid gap-4 md:grid-cols-2">
