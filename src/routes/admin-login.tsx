@@ -26,7 +26,7 @@ function AdminLogin() {
     mutationFn: () => authService.login(email, password, true),
     onSuccess: async () => {
       setPassword("");
-      await navigate({ to: "/admin/importar", replace: true });
+      await navigate({ to: "/admin/", replace: true });
     },
     onError: () => setPassword(""),
     gcTime: 0,
