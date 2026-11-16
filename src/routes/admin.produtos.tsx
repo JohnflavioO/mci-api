@@ -91,6 +91,10 @@ function ProductsPage() {
       for (const [label, value] of Object.entries({ "Peso": dimensions.weightKg, "Altura": dimensions.heightCm, "Largura": dimensions.widthCm, "Comprimento": dimensions.lengthCm })) {
         if (value !== null && (!Number.isFinite(value) || value <= 0)) throw new Error(label + " deve ser maior que zero.");
       }
+      // Sem peso e dimensões o frete não é calculado e o cliente não consegue pagar.
+      if (f.status === "published" && Object.values(dimensions).some((value) => value === null)) {
+        throw new Error("Para deixar o produto visível na vitrine, informe peso, altura, largura e comprimento em “Dados para transporte”. Sem eles o frete não é calculado e a compra fica bloqueada.");
+      }
       // Produtos novos com fotos locais precisam ser criados como rascunho primeiro:
       // a galeria só pode ser gravada depois que o produto tiver um ID. Publicamos no final.
       const publishAfterImages = f.status === "published" && f.imageFiles.length > 0;
@@ -273,7 +277,7 @@ function ProductsPage() {
               <tbody className="divide-y">{list.map((p) => <tr key={p.slug} className="transition-colors hover:bg-muted/30">
                 <td className="px-5 py-3"><div className="flex items-center gap-3"><div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">{p.images[0] ? <img src={p.images[0]} alt="" className="size-full object-cover" /> : <ImageOff className="size-4 text-muted-foreground" />}</div><div className="min-w-0"><p className="max-w-[280px] truncate font-medium">{p.name}</p><p className="text-xs text-muted-foreground">{p.brand || "Sem marca"}</p></div></div></td>
                 <td className="px-4 py-3 text-muted-foreground">{p.sku || "—"}</td><td className="px-4 py-3">{p.category || "—"}</td><td className="px-4 py-3">{p.customerPrice != null ? formatPrice(p.customerPrice, p.currency) : "—"}</td>
-                <td className="px-4 py-3"><div className="flex flex-wrap items-center gap-1.5">{p.stock === 0 && <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-700">Sem estoque</span>}<span className={p.status === "published" ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700" : "rounded-full bg-slate-500/10 px-2.5 py-1 text-xs font-medium text-slate-600"}>{p.status === "published" ? "Publicado" : "Desativado"}</span></div></td>
+                <td className="px-4 py-3"><div className="flex flex-wrap items-center gap-1.5">{p.stock === 0 && <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-700">Sem estoque</span>}{p.status === "published" && [p.weightKg, p.heightCm, p.widthCm, p.lengthCm].some((value) => value == null || value <= 0) && <span title="Sem peso e dimensões o frete não é calculado e o cliente não consegue pagar." className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-800">Sem dados de frete</span>}<span className={p.status === "published" ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700" : "rounded-full bg-slate-500/10 px-2.5 py-1 text-xs font-medium text-slate-600"}>{p.status === "published" ? "Publicado" : "Desativado"}</span></div></td>
                 <td className="px-5 py-3 text-right"><div className="inline-flex gap-2"><Link to="/produto/$slug" params={{ slug: p.slug }} className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted">Visualizar</Link><Button variant="outline" size="sm" className="gap-1.5" onClick={() => editProduct(p)}><Pencil className="size-3.5" /> Editar</Button></div></td>
               </tr>)}</tbody>
             </table></div>}

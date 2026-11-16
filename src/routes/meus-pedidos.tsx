@@ -25,6 +25,11 @@ export const Route = createFileRoute("/meus-pedidos")({
   component: CustomerAccount,
 });
 
+/** Só abre links de pagamento https; qualquer outro valor é tratado como ausente. */
+const isHttps = (url: string | null): url is string => {
+  if (!url) return false;
+  try { return new URL(url).protocol === "https:"; } catch { return false; }
+};
 const brl = (n: number) => Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function CustomerAccount() {
@@ -118,7 +123,7 @@ function CustomerAccount() {
                   <div className="flex size-10 items-center justify-center rounded-lg bg-secondary"><PackageCheck className="size-5" /></div>
                   <p className="mt-4 text-sm text-muted-foreground">Acompanhamento</p>
                   <p className="mt-1 font-semibold">Status dos pedidos</p>
-                  <p className="mt-1 text-sm text-muted-foreground">As atualizações aparecerão quando os pedidos estiverem habilitados.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Acompanhe ao lado a situação de cada compra e conclua pagamentos pendentes.</p>
                 </div>
               </div>
 
@@ -147,11 +152,17 @@ function CustomerAccount() {
                       : <ul className="space-y-3">{orders.data.map((o) => (
                         <li key={o.id} className="rounded-lg border p-4">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</span>
+                            <span className="text-sm text-muted-foreground"><strong className="font-mono text-foreground">#{o.id.slice(0, 8).toUpperCase()}</strong> · {new Date(o.created_at).toLocaleDateString("pt-BR")}</span>
                             <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">{ORDER_STATUS_LABEL[o.status] ?? o.status}</span>
                           </div>
                           <ul className="mt-3 space-y-1 text-sm">{o.order_items.map((i, k) => <li key={k}>{i.qty}× {i.name_snapshot} — {brl(i.unit_price)}</li>)}</ul>
-                          <p className="mt-3 font-semibold">Total: {brl(o.total)}</p>
+                          {Number(o.shipping_amount) > 0 && <p className="mt-2 text-sm text-muted-foreground">Entrega: {brl(Number(o.shipping_amount))}</p>}
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                            <p className="font-semibold">Total: {brl(o.total)}</p>
+                            {o.status === "pending_payment" && (isHttps(o.provider_checkout_url)
+                              ? <Button asChild size="sm" className="bg-[#ff681f] text-white hover:bg-[#e95712]"><a href={o.provider_checkout_url}>Pagar agora <ArrowRight className="ml-1.5 size-4" /></a></Button>
+                              : <span className="text-xs text-muted-foreground">Pagamento não iniciado. Refaça a compra pelo carrinho.</span>)}
+                          </div>
                         </li>
                       ))}</ul>}
                   </div>

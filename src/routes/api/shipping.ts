@@ -52,10 +52,20 @@ export const Route = createFileRoute("/api/shipping")({
           const price = positive(Array.isArray(product.product_prices) ? product.product_prices[0]?.customer_price : product.product_prices?.customer_price);
           return sum + price * item.qty;
         }, 0).toFixed(2));
+        // Cadastro incompleto é um problema da loja, não do comprador: a mensagem ao cliente
+        // não expõe o detalhe interno, que fica registrado no log do servidor.
+        const withoutShippingData = (products as Product[]).filter((p) => !positive(p.weight_kg) || !positive(p.height_cm) || !positive(p.width_cm) || !positive(p.length_cm));
+        if (withoutShippingData.length) {
+          console.error("Shipping quote blocked: products without weight/dimensions", withoutShippingData.map((p) => p.id + " " + p.name).join("; "));
+          const names = withoutShippingData.map((p) => "\"" + p.name + "\"").join(", ");
+          return Response.json({
+            code: "shipping_data_missing",
+            error: "Ainda não conseguimos calcular o frete de " + names + " pelo site. Fale com nosso atendimento para concluir a compra ou remova o item para seguir com os demais.",
+          }, { status: 422 });
+        }
         const quoteProducts = requested.map((item) => {
           const product = byId.get(item.id)!;
           const weight = positive(product.weight_kg), height = positive(product.height_cm), width = positive(product.width_cm), length = positive(product.length_cm);
-          if (!weight || !height || !width || !length) throw new Error("Complete peso e dimensões do produto \"" + product.name + "\" no cadastro para calcular o frete.");
           return {
             id: product.id,
             width: Math.ceil(width), height: Math.ceil(height), length: Math.ceil(length),

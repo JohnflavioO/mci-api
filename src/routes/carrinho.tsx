@@ -1,15 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductImage } from "@/components/shop/ProductCard";
 import { EmptyState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
-import { catalogService } from "@/services";
-import { catalogSource } from "@/lib/api";
-import { getSupabase } from "@/lib/supabase";
-import { calculateVolumeDiscount, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { useCartPricing } from "@/lib/useCartPricing";
 import { formatPrice } from "@/services/catalog";
 
 export const Route = createFileRoute("/carrinho")({
@@ -28,62 +24,8 @@ export const Route = createFileRoute("/carrinho")({
 
 function CartPage() {
   const { items, setQty, remove, count } = useCart();
-  const catalogQuery = useQuery({ queryKey: ["cart-product-thumbnails"], queryFn: () => catalogService.list(), staleTime: 60_000, retry: false });
-  const imageFor = (item: (typeof items)[number]) => item.image ?? catalogQuery.data?.products.find(product => product.slug === item.slug || product.name === item.name)?.images?.[0];
-  const resellerCartQuery = useQuery({
-    queryKey: ["cart-reseller-pricing", items.map(item => `${item.slug}:${item.qty}`).join("|")],
-    enabled: catalogSource() === "supabase" && items.length > 0,
-    staleTime: 30_000,
-    retry: false,
-    queryFn: async () => {
-      const supabase = getSupabase();
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
-      const { data: isReseller, error: roleError } = await supabase.rpc("has_role", { _role: "revendedor" });
-      if (roleError || isReseller !== true) return { isReseller: false as const, products: [], rules: [] as VolumeDiscountRule[] };
-      const [{ createSupabaseCatalog }] = await Promise.all([
-        import("@/services/supabaseCatalog"),
-      ]);
-      const fullRules = await supabase.from("reseller_volume_discount_rules")
-        .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order,quantity_discounts")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-        .order("min_quantity", { ascending: true });
-      // Compatibilidade durante a implantação da migration de merchandising:
-      // se os campos visuais ainda não existirem, mantém preço e desconto funcionando.
-      const ruleResponse = fullRules.error && /badge_label|display_note|is_featured|sort_order|column .* does not exist|schema cache/i.test(fullRules.error.message)
-        ? await supabase.from("reseller_volume_discount_rules")
-            .select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids")
-            .eq("is_active", true)
-            .order("min_quantity", { ascending: true })
-        : fullRules;
-      if (ruleResponse.error) throw ruleResponse.error;
-      const ruleData = ruleResponse.data;
-      // Busca o catálogo sem o relacionamento aninhado de preços: em alguns esquemas/RLS esse join
-      // retorna o produto, mas omite o preço de revenda. O preço é consultado pela tabela autorizada.
-      const catalog = createSupabaseCatalog();
-      const publishedProducts = await catalog.listPublished();
-      const products = await Promise.all(
-        publishedProducts
-          .filter(product => items.some(item => product.slug === item.slug || product.name === item.name))
-          .map(async product => ({
-            ...product,
-            resellerPrice: await catalog.resellerPrice(product.slug),
-          })),
-      );
-      return { isReseller: true as const, products, rules: (ruleData ?? []) as VolumeDiscountRule[] };
-    },
-  });
-  const resellerPricing = resellerCartQuery.data?.isReseller === true ? resellerCartQuery.data : null;
-  const priceForItem = (item: (typeof items)[number]) => {
-    const product = resellerPricing?.products.find(product => product.slug === item.slug || product.name === item.name);
-    if (!product || product.resellerPrice == null) return null;
-    const rules = resellerPricing!.rules.filter(rule => (rule.product_ids ?? []).includes(product.slug));
-    return {
-      currency: product.currency,
-      quote: calculateVolumeDiscount(product.resellerPrice, item.qty, rules, product.slug),
-    };
-  };
+  const pricing = useCartPricing(items);
+  const { imageFor, lineFor } = pricing;
 
   return (
     <SiteShell>
@@ -93,7 +35,7 @@ function CartPage() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[.16em] text-brand">MCI Xpress</p>
             <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Seu carrinho</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{count} {count === 1 ? "unidade" : "unidades"} selecionadas</p>
+            <p className="mt-1 text-sm text-muted-foreground">{count} {count === 1 ? "unidade selecionada" : "unidades selecionadas"}</p>
           </div>
         </header>
         {items.length === 0 ? (
@@ -117,9 +59,9 @@ function CartPage() {
                     <div className="min-w-0 flex-1">
                       <Link to="/produto/$slug" params={{ slug: item.slug }} className="line-clamp-2 text-sm font-bold leading-5 hover:text-brand sm:text-base">{item.name}</Link>
                       {(() => {
-                        const pricing = priceForItem(item);
-                        if (resellerPricing && pricing) {
-                          const { quote, currency } = pricing;
+                        const line = lineFor(item);
+                        if (line?.kind === "reseller" && line.quote) {
+                          const { quote, currency } = line;
                           return (
                             <div className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3">
                               <div className="flex items-center justify-between gap-3">
@@ -139,9 +81,17 @@ function CartPage() {
                             </div>
                           );
                         }
-                        if (resellerCartQuery.isPending) return <p className="mt-1 text-xs text-muted-foreground">Carregando preço de revenda…</p>;
-                        if (resellerCartQuery.isError) return <p className="mt-1 text-xs text-destructive">Não foi possível carregar o preço de revenda. Atualize a página ou tente novamente.</p>;
-                        return <p className="mt-1 text-xs text-muted-foreground">{resellerPricing ? "Preço de revenda indisponível para este produto." : "Preço e descontos confirmados na finalização"}</p>;
+                        if (line) {
+                          return (
+                            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                              <span className="text-xs text-muted-foreground tabular-nums">{formatPrice(line.unitPrice, line.currency)} cada</span>
+                              <strong className="text-base tabular-nums">{formatPrice(line.lineTotal, line.currency)}</strong>
+                            </div>
+                          );
+                        }
+                        if (pricing.isPending) return <p className="mt-1 text-xs text-muted-foreground">Carregando preço…</p>;
+                        if (pricing.isError) return <p className="mt-1 text-xs text-destructive">Não foi possível carregar o preço. Atualize a página ou tente novamente.</p>;
+                        return <p className="mt-1 text-xs text-muted-foreground">{pricing.isReseller ? "Preço de revenda indisponível para este produto." : "Preço confirmado na finalização."}</p>;
                       })()}
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                         <div className="inline-flex h-10 items-center overflow-hidden rounded-xl border bg-background" aria-label={`Quantidade de ${item.name}`}>
@@ -159,18 +109,18 @@ function CartPage() {
             </section>
             <aside className="rounded-2xl border bg-card p-5 shadow-sm lg:sticky lg:top-6">
               <h2 className="text-lg font-extrabold">Resumo do pedido</h2>
-              <p className="mt-3 rounded-xl bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">Preços de revenda, descontos por quantidade, estoque e frete são validados conforme seu perfil e as regras vigentes.</p>
               <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm"><span className="text-muted-foreground">Produtos</span><strong>{items.length}</strong></div>
               <div className="mt-1 flex items-center justify-between text-sm"><span className="text-muted-foreground">Unidades</span><strong>{count}</strong></div>
-              {resellerPricing && items.every(item => priceForItem(item) != null) && (
+              {pricing.subtotal != null && (
                 <div className="mt-4 flex items-center justify-between border-t pt-4">
-                  <span className="text-sm font-semibold">Subtotal estimado</span>
-                  <strong className="text-lg tabular-nums">{formatPrice(items.reduce((sum, item) => sum + (priceForItem(item)?.quote.totalAfterDiscount ?? 0), 0), priceForItem(items[0])?.currency ?? "BRL")}</strong>
+                  <span className="text-sm font-semibold">Subtotal</span>
+                  <strong className="text-lg tabular-nums">{formatPrice(pricing.subtotal, pricing.currency)}</strong>
                 </div>
               )}
-              {resellerPricing && items.some(item => priceForItem(item) == null) && (
+              {pricing.isReseller && pricing.hasUnpriced && (
                 <p className="mt-3 text-xs text-amber-700">Um ou mais produtos estão sem preço de revenda cadastrado. Confira esses itens antes de continuar.</p>
               )}
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">{pricing.isReseller ? "Preço de revenda e descontos por quantidade já aplicados. O frete é calculado na próxima etapa." : "O frete é calculado na próxima etapa, a partir do seu CEP."}</p>
               <Button asChild className="mt-5 h-12 w-full rounded-xl bg-graphite font-bold text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/checkout">Continuar para checkout <ArrowRight className="ml-2 size-4" /></Link></Button>
               <Link to="/catalogo" className="mt-3 block text-center text-xs font-semibold text-muted-foreground hover:text-brand">Continuar comprando</Link>
             </aside>
@@ -180,7 +130,7 @@ function CartPage() {
       {items.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 pb-[calc(.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-18px_rgba(0,0,0,.35)] backdrop-blur-md sm:hidden">
           <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
-            <div className="min-w-0"><p className="text-[11px] text-muted-foreground">{count} {count === 1 ? "unidade" : "unidades"}</p><p className="text-sm font-bold">Revise antes de finalizar</p></div>
+            <div className="min-w-0"><p className="text-[11px] text-muted-foreground">{count} {count === 1 ? "unidade" : "unidades"}</p><p className="text-sm font-bold tabular-nums">{pricing.subtotal != null ? formatPrice(pricing.subtotal, pricing.currency) : "Revise antes de finalizar"}</p></div>
             <Button asChild className="h-11 shrink-0 rounded-xl bg-graphite px-4 text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><Link to="/checkout">Finalizar <ArrowRight className="ml-2 size-4" /></Link></Button>
           </div>
         </div>
