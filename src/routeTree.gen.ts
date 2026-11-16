@@ -11,29 +11,51 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AfiliadoRouteImport } from './routes/afiliado'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
+import { Route as PagamentoRetornoRouteImport } from './routes/pagamento-retorno'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as RevendedorRouteImport } from './routes/revendedor'
+import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSecaoRouteImport } from './routes/admin.$secao'
+import { Route as AdminBannersRouteImport } from './routes/admin.banners'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminImportarRouteImport } from './routes/admin.importar'
+import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
 import { Route as AdminRevendedoresRouteImport } from './routes/admin.revendedores'
-import { Route as AdminBannersRouteImport } from './routes/admin.banners'
-import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AfiliadoIndexRouteImport } from './routes/afiliado.index'
 import { Route as AfiliadoSecaoRouteImport } from './routes/afiliado.$secao'
+import { Route as ApiOrdersRouteImport } from './routes/api/orders'
+import { Route as ApiShippingRouteImport } from './routes/api/shipping'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
+import { Route as RSlugRouteImport } from './routes/r.$slug'
 import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
 import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
+import { Route as ApiAdminAdministratorsRouteImport } from './routes/api/admin/administrators'
+import { Route as ApiAdminAffiliatesRouteImport } from './routes/api/admin/affiliates'
 import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
-import { Route as ApiAdminOrdersOrderIdRouteImport } from './routes/api/admin/orders/$orderId'
+import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
+import { Route as ApiAffiliateDashboardRouteImport } from './routes/api/affiliate/dashboard'
+import { Route as ApiAffiliateLinksRouteImport } from './routes/api/affiliate/links'
+import { Route as ApiAffiliateSettingsRouteImport } from './routes/api/affiliate/settings'
+import { Route as ApiPublicInfinitepayConfirmRouteImport } from './routes/api/public/infinitepay-confirm'
+import { Route as ApiPublicInfinitepayHealthRouteImport } from './routes/api/public/infinitepay-health'
+import { Route as ApiPublicInfinitepayWebhookRouteImport } from './routes/api/public/infinitepay-webhook'
 import { Route as ApiPublicPagarmeWebhookRouteImport } from './routes/api/public/pagarme-webhook'
+import { Route as ApiAdminOrdersOrderIdRouteImport } from './routes/api/admin/orders/$orderId'
+import { Route as ApiShippingMelhorEnvioCallbackRouteImport } from './routes/api/shipping/melhor-envio/callback'
+import { Route as ApiShippingMelhorEnvioConnectRouteImport } from './routes/api/shipping/melhor-envio/connect'
+import { Route as ApiShippingMelhorEnvioStatusRouteImport } from './routes/api/shipping/melhor-envio/status'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -43,6 +65,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin-login',
+  path: '/admin-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AfiliadoRoute = AfiliadoRouteImport.update({
@@ -75,14 +102,39 @@ const EntrarRoute = EntrarRouteImport.update({
   path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FavoritosRoute = FavoritosRouteImport.update({
+  id: '/favoritos',
+  path: '/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
   id: '/meus-pedidos',
   path: '/meus-pedidos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PagamentoRetornoRoute = PagamentoRetornoRouteImport.update({
+  id: '/pagamento-retorno',
+  path: '/pagamento-retorno',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RevendedorRoute = RevendedorRouteImport.update({
   id: '/revendedor',
   path: '/revendedor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SejaAfiliadoRoute = SejaAfiliadoRouteImport.update({
+  id: '/seja-afiliado',
+  path: '/seja-afiliado',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -95,9 +147,24 @@ const AdminSecaoRoute = AdminSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBannersRoute = AdminBannersRouteImport.update({
+  id: '/banners',
+  path: '/banners',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminImportarRoute = AdminImportarRouteImport.update({
   id: '/importar',
   path: '/importar',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPedidosRoute = AdminPedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminProdutosRoute = AdminProdutosRouteImport.update({
@@ -110,16 +177,6 @@ const AdminRevendedoresRoute = AdminRevendedoresRouteImport.update({
   path: '/revendedores',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminBannersRoute = AdminBannersRouteImport.update({
-  id: '/banners',
-  path: '/banners',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPedidosRoute = AdminPedidosRouteImport.update({
-  id: '/pedidos',
-  path: '/pedidos',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AfiliadoIndexRoute = AfiliadoIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -130,9 +187,24 @@ const AfiliadoSecaoRoute = AfiliadoSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => AfiliadoRoute,
 } as any)
+const ApiOrdersRoute = ApiOrdersRouteImport.update({
+  id: '/api/orders',
+  path: '/api/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiShippingRoute = ApiShippingRouteImport.update({
+  id: '/api/shipping',
+  path: '/api/shipping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
   id: '/produto/$slug',
   path: '/produto/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RSlugRoute = RSlugRouteImport.update({
+  id: '/r/$slug',
+  path: '/r/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RevendedorIndexRoute = RevendedorIndexRouteImport.update({
@@ -145,9 +217,14 @@ const RevendedorSecaoRoute = RevendedorSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => RevendedorRoute,
 } as any)
-const ApiAdminOrdersOrderIdRoute = ApiAdminOrdersOrderIdRouteImport.update({
-  id: '/api/admin/orders/$orderId',
-  path: '/api/admin/orders/$orderId',
+const ApiAdminAdministratorsRoute = ApiAdminAdministratorsRouteImport.update({
+  id: '/api/admin/administrators',
+  path: '/api/admin/administrators',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminAffiliatesRoute = ApiAdminAffiliatesRouteImport.update({
+  id: '/api/admin/affiliates',
+  path: '/api/admin/affiliates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminImportPreviewRoute = ApiAdminImportPreviewRouteImport.update({
@@ -155,182 +232,398 @@ const ApiAdminImportPreviewRoute = ApiAdminImportPreviewRouteImport.update({
   path: '/api/admin/import-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
+  id: '/api/admin/users',
+  path: '/api/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAffiliateDashboardRoute = ApiAffiliateDashboardRouteImport.update({
+  id: '/api/affiliate/dashboard',
+  path: '/api/affiliate/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAffiliateLinksRoute = ApiAffiliateLinksRouteImport.update({
+  id: '/api/affiliate/links',
+  path: '/api/affiliate/links',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAffiliateSettingsRoute = ApiAffiliateSettingsRouteImport.update({
+  id: '/api/affiliate/settings',
+  path: '/api/affiliate/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicInfinitepayConfirmRoute =
+  ApiPublicInfinitepayConfirmRouteImport.update({
+    id: '/api/public/infinitepay-confirm',
+    path: '/api/public/infinitepay-confirm',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicInfinitepayHealthRoute =
+  ApiPublicInfinitepayHealthRouteImport.update({
+    id: '/api/public/infinitepay-health',
+    path: '/api/public/infinitepay-health',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicInfinitepayWebhookRoute =
+  ApiPublicInfinitepayWebhookRouteImport.update({
+    id: '/api/public/infinitepay-webhook',
+    path: '/api/public/infinitepay-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPagarmeWebhookRoute = ApiPublicPagarmeWebhookRouteImport.update({
   id: '/api/public/pagarme-webhook',
   path: '/api/public/pagarme-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminOrdersOrderIdRoute = ApiAdminOrdersOrderIdRouteImport.update({
+  id: '/api/admin/orders/$orderId',
+  path: '/api/admin/orders/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiShippingMelhorEnvioCallbackRoute =
+  ApiShippingMelhorEnvioCallbackRouteImport.update({
+    id: '/melhor-envio/callback',
+    path: '/melhor-envio/callback',
+    getParentRoute: () => ApiShippingRoute,
+  } as any)
+const ApiShippingMelhorEnvioConnectRoute =
+  ApiShippingMelhorEnvioConnectRouteImport.update({
+    id: '/melhor-envio/connect',
+    path: '/melhor-envio/connect',
+    getParentRoute: () => ApiShippingRoute,
+  } as any)
+const ApiShippingMelhorEnvioStatusRoute =
+  ApiShippingMelhorEnvioStatusRouteImport.update({
+    id: '/melhor-envio/status',
+    path: '/melhor-envio/status',
+    getParentRoute: () => ApiShippingRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
   '/afiliado': typeof AfiliadoRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/pagamento-retorno': typeof PagamentoRetornoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/revendedor': typeof RevendedorRouteWithChildren
+  '/seja-afiliado': typeof SejaAfiliadoRoute
   '/admin/$secao': typeof AdminSecaoRoute
+  '/admin/banners': typeof AdminBannersRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/importar': typeof AdminImportarRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
-  '/admin/banners': typeof AdminBannersRoute
-  '/admin/pedidos': typeof AdminPedidosRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/api/orders': typeof ApiOrdersRoute
+  '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/r/$slug': typeof RSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
   '/admin/': typeof AdminIndexRoute
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
-  '/api/admin/orders/$orderId': typeof ApiAdminOrdersOrderIdRoute
-  '/api/admin/orders/$orderId': typeof ApiAdminOrdersOrderIdRoute
+  '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
+  '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
+  '/api/affiliate/links': typeof ApiAffiliateLinksRoute
+  '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
+  '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
+  '/api/public/infinitepay-health': typeof ApiPublicInfinitepayHealthRoute
+  '/api/public/infinitepay-webhook': typeof ApiPublicInfinitepayWebhookRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
+  '/api/admin/orders/$orderId': typeof ApiAdminOrdersOrderIdRoute
+  '/api/shipping/melhor-envio/callback': typeof ApiShippingMelhorEnvioCallbackRoute
+  '/api/shipping/melhor-envio/connect': typeof ApiShippingMelhorEnvioConnectRoute
+  '/api/shipping/melhor-envio/status': typeof ApiShippingMelhorEnvioStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin/pedidos': typeof AdminPedidosRoute
+  '/admin-login': typeof AdminLoginRoute
   '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/pagamento-retorno': typeof PagamentoRetornoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/seja-afiliado': typeof SejaAfiliadoRoute
   '/admin/$secao': typeof AdminSecaoRoute
+  '/admin/banners': typeof AdminBannersRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/importar': typeof AdminImportarRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
-  '/admin/banners': typeof AdminBannersRoute
-  '/admin/pedidos': typeof AdminPedidosRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/api/orders': typeof ApiOrdersRoute
+  '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/r/$slug': typeof RSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
   '/admin': typeof AdminIndexRoute
   '/afiliado': typeof AfiliadoIndexRoute
   '/revendedor': typeof RevendedorIndexRoute
+  '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
+  '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
+  '/api/affiliate/links': typeof ApiAffiliateLinksRoute
+  '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
+  '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
+  '/api/public/infinitepay-health': typeof ApiPublicInfinitepayHealthRoute
+  '/api/public/infinitepay-webhook': typeof ApiPublicInfinitepayWebhookRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
+  '/api/admin/orders/$orderId': typeof ApiAdminOrdersOrderIdRoute
+  '/api/shipping/melhor-envio/callback': typeof ApiShippingMelhorEnvioCallbackRoute
+  '/api/shipping/melhor-envio/connect': typeof ApiShippingMelhorEnvioConnectRoute
+  '/api/shipping/melhor-envio/status': typeof ApiShippingMelhorEnvioStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
   '/afiliado': typeof AfiliadoRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/catalogo': typeof CatalogoRoute
   '/checkout': typeof CheckoutRoute
   '/entrar': typeof EntrarRoute
+  '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/pagamento-retorno': typeof PagamentoRetornoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/revendedor': typeof RevendedorRouteWithChildren
+  '/seja-afiliado': typeof SejaAfiliadoRoute
   '/admin/$secao': typeof AdminSecaoRoute
+  '/admin/banners': typeof AdminBannersRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/importar': typeof AdminImportarRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
-  '/admin/banners': typeof AdminBannersRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/api/orders': typeof ApiOrdersRoute
+  '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/r/$slug': typeof RSlugRoute
   '/revendedor/$secao': typeof RevendedorSecaoRoute
   '/admin/': typeof AdminIndexRoute
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
+  '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
+  '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
+  '/api/affiliate/links': typeof ApiAffiliateLinksRoute
+  '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
+  '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
+  '/api/public/infinitepay-health': typeof ApiPublicInfinitepayHealthRoute
+  '/api/public/infinitepay-webhook': typeof ApiPublicInfinitepayWebhookRoute
   '/api/public/pagarme-webhook': typeof ApiPublicPagarmeWebhookRoute
+  '/api/admin/orders/$orderId': typeof ApiAdminOrdersOrderIdRoute
+  '/api/shipping/melhor-envio/callback': typeof ApiShippingMelhorEnvioCallbackRoute
+  '/api/shipping/melhor-envio/connect': typeof ApiShippingMelhorEnvioConnectRoute
+  '/api/shipping/melhor-envio/status': typeof ApiShippingMelhorEnvioStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/admin-login'
     | '/afiliado'
     | '/cadastro'
     | '/carrinho'
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/favoritos'
     | '/meus-pedidos'
+    | '/pagamento-retorno'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/revendedor'
+    | '/seja-afiliado'
     | '/admin/$secao'
+    | '/admin/banners'
+    | '/admin/configuracoes'
     | '/admin/importar'
+    | '/admin/pedidos'
     | '/admin/produtos'
     | '/admin/revendedores'
-    | '/admin/banners'
-    | '/admin/pedidos'
     | '/afiliado/$secao'
+    | '/api/orders'
+    | '/api/shipping'
     | '/produto/$slug'
+    | '/r/$slug'
     | '/revendedor/$secao'
     | '/admin/'
     | '/afiliado/'
     | '/revendedor/'
+    | '/api/admin/administrators'
+    | '/api/admin/affiliates'
     | '/api/admin/import-preview'
+    | '/api/admin/users'
+    | '/api/affiliate/dashboard'
+    | '/api/affiliate/links'
+    | '/api/affiliate/settings'
+    | '/api/public/infinitepay-confirm'
+    | '/api/public/infinitepay-health'
+    | '/api/public/infinitepay-webhook'
     | '/api/public/pagarme-webhook'
+    | '/api/admin/orders/$orderId'
+    | '/api/shipping/melhor-envio/callback'
+    | '/api/shipping/melhor-envio/connect'
+    | '/api/shipping/melhor-envio/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin-login'
     | '/cadastro'
     | '/carrinho'
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/favoritos'
     | '/meus-pedidos'
+    | '/pagamento-retorno'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
+    | '/seja-afiliado'
     | '/admin/$secao'
+    | '/admin/banners'
+    | '/admin/configuracoes'
     | '/admin/importar'
+    | '/admin/pedidos'
     | '/admin/produtos'
     | '/admin/revendedores'
-    | '/admin/banners'
-    | '/admin/pedidos'
     | '/afiliado/$secao'
+    | '/api/orders'
+    | '/api/shipping'
     | '/produto/$slug'
+    | '/r/$slug'
     | '/revendedor/$secao'
     | '/admin'
     | '/afiliado'
     | '/revendedor'
+    | '/api/admin/administrators'
+    | '/api/admin/affiliates'
     | '/api/admin/import-preview'
+    | '/api/admin/users'
+    | '/api/affiliate/dashboard'
+    | '/api/affiliate/links'
+    | '/api/affiliate/settings'
+    | '/api/public/infinitepay-confirm'
+    | '/api/public/infinitepay-health'
+    | '/api/public/infinitepay-webhook'
     | '/api/public/pagarme-webhook'
+    | '/api/admin/orders/$orderId'
+    | '/api/shipping/melhor-envio/callback'
+    | '/api/shipping/melhor-envio/connect'
+    | '/api/shipping/melhor-envio/status'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/admin-login'
     | '/afiliado'
     | '/cadastro'
     | '/carrinho'
     | '/catalogo'
     | '/checkout'
     | '/entrar'
+    | '/favoritos'
     | '/meus-pedidos'
+    | '/pagamento-retorno'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/revendedor'
+    | '/seja-afiliado'
     | '/admin/$secao'
+    | '/admin/banners'
+    | '/admin/configuracoes'
     | '/admin/importar'
+    | '/admin/pedidos'
     | '/admin/produtos'
     | '/admin/revendedores'
-    | '/admin/banners'
     | '/afiliado/$secao'
+    | '/api/orders'
+    | '/api/shipping'
     | '/produto/$slug'
+    | '/r/$slug'
     | '/revendedor/$secao'
     | '/admin/'
     | '/afiliado/'
     | '/revendedor/'
+    | '/api/admin/administrators'
+    | '/api/admin/affiliates'
     | '/api/admin/import-preview'
+    | '/api/admin/users'
+    | '/api/affiliate/dashboard'
+    | '/api/affiliate/links'
+    | '/api/affiliate/settings'
+    | '/api/public/infinitepay-confirm'
+    | '/api/public/infinitepay-health'
+    | '/api/public/infinitepay-webhook'
     | '/api/public/pagarme-webhook'
+    | '/api/admin/orders/$orderId'
+    | '/api/shipping/melhor-envio/callback'
+    | '/api/shipping/melhor-envio/connect'
+    | '/api/shipping/melhor-envio/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
   AfiliadoRoute: typeof AfiliadoRouteWithChildren
   CadastroRoute: typeof CadastroRoute
   CarrinhoRoute: typeof CarrinhoRoute
   CatalogoRoute: typeof CatalogoRoute
   CheckoutRoute: typeof CheckoutRoute
   EntrarRoute: typeof EntrarRoute
+  FavoritosRoute: typeof FavoritosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
+  PagamentoRetornoRoute: typeof PagamentoRetornoRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RevendedorRoute: typeof RevendedorRouteWithChildren
+  SejaAfiliadoRoute: typeof SejaAfiliadoRoute
+  ApiOrdersRoute: typeof ApiOrdersRoute
+  ApiShippingRoute: typeof ApiShippingRouteWithChildren
   ProdutoSlugRoute: typeof ProdutoSlugRoute
-  ApiAdminOrdersOrderIdRoute: typeof ApiAdminOrdersOrderIdRoute
+  RSlugRoute: typeof RSlugRoute
+  ApiAdminAdministratorsRoute: typeof ApiAdminAdministratorsRoute
+  ApiAdminAffiliatesRoute: typeof ApiAdminAffiliatesRoute
   ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
+  ApiAdminUsersRoute: typeof ApiAdminUsersRoute
+  ApiAffiliateDashboardRoute: typeof ApiAffiliateDashboardRoute
+  ApiAffiliateLinksRoute: typeof ApiAffiliateLinksRoute
+  ApiAffiliateSettingsRoute: typeof ApiAffiliateSettingsRoute
+  ApiPublicInfinitepayConfirmRoute: typeof ApiPublicInfinitepayConfirmRoute
+  ApiPublicInfinitepayHealthRoute: typeof ApiPublicInfinitepayHealthRoute
+  ApiPublicInfinitepayWebhookRoute: typeof ApiPublicInfinitepayWebhookRoute
   ApiPublicPagarmeWebhookRoute: typeof ApiPublicPagarmeWebhookRoute
+  ApiAdminOrdersOrderIdRoute: typeof ApiAdminOrdersOrderIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -347,6 +640,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-login': {
+      id: '/admin-login'
+      path: '/admin-login'
+      fullPath: '/admin-login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/afiliado': {
@@ -391,6 +691,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/favoritos': {
+      id: '/favoritos'
+      path: '/favoritos'
+      fullPath: '/favoritos'
+      preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meus-pedidos': {
       id: '/meus-pedidos'
       path: '/meus-pedidos'
@@ -398,11 +705,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeusPedidosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pagamento-retorno': {
+      id: '/pagamento-retorno'
+      path: '/pagamento-retorno'
+      fullPath: '/pagamento-retorno'
+      preLoaderRoute: typeof PagamentoRetornoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/revendedor': {
       id: '/revendedor'
       path: '/revendedor'
       fullPath: '/revendedor'
       preLoaderRoute: typeof RevendedorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seja-afiliado': {
+      id: '/seja-afiliado'
+      path: '/seja-afiliado'
+      fullPath: '/seja-afiliado'
+      preLoaderRoute: typeof SejaAfiliadoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -419,11 +754,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSecaoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/banners': {
+      id: '/admin/banners'
+      path: '/banners'
+      fullPath: '/admin/banners'
+      preLoaderRoute: typeof AdminBannersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/configuracoes': {
+      id: '/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/importar': {
       id: '/admin/importar'
       path: '/importar'
       fullPath: '/admin/importar'
       preLoaderRoute: typeof AdminImportarRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pedidos': {
+      id: '/admin/pedidos'
+      path: '/pedidos'
+      fullPath: '/admin/pedidos'
+      preLoaderRoute: typeof AdminPedidosRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/produtos': {
@@ -440,20 +796,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRevendedoresRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/banners': {
-      id: '/admin/banners'
-      path: '/banners'
-      fullPath: '/admin/banners'
-      preLoaderRoute: typeof AdminBannersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/pedidos': {
-      id: '/admin/pedidos'
-      path: '/pedidos'
-      fullPath: '/admin/pedidos'
-      preLoaderRoute: typeof AdminPedidosRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/afiliado/': {
       id: '/afiliado/'
       path: '/'
@@ -468,11 +810,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AfiliadoSecaoRouteImport
       parentRoute: typeof AfiliadoRoute
     }
+    '/api/orders': {
+      id: '/api/orders'
+      path: '/api/orders'
+      fullPath: '/api/orders'
+      preLoaderRoute: typeof ApiOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/shipping': {
+      id: '/api/shipping'
+      path: '/api/shipping'
+      fullPath: '/api/shipping'
+      preLoaderRoute: typeof ApiShippingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/produto/$slug': {
       id: '/produto/$slug'
       path: '/produto/$slug'
       fullPath: '/produto/$slug'
       preLoaderRoute: typeof ProdutoSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$slug': {
+      id: '/r/$slug'
+      path: '/r/$slug'
+      fullPath: '/r/$slug'
+      preLoaderRoute: typeof RSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/revendedor/': {
@@ -489,11 +852,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RevendedorSecaoRouteImport
       parentRoute: typeof RevendedorRoute
     }
-    '/api/admin/orders/$orderId': {
-      id: '/api/admin/orders/$orderId'
-      path: '/api/admin/orders/$orderId'
-      fullPath: '/api/admin/orders/$orderId'
-      preLoaderRoute: typeof ApiAdminOrdersOrderIdRouteImport
+    '/api/admin/administrators': {
+      id: '/api/admin/administrators'
+      path: '/api/admin/administrators'
+      fullPath: '/api/admin/administrators'
+      preLoaderRoute: typeof ApiAdminAdministratorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/affiliates': {
+      id: '/api/admin/affiliates'
+      path: '/api/admin/affiliates'
+      fullPath: '/api/admin/affiliates'
+      preLoaderRoute: typeof ApiAdminAffiliatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/import-preview': {
@@ -503,6 +873,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminImportPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/users': {
+      id: '/api/admin/users'
+      path: '/api/admin/users'
+      fullPath: '/api/admin/users'
+      preLoaderRoute: typeof ApiAdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/affiliate/dashboard': {
+      id: '/api/affiliate/dashboard'
+      path: '/api/affiliate/dashboard'
+      fullPath: '/api/affiliate/dashboard'
+      preLoaderRoute: typeof ApiAffiliateDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/affiliate/links': {
+      id: '/api/affiliate/links'
+      path: '/api/affiliate/links'
+      fullPath: '/api/affiliate/links'
+      preLoaderRoute: typeof ApiAffiliateLinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/affiliate/settings': {
+      id: '/api/affiliate/settings'
+      path: '/api/affiliate/settings'
+      fullPath: '/api/affiliate/settings'
+      preLoaderRoute: typeof ApiAffiliateSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/infinitepay-confirm': {
+      id: '/api/public/infinitepay-confirm'
+      path: '/api/public/infinitepay-confirm'
+      fullPath: '/api/public/infinitepay-confirm'
+      preLoaderRoute: typeof ApiPublicInfinitepayConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/infinitepay-health': {
+      id: '/api/public/infinitepay-health'
+      path: '/api/public/infinitepay-health'
+      fullPath: '/api/public/infinitepay-health'
+      preLoaderRoute: typeof ApiPublicInfinitepayHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/infinitepay-webhook': {
+      id: '/api/public/infinitepay-webhook'
+      path: '/api/public/infinitepay-webhook'
+      fullPath: '/api/public/infinitepay-webhook'
+      preLoaderRoute: typeof ApiPublicInfinitepayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/pagarme-webhook': {
       id: '/api/public/pagarme-webhook'
       path: '/api/public/pagarme-webhook'
@@ -510,26 +929,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPagarmeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/orders/$orderId': {
+      id: '/api/admin/orders/$orderId'
+      path: '/api/admin/orders/$orderId'
+      fullPath: '/api/admin/orders/$orderId'
+      preLoaderRoute: typeof ApiAdminOrdersOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/shipping/melhor-envio/callback': {
+      id: '/api/shipping/melhor-envio/callback'
+      path: '/melhor-envio/callback'
+      fullPath: '/api/shipping/melhor-envio/callback'
+      preLoaderRoute: typeof ApiShippingMelhorEnvioCallbackRouteImport
+      parentRoute: typeof ApiShippingRoute
+    }
+    '/api/shipping/melhor-envio/connect': {
+      id: '/api/shipping/melhor-envio/connect'
+      path: '/melhor-envio/connect'
+      fullPath: '/api/shipping/melhor-envio/connect'
+      preLoaderRoute: typeof ApiShippingMelhorEnvioConnectRouteImport
+      parentRoute: typeof ApiShippingRoute
+    }
+    '/api/shipping/melhor-envio/status': {
+      id: '/api/shipping/melhor-envio/status'
+      path: '/melhor-envio/status'
+      fullPath: '/api/shipping/melhor-envio/status'
+      preLoaderRoute: typeof ApiShippingMelhorEnvioStatusRouteImport
+      parentRoute: typeof ApiShippingRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
   AdminSecaoRoute: typeof AdminSecaoRoute
+  AdminBannersRoute: typeof AdminBannersRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminImportarRoute: typeof AdminImportarRoute
+  AdminPedidosRoute: typeof AdminPedidosRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminRevendedoresRoute: typeof AdminRevendedoresRoute
-  AdminBannersRoute: typeof AdminBannersRoute
-  AdminPedidosRoute: typeof AdminPedidosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSecaoRoute: AdminSecaoRoute,
+  AdminBannersRoute: AdminBannersRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminImportarRoute: AdminImportarRoute,
+  AdminPedidosRoute: AdminPedidosRoute,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminRevendedoresRoute: AdminRevendedoresRoute,
-  AdminBannersRoute: AdminBannersRoute,
-  AdminPedidosRoute: AdminPedidosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -563,21 +1012,55 @@ const RevendedorRouteWithChildren = RevendedorRoute._addFileChildren(
   RevendedorRouteChildren,
 )
 
+interface ApiShippingRouteChildren {
+  ApiShippingMelhorEnvioCallbackRoute: typeof ApiShippingMelhorEnvioCallbackRoute
+  ApiShippingMelhorEnvioConnectRoute: typeof ApiShippingMelhorEnvioConnectRoute
+  ApiShippingMelhorEnvioStatusRoute: typeof ApiShippingMelhorEnvioStatusRoute
+}
+
+const ApiShippingRouteChildren: ApiShippingRouteChildren = {
+  ApiShippingMelhorEnvioCallbackRoute: ApiShippingMelhorEnvioCallbackRoute,
+  ApiShippingMelhorEnvioConnectRoute: ApiShippingMelhorEnvioConnectRoute,
+  ApiShippingMelhorEnvioStatusRoute: ApiShippingMelhorEnvioStatusRoute,
+}
+
+const ApiShippingRouteWithChildren = ApiShippingRoute._addFileChildren(
+  ApiShippingRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
   AfiliadoRoute: AfiliadoRouteWithChildren,
   CadastroRoute: CadastroRoute,
   CarrinhoRoute: CarrinhoRoute,
   CatalogoRoute: CatalogoRoute,
   CheckoutRoute: CheckoutRoute,
   EntrarRoute: EntrarRoute,
+  FavoritosRoute: FavoritosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
+  PagamentoRetornoRoute: PagamentoRetornoRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   RevendedorRoute: RevendedorRouteWithChildren,
+  SejaAfiliadoRoute: SejaAfiliadoRoute,
+  ApiOrdersRoute: ApiOrdersRoute,
+  ApiShippingRoute: ApiShippingRouteWithChildren,
   ProdutoSlugRoute: ProdutoSlugRoute,
-  ApiAdminOrdersOrderIdRoute: ApiAdminOrdersOrderIdRoute,
+  RSlugRoute: RSlugRoute,
+  ApiAdminAdministratorsRoute: ApiAdminAdministratorsRoute,
+  ApiAdminAffiliatesRoute: ApiAdminAffiliatesRoute,
   ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
+  ApiAdminUsersRoute: ApiAdminUsersRoute,
+  ApiAffiliateDashboardRoute: ApiAffiliateDashboardRoute,
+  ApiAffiliateLinksRoute: ApiAffiliateLinksRoute,
+  ApiAffiliateSettingsRoute: ApiAffiliateSettingsRoute,
+  ApiPublicInfinitepayConfirmRoute: ApiPublicInfinitepayConfirmRoute,
+  ApiPublicInfinitepayHealthRoute: ApiPublicInfinitepayHealthRoute,
+  ApiPublicInfinitepayWebhookRoute: ApiPublicInfinitepayWebhookRoute,
   ApiPublicPagarmeWebhookRoute: ApiPublicPagarmeWebhookRoute,
+  ApiAdminOrdersOrderIdRoute: ApiAdminOrdersOrderIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

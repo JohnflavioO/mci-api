@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 import { useCart } from "@/lib/cart";
 import { orderService } from "@/services";
 import { getSupabase } from "@/lib/supabase";
+import { useCartPricing } from "@/lib/useCartPricing";
+import { ProductImage } from "@/components/shop/ProductCard";
+import { formatPrice } from "@/services/catalog";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -73,6 +76,10 @@ function Checkout() {
     },
     onSuccess: (result) => { setShippingOptions(result.options || []); setProductsSubtotal(Number.isFinite(result.products_subtotal) ? Number(result.products_subtotal) : null); setShippingProviders(result.providers || {}); setSelectedShipping(null); },
   });
+  const pricing = useCartPricing(items);
+  // A cotação de frete devolve o subtotal pelo preço de cliente final; para revendedores o pedido
+  // é criado com o preço de revenda, então o resumo usa a mesma estimativa exibida no carrinho.
+  const summarySubtotal = productsSubtotal === null ? null : pricing.isReseller && pricing.subtotal != null ? pricing.subtotal : productsSubtotal;
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const m = useMutation({
     mutationFn: async () => {
@@ -156,6 +163,30 @@ function Checkout() {
           </div>}
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
             {profile.isError && <p role="status" className="text-sm text-muted-foreground">Não foi possível carregar seus dados salvos. Você pode preencher os campos manualmente.</p>}
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" aria-label="Itens do pedido">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="font-display text-lg font-semibold">Itens do pedido</h2>
+                <Link to="/carrinho" className="text-xs font-semibold text-brand underline-offset-4 hover:underline">Editar carrinho</Link>
+              </div>
+              <ul className="divide-y">
+                {items.map((item) => {
+                  const line = pricing.lineFor(item);
+                  return <li key={item.slug} className="flex items-center gap-3 py-3">
+                    <div className="size-14 shrink-0 overflow-hidden rounded-lg border bg-white"><ProductImage src={pricing.imageFor(item)} alt="" className="size-full object-contain" /></div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-semibold leading-5">{item.name}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">{item.qty} × {line ? formatPrice(line.unitPrice, line.currency) : "—"}{line?.kind === "reseller" ? " · preço de revenda" : ""}</p>
+                    </div>
+                    <strong className="shrink-0 text-sm tabular-nums">{line ? formatPrice(line.lineTotal, line.currency) : pricing.isPending ? "…" : "—"}</strong>
+                  </li>;
+                })}
+              </ul>
+              <div className="flex items-center justify-between gap-3 border-t pt-3 text-sm">
+                <span className="text-muted-foreground">Subtotal dos produtos</span>
+                <strong className="text-base tabular-nums">{pricing.subtotal != null ? formatPrice(pricing.subtotal, pricing.currency) : pricing.isPending ? "Calculando…" : "Confirmado após o frete"}</strong>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">O frete é somado depois que você escolher a entrega.</p>
+            </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
               <div className="mb-4">
                 <h2 className="font-display text-lg font-semibold">Identificação e contato</h2>
@@ -206,9 +237,9 @@ function Checkout() {
                   </label>;
                 })}
               </div>
-              {productsSubtotal !== null && (() => {
+              {summarySubtotal !== null && (() => {
                 const chosen = selectedShipping ? shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token) : null;
-                const total = chosen ? Number((productsSubtotal + chosen.price).toFixed(2)) : null;
+                const total = chosen ? Number((summarySubtotal + chosen.price).toFixed(2)) : null;
                 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
                 return <div aria-live="polite" className="mt-5 overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-md">
                   <div className="border-b border-orange-100 bg-gradient-to-r from-orange-50 to-white px-5 py-4 sm:px-6">
@@ -216,10 +247,10 @@ function Checkout() {
                     <p className="mt-0.5 text-xs text-muted-foreground">Confira os valores antes de seguir para o pagamento.</p>
                   </div>
                   <div className="space-y-3 px-4 py-4 sm:px-5">
-                    <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Produtos ({items.reduce((n, i) => n + i.qty, 0)} item(ns))</span><span className="font-medium tabular-nums">{money(productsSubtotal)}</span></div>
+                    <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Produtos ({items.reduce((n, i) => n + i.qty, 0)} item(ns))</span><span className="font-medium tabular-nums">{money(summarySubtotal)}</span></div>
                     <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Entrega{chosen ? " · " + (chosen.provider === "pickup" ? "Retirada no local" : chosen.service) : ""}</span><span className="font-medium tabular-nums">{chosen ? (chosen.price === 0 ? "Grátis" : money(chosen.price)) : "Selecione uma modalidade"}</span></div>
                     <div className="border-t border-border pt-3">
-                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">{chosen ? "Total estimado" : "Total parcial"}</span><span className="text-2xl font-extrabold tabular-nums text-[#e95712]">{total === null ? money(productsSubtotal) : money(total)}</span></div>
+                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">{chosen ? "Total estimado" : "Total parcial"}</span><span className="text-2xl font-extrabold tabular-nums text-[#e95712]">{total === null ? money(summarySubtotal) : money(total)}</span></div>
                       <p className="mt-1 text-xs text-muted-foreground">{chosen ? "Frete incluído no total estimado. O valor será confirmado ao criar o pedido." : "O valor da entrega será somado assim que você selecionar uma modalidade."}</p>
                     </div>
                   </div>
@@ -244,10 +275,10 @@ function Checkout() {
             </section>
             <div className="sticky bottom-0 z-20 -mx-4 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-4 py-4 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:border sm:px-5">
               <div className="text-sm">
-                <p className="text-muted-foreground">{items.reduce((n, i) => n + i.qty, 0)} item(ns) no carrinho</p>
-                {selectedShipping && productsSubtotal !== null && (() => {
+                <p className="text-muted-foreground">{items.reduce((n, i) => n + i.qty, 0)} item(ns){!selectedShipping && pricing.subtotal != null ? " · " + formatPrice(pricing.subtotal, pricing.currency) + " + frete" : ""}</p>
+                {selectedShipping && summarySubtotal !== null && (() => {
                   const chosen = shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token);
-                  return chosen ? <p className="mt-1 font-semibold">Total com entrega: {(productsSubtotal + chosen.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p> : null;
+                  return chosen ? <p className="mt-1 font-semibold">Total com entrega: {(summarySubtotal + chosen.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p> : null;
                 })()}
               </div>
               <Button type="submit" size="lg" disabled={!profile.data?.authenticated || m.isPending || !selectedShipping} className="min-h-12 min-w-64 bg-[#ff681f] text-white shadow-lg shadow-orange-200 hover:bg-[#e95712]">{m.isPending ? "Preparando seu pagamento…" : "Continuar para pagamento"}</Button>
