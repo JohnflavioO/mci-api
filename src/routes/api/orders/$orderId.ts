@@ -15,7 +15,7 @@ export const Route = createFileRoute("/api/orders/$orderId")({
         }
         if (!UUID.test(params.orderId)) return Response.json({ error: "Pedido inválido." }, { status: 400 });
 
-        const token = (request.headers.get("authorization") ?? "").replace(/^Bearer\\s+/i, "");
+        const token = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
         if (!token) return Response.json({ error: "Entre na sua conta para excluir o pedido." }, { status: 401 });
 
         const userClient = createClient(url, publishableKey, {
