@@ -150,7 +150,7 @@ function CustomerAccount() {
                     {orders.isPending ? <p className="text-sm text-muted-foreground">Consultando pedidos…</p>
                       : orders.isError ? <div className="rounded-lg border border-dashed p-4"><p className="font-medium">Histórico indisponível no momento</p><p className="mt-1 text-sm text-muted-foreground">{orders.error.message}</p></div>
                       : orders.data.length === 0 ? <EmptyState title="Você ainda não fez pedidos"><Link to="/catalogo" className="underline">Explorar produtos</Link></EmptyState>
-                      : <><ul className="grid gap-3 xl:grid-cols-2">{orders.data.slice(0, showAllOrders ? orders.data.length : 4).map((o) => (
+                      : <div><ul className="grid gap-3 xl:grid-cols-2">{orders.data.slice(0, showAllOrders ? orders.data.length : 4).map((o) => (
                         <li key={o.id} className="rounded-lg border p-4">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-sm text-muted-foreground"><strong className="font-mono text-foreground">#{o.id.slice(0, 8).toUpperCase()}</strong> · {new Date(o.created_at).toLocaleDateString("pt-BR")}</span>
@@ -166,7 +166,7 @@ function CustomerAccount() {
                           </div>
                         </li>
                       ))}</ul>
-                      {orders.data.length > 4 && <button type="button" onClick={() => setShowAllOrders((value) => !value)} className="mt-4 text-sm font-semibold text-brand hover:underline">{showAllOrders ? "Recolher histórico" : "Ver todos os pedidos (" + (orders.data.length - 4) + " anteriores)"}</button>}</>
+                      {orders.data.length > 4 && <button type="button" onClick={() => setShowAllOrders((value) => !value)} className="mt-4 text-sm font-semibold text-brand hover:underline">{showAllOrders ? "Recolher histórico" : "Ver todos os pedidos (" + (orders.data.length - 4) + " anteriores)"}</button>}</div>
                   </div>
                 </section>
               </div>
