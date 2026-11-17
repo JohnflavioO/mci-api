@@ -35,23 +35,23 @@ export const Route = createFileRoute("/api/orders/$orderId")({
         if (order.status !== "pending_payment" && order.status !== "rejected") {
           return Response.json({ error: "Somente pedidos não pagos podem ser excluídos." }, { status: 409 });
         }
-        if (order.provider_charge_id || order.provider_checkout_url || order.payment_link_created_at) {
-          return Response.json({ error: "Este pedido já teve checkout iniciado. Não é possível excluí-lo por aqui." }, { status: 409 });
-        }
-
-        const { data: deleted, error: deleteError } = await db.from("orders").delete()
+        // Cancelamento lógico preserva o histórico financeiro.
+        // Se houver pagamento tardio no link externo, a reconciliação da InfinitePay
+        // encaminha o pedido para refund_required em vez de reconhecê-lo como venda.
+        const { data: cancelled, error: cancelError } = await db.from("orders").update({
+          status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
           .eq("id", params.orderId)
           .eq("user_id", auth.user.id)
           .in("status", ["pending_payment", "rejected"])
           .is("provider_charge_id", null)
-          .is("provider_checkout_url", null)
-          .is("payment_link_created_at", null)
           .select("id")
           .maybeSingle();
 
-        if (deleteError) return Response.json({ error: "Não foi possível excluir o pedido. Tente novamente." }, { status: 503 });
-        if (!deleted) return Response.json({ error: "O pedido foi atualizado e não pode mais ser excluído." }, { status: 409 });
-        return Response.json({ success: true, orderId: deleted.id });
+        if (cancelError) return Response.json({ error: "Não foi possível cancelar o pedido. Tente novamente." }, { status: 503 });
+        if (!cancelled) return Response.json({ error: "O pedido foi atualizado e não pode mais ser cancelado." }, { status: 409 });
+        return Response.json({ success: true, orderId: cancelled.id, cancelled: true });
       },
     },
   },
