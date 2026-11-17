@@ -175,7 +175,7 @@ export const orderService = {
     if (!s.session) throw new ApiError("Entre na sua conta para ver seus pedidos.", 401);
     const { data, error } = await sb.from("orders")
       .select("id,status,total,currency,created_at,shipping_amount,provider_checkout_url,payment_link_created_at,order_items(name_snapshot,qty,unit_price)")
-      .order("created_at", { ascending: false }).limit(50);
+      .neq("status", "cancelled").order("created_at", { ascending: false }).limit(50);
     if (error) throw new ApiError(error.code === "PGRST205" ? "Os pedidos ainda não foram ativados no banco." : "Não foi possível carregar seus pedidos.", error.code === "PGRST205" ? 501 : 500);
     return (data ?? []) as MyOrder[];
   },
