@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowRight, ClipboardList, PackageCheck, UserRound } from "lucide-react";
+import { ArrowRight, ClipboardList, PackageCheck, UserRound, Trash2 } from "lucide-react";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { EmptyState, ErrorState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,14 @@ function CustomerAccount() {
       setPhone(account.data.phone);
     }
   }, [account.data]);
+  const deleteOrder = useMutation({
+    mutationFn: (orderId: string) => orderService.deleteUnpaid(orderId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-dashboard", "orders-count"] });
+    },
+  });
+
   const saveProfile = useMutation({
     mutationFn: async () => {
       const cleanName = name.trim();
@@ -146,6 +154,8 @@ function CustomerAccount() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div><h2 className="font-display text-xl font-semibold">Meus pedidos</h2><p className="mt-1 text-sm text-muted-foreground">Histórico e situação das suas compras.</p></div>
                   </div>
+                  {deleteOrder.isError && <p role="alert" className="mt-3 text-sm text-destructive">{deleteOrder.error.message}</p>}
+                  {deleteOrder.isSuccess && <p role="status" className="mt-3 text-sm text-green-700">Pedido excluído.</p>}
                   <div className="mt-5">
                     {orders.isPending ? <p className="text-sm text-muted-foreground">Consultando pedidos…</p>
                       : orders.isError ? <div className="rounded-lg border border-dashed p-4"><p className="font-medium">Histórico indisponível no momento</p><p className="mt-1 text-sm text-muted-foreground">{orders.error.message}</p></div>
@@ -160,9 +170,17 @@ function CustomerAccount() {
                           {Number(o.shipping_amount) > 0 && <p className="mt-2 text-sm text-muted-foreground">Entrega: {brl(Number(o.shipping_amount))}</p>}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                             <p className="font-semibold">Total: {brl(o.total)}</p>
-                            {o.status === "pending_payment" && (isHttps(o.provider_checkout_url)
-                              ? <Button asChild size="sm" className="bg-[#ff681f] text-white hover:bg-[#e95712]"><a href={o.provider_checkout_url}>Pagar agora <ArrowRight className="ml-1.5 size-4" /></a></Button>
-                              : <span className="text-xs text-muted-foreground">Pagamento não iniciado. Refaça a compra pelo carrinho.</span>)}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {o.status === "pending_payment" && (isHttps(o.provider_checkout_url)
+                                ? <Button asChild size="sm" className="bg-[#ff681f] text-white hover:bg-[#e95712]"><a href={o.provider_checkout_url}>Pagar agora <ArrowRight className="ml-1.5 size-4" /></a></Button>
+                                : <span className="text-xs text-muted-foreground">Pagamento não iniciado.</span>)}
+                              {o.status === "pending_payment" && !o.provider_checkout_url && !o.payment_link_created_at && (
+                                <Button type="button" size="sm" variant="outline" className="text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteOrder.isPending}
+                                  onClick={() => { if (window.confirm("Excluir este pedido não pago? Esta ação não poderá ser desfeita.")) deleteOrder.mutate(o.id); }}>
+                                  <Trash2 className="mr-1.5 size-4" /> Excluir pedido
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </li>
                       ))}</ul>
