@@ -166,7 +166,7 @@ function CustomerAccount() {
                           </div>
                         </li>
                       ))}</ul>
-                      {orders.data.length > 4 && <button type="button" onClick={() => setShowAllOrders((value) => !value)} className="mt-4 text-sm font-semibold text-brand hover:underline">{showAllOrders ? "Recolher histórico" : "Ver todos os pedidos (" + (orders.data.length - 4) + " anteriores)"}</button>}</div>
+                      {orders.data.length > 4 && <button type="button" onClick={() => setShowAllOrders((value) => !value)} className="mt-4 text-sm font-semibold text-brand hover:underline">{showAllOrders ? "Recolher histórico" : "Ver todos os pedidos (" + (orders.data.length - 4) + " anteriores)"}</button>}</div>}
                   </div>
                 </section>
               </div>
