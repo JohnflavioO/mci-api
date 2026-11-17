@@ -179,7 +179,7 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
                   <p className="mt-3 font-display text-3xl font-semibold tracking-tight text-foreground">
                     {ordersQuery.isPending ? <span className="inline-block h-8 w-12 animate-pulse rounded bg-muted" /> : ordersQuery.isError ? "—" : ordersQuery.data.total}
                   </p>
-                  <p className="mt-2 text-xs text-muted-foreground">{ordersQuery.isError ? "Contagem indisponível" : ordersQuery.data?.pending ? `${ordersQuery.data.pending} aguardando ação` : "Total de pedidos registrados"}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{ordersQuery.isError ? "Contagem indisponível" : ordersQuery.data?.pending ? `${ordersQuery.data.pending} aguardando ação` : "Pedidos com checkout iniciado ou pagos"}</p>
                   {ordersQuery.isError ? <button onClick={(event) => { event.preventDefault(); event.stopPropagation(); void ordersQuery.refetch(); }} className="mt-2 text-xs font-semibold underline underline-offset-4">Tentar novamente</button> : null}
                 </div>
                 <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"><ShoppingCart className="size-5" /></span>
