@@ -132,6 +132,7 @@ export type MyOrder = {
   shipping_amount: number | null;
   /** Link hospedado de pagamento; só é útil enquanto o pedido aguarda pagamento. */
   provider_checkout_url: string | null;
+  payment_link_created_at?: string | null;
   order_items: { name_snapshot: string; qty: number; unit_price: number }[];
 };
 
@@ -173,10 +174,21 @@ export const orderService = {
     const { data: s } = await sb.auth.getSession();
     if (!s.session) throw new ApiError("Entre na sua conta para ver seus pedidos.", 401);
     const { data, error } = await sb.from("orders")
-      .select("id,status,total,currency,created_at,shipping_amount,provider_checkout_url,order_items(name_snapshot,qty,unit_price)")
+      .select("id,status,total,currency,created_at,shipping_amount,provider_checkout_url,payment_link_created_at,order_items(name_snapshot,qty,unit_price)")
       .order("created_at", { ascending: false }).limit(50);
     if (error) throw new ApiError(error.code === "PGRST205" ? "Os pedidos ainda não foram ativados no banco." : "Não foi possível carregar seus pedidos.", error.code === "PGRST205" ? 501 : 500);
     return (data ?? []) as MyOrder[];
+  },
+  deleteUnpaid: async (orderId: string): Promise<void> => {
+    const sb = getSupabase();
+    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+    if (sessionError || !sessionData.session) throw new ApiError("Entre na sua conta para excluir o pedido.", 401);
+    const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+    });
+    const body = await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) throw new ApiError(body.error || "Não foi possível excluir o pedido.", response.status);
   },
 };
 
