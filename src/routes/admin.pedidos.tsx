@@ -19,7 +19,7 @@ export const Route = createFileRoute("/admin/pedidos")({
 
 type OrderStatus = "pending_payment" | "paid" | "rejected" | "cancelled" | "refund_required" | "refunded";
 type OrderItem = { id: string; name_snapshot: string; unit_price: number; qty: number };
-type OrderDetails = { id: string; user_id: string; status: OrderStatus; currency: string; total: number; provider: string | null; provider_order_id: string | null; provider_charge_id: string | null; provider_checkout_url: string | null; shipping_amount: number; shipping_provider: string | null; shipping_service: string | null; shipping_cep: string | null; shipping_street: string | null; shipping_number: string | null; shipping_complement: string | null; shipping_district: string | null; shipping_city: string | null; shipping_state: string | null; customer_name: string | null; customer_document: string | null; customer_email: string | null; customer_phone: string | null; refund_reason: string | null; created_at: string; updated_at: string; buyer: { id: string; email: string | null; name: string | null; phone: string | null }; items: (OrderItem & { product_id: string })[] };
+type OrderDetails = { id: string; user_id: string; status: OrderStatus; currency: string; total: number; provider: string | null; provider_order_id: string | null; provider_charge_id: string | null; provider_checkout_url: string | null; payment_link_created_at: string | null; shipping_amount: number; shipping_provider: string | null; shipping_service: string | null; shipping_cep: string | null; shipping_street: string | null; shipping_number: string | null; shipping_complement: string | null; shipping_district: string | null; shipping_city: string | null; shipping_state: string | null; customer_name: string | null; customer_document: string | null; customer_email: string | null; customer_phone: string | null; refund_reason: string | null; created_at: string; updated_at: string; buyer: { id: string; email: string | null; name: string | null; phone: string | null }; items: (OrderItem & { product_id: string })[] };
 type Order = {
   id: string;
   user_id: string;
@@ -97,7 +97,7 @@ function OrdersPage() {
     queryFn: async () => {
       const { data, error } = await getSupabase()
         .from("orders")
-        .select("id,user_id,status,currency,total,provider,created_at,updated_at,order_items(id,name_snapshot,unit_price,qty)")
+        .select("id,user_id,status,currency,total,provider,provider_order_id,provider_charge_id,provider_checkout_url,payment_link_created_at,created_at,updated_at,order_items(id,name_snapshot,unit_price,qty)")
         .order("created_at", { ascending: false })
         .limit(250);
       if (error) throw error;
@@ -132,7 +132,7 @@ function OrdersPage() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric icon={ShoppingCart} label="Pedidos encontrados" value={ordersQuery.isPending ? "…" : String(orders.length)} detail="Até 250 registros mais recentes" />
+        <Metric icon={ShoppingCart} label="Pedidos efetivos" value={ordersQuery.isPending ? "…" : String(effectiveOrders.length)} detail="Checkout iniciado ou pagamento confirmado" />
         <Metric icon={Clock3} label="Aguardando pagamento" value={ordersQuery.isPending ? "…" : String(pending)} detail="Não significa pagamento confirmado" />
         <Metric icon={CheckCircle2} label="Total confirmado" value={ordersQuery.isPending ? "…" : money(totalPaid)} detail="Somente pedidos com status pago" />
         <Metric icon={AlertCircle} label="Precisam de atenção" value={ordersQuery.isPending ? "…" : String(needsAttention)} detail="Pedidos que exigem análise de estorno" />
@@ -163,7 +163,7 @@ function OrdersPage() {
 
       <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-          <div><h3 className="font-semibold">Lista de pedidos</h3><p className="mt-1 text-xs text-muted-foreground">Abra um pedido para ver os dados completos. Pedidos de teste sem pagamento podem ser excluídos com reautenticação.</p></div>
+          <div><h3 className="font-semibold">Lista de pedidos</h3><p className="mt-1 text-xs text-muted-foreground">Abra um pedido para ver os dados completos. Pedidos sem checkout iniciado podem ser excluídos com reautenticação. Pedidos com checkout ou pagamento são preservados.</p></div>
           <span className="text-sm text-muted-foreground">{filtered.length} resultado(s)</span>
         </div>
         <div className="grid gap-3 border-b p-4 md:grid-cols-[minmax(220px,1fr)_220px]">
@@ -224,8 +224,8 @@ function OrdersPage() {
         </div>
         <div className="mt-5"><h4 className="mb-2 font-semibold">Produtos do pedido</h4><div className="divide-y rounded-lg border">{(selected.items ?? []).map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"><div><p className="font-medium">{item.name_snapshot}</p><p className="text-xs text-muted-foreground">{item.qty} × {money(item.unit_price)}</p></div><strong>{money(item.qty * item.unit_price)}</strong></div>)}</div></div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground"><CreditCard className="mt-0.5 size-4 shrink-0" /> A exclusão é bloqueada para pedidos com pagamento confirmado ou cobrança registrada.</div>
-          <Button variant="destructive" onClick={() => { setDeleteTarget(orders.find((o) => o.id === selected.id) ?? null); setDeleteError(""); }} disabled={selected.status === "paid" || selected.status === "refund_required" || selected.status === "refunded" || Boolean(selected.provider_charge_id)}><Trash2 className="mr-2 size-4" /> Excluir pedido</Button>
+          <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground"><CreditCard className="mt-0.5 size-4 shrink-0" /> A exclusão é bloqueada após a geração do checkout, confirmação do pagamento ou registro de cobrança.</div>
+          <Button variant="destructive" onClick={() => { setDeleteTarget(orders.find((o) => o.id === selected.id) ?? null); setDeleteError(""); }} disabled={selected.status === "paid" || selected.status === "refund_required" || selected.status === "refunded" || Boolean(selected.provider_charge_id || selected.provider_checkout_url || selected.payment_link_created_at)}><Trash2 className="mr-2 size-4" /> Excluir pedido</Button>
         </div>
         </> : null}
       </section> : null}
