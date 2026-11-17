@@ -86,13 +86,13 @@ export const Route = createFileRoute("/api/admin/orders/$orderId")({
         if (passwordError) return Response.json({ error: "Senha do administrador incorreta." }, { status: 401 });
 
         const { data: order, error: orderError } = await auth.admin.from("orders")
-          .select("id,status,provider,provider_charge_id").eq("id", params.orderId).maybeSingle();
+          .select("id,status,provider,provider_order_id,provider_charge_id,provider_checkout_url,payment_link_created_at").eq("id", params.orderId).maybeSingle();
         if (orderError) return Response.json({ error: "Não foi possível validar o pedido para exclusão." }, { status: 503 });
         if (!order) return Response.json({ error: "Pedido não encontrado." }, { status: 404 });
 
         // Não permite apagar pedidos com pagamento confirmado/cobrança; isso preserva histórico financeiro e estoque.
-        if (order.status === "paid" || order.status === "refund_required" || order.status === "refunded" || order.provider_charge_id) {
-          return Response.json({ error: "Este pedido possui registro financeiro. Não pode ser excluído por segurança; trate-o pelo fluxo de estorno/cancelamento." }, { status: 409 });
+        if (order.status === "paid" || order.status === "refund_required" || order.status === "refunded" || order.provider_charge_id || order.provider_checkout_url || order.payment_link_created_at) {
+          return Response.json({ error: "Este pedido já possui checkout iniciado ou registro financeiro. Não pode ser excluído por segurança; preserve o histórico e trate-o pelo fluxo de cancelamento/estorno." }, { status: 409 });
         }
 
         const { error: deleteError } = await auth.admin.from("orders").delete()
