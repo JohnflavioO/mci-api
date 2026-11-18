@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CalendarDays, CheckCircle2, Clock3, CreditCard, Package, RefreshCw, Search, ShoppingCart, WalletCards, Trash2, Truck, UserRound, MapPin } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
+import { isEffectiveOrder } from "@/lib/orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,6 +28,10 @@ type Order = {
   currency: string;
   total: number;
   provider: string | null;
+  provider_order_id: string | null;
+  provider_charge_id: string | null;
+  provider_checkout_url: string | null;
+  payment_link_created_at: string | null;
   created_at: string;
   updated_at: string;
   order_items: OrderItem[];
@@ -114,8 +119,9 @@ function OrdersPage() {
     return matchesSearch && (statusFilter === "all" || order.status === statusFilter);
   }), [orders, search, statusFilter]);
   const selected = detailsQuery.data ?? null;
+  const effectiveOrders = orders.filter(isEffectiveOrder);
   const totalPaid = orders.filter((order) => order.status === "paid").reduce((sum, order) => sum + Number(order.total), 0);
-  const pending = orders.filter((order) => order.status === "pending_payment").length;
+  const pending = effectiveOrders.filter((order) => order.status === "pending_payment").length;
   const needsAttention = orders.filter((order) => order.status === "refund_required").length;
 
   return (
