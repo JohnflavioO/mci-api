@@ -16,6 +16,7 @@ import { portalService } from "@/services";
 import { resellerService, statusLabel } from "@/services/resellers";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { getSupabase } from "@/lib/supabase";
+import { EFFECTIVE_ORDERS_FILTER } from "@/lib/orders";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import type { PortalSection } from "./PortalLayout";
 
@@ -127,8 +128,8 @@ export function PortalOverview({ portal }: { portal: PortalKey }) {
     queryFn: async () => {
       const supabase = getSupabase();
       const [totalResult, pendingResult] = await Promise.all([
-        supabase.from("orders").select("id", { count: "exact", head: true }),
-        supabase.from("orders").select("id", { count: "exact", head: true }).in("status", ["pending_payment", "refund_required"]),
+        supabase.from("orders").select("id", { count: "exact", head: true }).or(EFFECTIVE_ORDERS_FILTER),
+        supabase.from("orders").select("id", { count: "exact", head: true }).or(EFFECTIVE_ORDERS_FILTER).in("status", ["pending_payment", "refund_required"]),
       ]);
       if (totalResult.error) throw totalResult.error;
       if (pendingResult.error) throw pendingResult.error;
