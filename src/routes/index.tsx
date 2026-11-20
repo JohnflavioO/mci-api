@@ -150,59 +150,57 @@ function Index() {
       </section>
 
 
-      <section className="bg-[#f5f6f7] py-12 sm:py-16">
+      <section className="relative overflow-hidden bg-[#f3f4f6] py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#e95b19]">Universo MCI</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#171a1f] sm:text-4xl">Encontre o equipamento certo para sua produção.</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">Explore nossas principais categorias e monte seu setup com soluções profissionais.</p>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
+            <div className="max-w-3xl">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#e95b19]">Universo MCI</p>
+              <h2 className="mt-2 text-3xl font-semibold leading-tight tracking-[-0.04em] text-[#14181d] sm:text-4xl">Tudo para tirar sua produção do papel.</h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">Equipamentos profissionais, acessórios e oportunidades para quem vive o audiovisual.</p>
             </div>
-            <Link to="/catalogo" className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:border-[#ff681f] hover:text-[#e95b19]">Ver catálogo completo <ArrowRight className="size-4" /></Link>
+            <Link to="/catalogo" className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-[#ff681f] hover:text-[#e95b19]">Explorar catálogo <ArrowRight className="size-4" /></Link>
           </div>
-          <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {[
-              { name: "Iluminação", description: "Luzes, painéis e soluções LED para dar forma à sua imagem.", image: products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "iluminação")?.images?.[0], tone: "warm", eyebrow: "Controle a luz · Crie a cena" },
-              { name: "Acessórios", description: "Suportes, cabos, modificadores e tudo para completar seu equipamento.", image: products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "acessórios")?.images?.[0], tone: "light", eyebrow: "Complete seu setup" },
-            ].map((item) => (
-              <Link key={item.name} to="/catalogo" search={{ categoria: item.name }} className={`group relative isolate flex min-h-[260px] overflow-hidden rounded-2xl border border-slate-200 ${item.tone === "warm" ? "bg-[#fff3df]" : "bg-white"} transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg`}>
-                <div className="relative z-10 flex w-[58%] flex-col justify-between p-5 sm:p-6">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b94710]">{item.eyebrow}</span>
-                    <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#171a1f]">{item.name}</h3>
-                    <p className="mt-2 max-w-[220px] text-sm leading-relaxed text-slate-600">{item.description}</p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_0.9fr]">
+            <Link to="/catalogo" search={{ categoria: "Iluminação" }} className="group relative isolate min-h-[420px] overflow-hidden rounded-[28px] bg-[#151a20] text-white shadow-sm sm:min-h-[470px]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_38%,rgba(255,132,46,0.22),transparent_38%),linear-gradient(120deg,#171b20,#252b32)]" />
+              <div className="absolute inset-y-0 right-0 flex w-[58%] items-center justify-center p-5 sm:p-8">
+                {products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "iluminação")?.images?.[0] ? <img src={products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "iluminação")?.images?.[0]} alt="" loading="lazy" className="size-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105" /> : <div className="flex size-full items-center justify-center text-white/35"><Package className="size-20" strokeWidth={1} /></div>}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#15191e] via-[#15191e]/90 to-transparent" />
+              <div className="relative z-10 flex h-full min-h-[420px] max-w-[58%] flex-col justify-between p-7 sm:min-h-[470px] sm:p-10">
+                <div><span className="inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-orange-300">Categoria em destaque</span>
+                  <h3 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">Iluminação</h3>
+                  <p className="mt-3 max-w-sm text-sm leading-6 text-white/70">Domine a luz. Encontre painéis, LEDs e soluções para transformar cada cena.</p></div>
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-orange-300">Ver equipamentos <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+              </div>
+              <span className="absolute bottom-6 right-6 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-xs text-white/70">01 / Iluminação</span>
+            </Link>
+            <div className="grid grid-rows-[1fr_1fr] gap-4">
+              <Link to="/catalogo" search={{ categoria: "Acessórios" }} className="group relative isolate flex min-h-[220px] overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[230px]">
+                <div className="relative z-10 flex max-w-[62%] flex-col justify-between">
+                  <div><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e95b19]">Finalize seu setup</span><h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#171a1f]">Acessórios</h3><p className="mt-2 text-sm leading-6 text-slate-600">Peças essenciais, conexões e complementos para trabalhar com mais praticidade.</p></div>
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#c64c12]">Descobrir acessórios <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+                </div>
+                <div className="absolute inset-y-4 right-4 flex w-[32%] items-center justify-center rounded-2xl bg-[#f2f5f8] text-slate-400 transition group-hover:bg-[#e9eef4]"><Package className="size-12" strokeWidth={1.25} /></div>
+              </Link>
+              {miniBanner ? (
+                <a href={miniBanner.button_url} target={miniBanner.open_in_new_tab ? "_blank" : undefined} rel={miniBanner.open_in_new_tab ? "noreferrer" : undefined} className="group relative isolate flex min-h-[220px] overflow-hidden rounded-[28px] bg-[#10232e] text-white sm:min-h-[230px]">
+                  <img src={miniBanner.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0b1b26]/95 via-[#0b1b26]/65 to-transparent" />
+                  <div className="relative z-10 flex max-w-[72%] flex-col items-start justify-center p-6 sm:p-7">
+                    {miniBanner.eyebrow && <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-300">{miniBanner.eyebrow}</span>}
+                    <h3 className="mt-2 text-xl font-semibold leading-tight sm:text-2xl">{miniBanner.title}</h3>
+                    {miniBanner.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-white/75">{miniBanner.description}</p>}
+                    <span className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-3.5 py-2 text-xs font-bold text-white transition group-hover:bg-[#e95712]">{miniBanner.button_label || "Saiba mais"} <ArrowRight className="size-4" /></span>
                   </div>
-                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#b94710]">Explorar categoria <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
-                </div>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex w-[42%] items-center justify-center p-4 sm:p-5">
-                  {item.image ? <img src={item.image} alt="" loading="lazy" className="size-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" /> : <div className="flex size-full items-center justify-center rounded-xl bg-slate-100 text-slate-400"><Package className="size-10" strokeWidth={1.4} /></div>}
-                </div>
-              </Link>
-            ))}
-            {miniBanner ? (
-              <a href={miniBanner.button_url} target={miniBanner.open_in_new_tab ? "_blank" : undefined} rel={miniBanner.open_in_new_tab ? "noreferrer" : undefined} className="group relative isolate flex min-h-[260px] overflow-hidden rounded-2xl bg-[#171a1f] text-white">
-                <img src={miniBanner.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-[1.03]" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#111419]/90 via-[#171a1f]/35 to-transparent" />
-                <div className="relative z-10 flex flex-col items-start justify-end p-5 sm:p-6">
-                  {miniBanner.eyebrow && <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff9a69]">{miniBanner.eyebrow}</span>}
-                  <h3 className="mt-2 text-xl font-semibold leading-tight sm:text-2xl">{miniBanner.title}</h3>
-                  {miniBanner.description && <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-white/75">{miniBanner.description}</p>}
-                  <span className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff681f] px-3.5 py-2 text-xs font-bold text-white transition group-hover:bg-[#e95712]">{miniBanner.button_label || "Saiba mais"} <ArrowRight className="size-4" /></span>
-                </div>
-              </a>
-            ) : (
-              <Link to="/catalogo" className="group relative isolate flex min-h-[260px] overflow-hidden rounded-2xl bg-[#171a1f] text-white">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,104,31,0.24),_transparent_48%),linear-gradient(125deg,#111419,#252a31)]" />
-                <div className="absolute -right-12 -top-12 size-48 rounded-full border border-white/10" />
-                <div className="absolute -right-4 -top-4 size-32 rounded-full border border-white/10" />
-                <div className="relative z-10 flex max-w-[90%] flex-col items-start justify-end p-5 sm:p-6">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff9a69]">Vitrine MCI</span>
-                  <h3 className="mt-2 text-xl font-semibold leading-tight sm:text-2xl">Sua próxima produção começa com a luz certa.</h3>
-                  <p className="mt-2 text-xs leading-relaxed text-white/70">Conheça nossa seleção de iluminação profissional.</p>
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white">Explorar iluminação <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
-                </div>
-              </Link>
-            )}
+                </a>
+              ) : (
+                <Link to="/catalogo" className="group relative isolate flex min-h-[220px] overflow-hidden rounded-[28px] bg-[#10232e] text-white sm:min-h-[230px]">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_90%_20%,rgba(255,104,31,0.25),transparent_45%),linear-gradient(120deg,#10232e,#162d3b)]" />
+                  <div className="relative z-10 flex max-w-[75%] flex-col items-start justify-center p-6 sm:p-7"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-300">Store House</span><h3 className="mt-2 text-xl font-semibold leading-tight sm:text-2xl">Tecnologia para sua próxima produção.</h3><span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold">Conhecer catálogo <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span></div>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </section>
