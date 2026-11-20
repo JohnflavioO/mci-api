@@ -464,7 +464,7 @@ function ProductPage() {
                       </div>
                       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm text-muted-foreground">Economia total</span>
-                        <strong className="text-base font-extrabold text-[#27734b]">{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
+                        <strong className="text-base font-extrabold text-[#27734b]">{formatPrice(activeVolumeRule ? volumeQuote.totalDiscount : Math.max(0, Number(p.customerPrice ?? rp.data) * purchaseQty - Number(rp.data) * purchaseQty), p.currency)}</strong>
                       </div>
                     </div>
                   )}
