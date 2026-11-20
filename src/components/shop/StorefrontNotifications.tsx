@@ -48,6 +48,7 @@ export function StorefrontNotifications() {
   const [approvedIds, setApprovedIds] = useState<string[]>([]);
   const [approvalReady, setApprovalReady] = useState(false);
   const [evaluatedCampaignIds, setEvaluatedCampaignIds] = useState<string[]>([]);
+  const [campaignDismissedIds, setCampaignDismissedIds] = useState<string[]>([]);
 
   useEffect(() => { setVisitorKey(getVisitorKey()); }, []);
 
@@ -130,9 +131,10 @@ export function StorefrontNotifications() {
 
   const visibleFeed = useMemo(() => feed.filter(item =>
     !dismissed.includes(item.id) &&
+    !campaignDismissedIds.includes(item.id) &&
     !getSessionFlag(`mci-notification-clicked-${item.id}`) &&
     (item.source === "sale" || approvedIds.includes(item.id))
-  ), [feed, dismissed, approvedIds]);
+  ), [feed, dismissed, approvedIds, campaignDismissedIds]);
   const current = visibleFeed.length ? visibleFeed[index % visibleFeed.length] : null;
 
   // Approve only one item at a time through the database policy function. This is the authoritative
@@ -193,6 +195,7 @@ export function StorefrontNotifications() {
         p_visitor_key: visitorKey, p_notification_id: current.id, p_event_type: "dismiss",
       });
     }
+    if (current.source === "campaign") setCampaignDismissedIds(previous => [...previous, current.id]);
     setIndex(value => visibleFeed.length > 1 ? (value + 1) % (visibleFeed.length - 1) : 0);
   };
   const click = () => {
