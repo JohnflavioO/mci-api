@@ -47,6 +47,7 @@ export function StorefrontNotifications() {
   const [visitorKey, setVisitorKey] = useState<string | null>(null);
   const [approvedIds, setApprovedIds] = useState<string[]>([]);
   const [approvalReady, setApprovalReady] = useState(false);
+  const [evaluatedCampaignIds, setEvaluatedCampaignIds] = useState<string[]>([]);
 
   useEffect(() => { setVisitorKey(getVisitorKey()); }, []);
 
@@ -139,6 +140,7 @@ export function StorefrontNotifications() {
   useEffect(() => {
     let cancelled = false;
     setApprovedIds([]);
+    setEvaluatedCampaignIds([]);
     setApprovalReady(false);
     const campaigns = feed.filter(item => item.source === "campaign");
     if (!visitorKey || campaigns.length === 0) {
@@ -147,6 +149,7 @@ export function StorefrontNotifications() {
     }
     void (async () => {
       const approved: string[] = [];
+      const evaluated: string[] = [];
       for (const item of campaigns) {
         if (cancelled) return;
         const { data, error } = await getSupabase().rpc("evaluate_storefront_notification", {
@@ -154,15 +157,20 @@ export function StorefrontNotifications() {
           p_notification_id: item.id,
           p_event_type: "impression",
         });
-        if (!error && data?.allowed === true) approved.push(item.id);
+        if (!error && data?.allowed === true) {
+          approved.push(item.id);
+          evaluated.push(item.id);
+          break; // one authorized campaign at a time, so the feed cannot consume the daily cap.
+        }
       }
       if (!cancelled) {
         setApprovedIds(approved);
+        setEvaluatedCampaignIds(evaluated);
         setApprovalReady(true);
       }
     })();
     return () => { cancelled = true; };
-  }, [visitorKey, feed]);
+  }, [visitorKey, campaignsQuery.data, audience]);
 
   useEffect(() => {
     if (!current) return;
@@ -179,7 +187,7 @@ export function StorefrontNotifications() {
   const Icon = current.kind === "promotion" ? Tag : current.kind === "real_purchase" || current.kind === "demo_purchase" ? ShoppingBag : current.kind === "product" ? CheckCircle2 : BellRing;
   const close = () => {
     setDismissed(previous => [...previous, current.id]);
-    if (current.source === "campaign" && visitorKey) {
+    if (current.source === "campaign" && visitorKey && !evaluatedCampaignIds.includes(current.id)) {
       void getSupabase().rpc("evaluate_storefront_notification", {
         p_visitor_key: visitorKey, p_notification_id: current.id, p_event_type: "dismiss",
       });
