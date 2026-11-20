@@ -155,35 +155,35 @@ function Index() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#e95b19]">Universo MCI</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#171a1f] sm:text-4xl">Iluminação e acessórios para sua produção.</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">Equipamentos e soluções profissionais selecionados para quem trabalha com luz.</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#171a1f] sm:text-4xl">Encontre o equipamento certo para sua produção.</h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">Explore nossas principais categorias e monte seu setup com soluções profissionais.</p>
             </div>
             <Link to="/catalogo" className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:border-[#ff681f] hover:text-[#e95b19]">Ver catálogo completo <ArrowRight className="size-4" /></Link>
           </div>
-          <div className="mt-7 grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {[
-              { name: "Iluminação", description: "Luzes, painéis e soluções LED para cada tipo de produção.", image: products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "iluminação")?.images?.[0], span: "lg:col-span-5", featured: true },
-              { name: "Acessórios", description: "Complete seu setup com os acessórios certos.", image: products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "acessórios")?.images?.[0], span: "lg:col-span-3", featured: false },
+              { name: "Iluminação", description: "Luzes, painéis e soluções LED para dar forma à sua imagem.", image: products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "iluminação")?.images?.[0], tone: "warm", eyebrow: "Controle a luz · Crie a cena" },
+              { name: "Acessórios", description: "Suportes, cabos, modificadores e tudo para completar seu equipamento.", image: products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "acessórios")?.images?.[0], tone: "light", eyebrow: "Complete seu setup" },
             ].map((item) => (
-              <Link key={item.name} to="/catalogo" search={{ categoria: item.name }} className={`group relative isolate flex min-h-[220px] overflow-hidden rounded-2xl border border-slate-200 ${item.featured ? "bg-[#fff3df] lg:col-span-5 lg:min-h-[286px]" : "bg-white lg:col-span-3"} transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/[0.07]`}>
-                <div className={`relative z-10 flex w-[58%] flex-col items-start p-5 sm:p-6 ${item.featured ? "justify-center" : "justify-between"}`}>
+              <Link key={item.name} to="/catalogo" search={{ categoria: item.name }} className={`group relative isolate flex min-h-[260px] overflow-hidden rounded-2xl border border-slate-200 ${item.tone === "warm" ? "bg-[#fff3df]" : "bg-white"} transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg`}>
+                <div className="relative z-10 flex w-[58%] flex-col justify-between p-5 sm:p-6">
                   <div>
-                    <span className={`text-[10px] font-bold uppercase tracking-[0.16em] ${item.featured ? "text-[#b94710]" : "text-slate-500"}`}>{item.featured ? "Linha em destaque" : "Complete seu setup"}</span>
-                    <h3 className={`mt-3 font-semibold tracking-tight text-[#171a1f] ${item.featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>{item.name}</h3>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-600">{item.description}</p>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b94710]">{item.eyebrow}</span>
+                    <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#171a1f]">{item.name}</h3>
+                    <p className="mt-2 max-w-[220px] text-sm leading-relaxed text-slate-600">{item.description}</p>
                   </div>
-                  <span className={`mt-5 inline-flex items-center gap-2 text-sm font-semibold ${item.featured ? "text-[#b94710]" : "text-slate-800"}`}>Explorar produtos <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#b94710]">Explorar categoria <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
                 </div>
-                <div className={`pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center ${item.featured ? "w-[43%] p-4 sm:p-6" : "w-[38%] p-3"}`}>
-                  {item.image ? <img src={item.image} alt="" loading="lazy" className="h-full w-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-[1.04]" /> : <div className="flex size-full items-center justify-center rounded-xl bg-slate-100 text-slate-400"><Package className="size-10" strokeWidth={1.4} /></div>}
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex w-[42%] items-center justify-center p-4 sm:p-5">
+                  {item.image ? <img src={item.image} alt="" loading="lazy" className="size-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" /> : <div className="flex size-full items-center justify-center rounded-xl bg-slate-100 text-slate-400"><Package className="size-10" strokeWidth={1.4} /></div>}
                 </div>
               </Link>
             ))}
             {miniBanner ? (
-              <a href={miniBanner.button_url} target={miniBanner.open_in_new_tab ? "_blank" : undefined} rel={miniBanner.open_in_new_tab ? "noreferrer" : undefined} className="group relative isolate flex min-h-[220px] overflow-hidden rounded-2xl bg-[#171a1f] text-white lg:col-span-4 lg:min-h-[286px]">
+              <a href={miniBanner.button_url} target={miniBanner.open_in_new_tab ? "_blank" : undefined} rel={miniBanner.open_in_new_tab ? "noreferrer" : undefined} className="group relative isolate flex min-h-[260px] overflow-hidden rounded-2xl bg-[#171a1f] text-white">
                 <img src={miniBanner.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-[1.03]" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#111419]/70 via-[#171a1f]/30 to-transparent" />
-                <div className="relative z-10 flex max-w-[85%] flex-col items-start justify-end p-5 sm:p-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#111419]/90 via-[#171a1f]/35 to-transparent" />
+                <div className="relative z-10 flex flex-col items-start justify-end p-5 sm:p-6">
                   {miniBanner.eyebrow && <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff9a69]">{miniBanner.eyebrow}</span>}
                   <h3 className="mt-2 text-xl font-semibold leading-tight sm:text-2xl">{miniBanner.title}</h3>
                   {miniBanner.description && <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-white/75">{miniBanner.description}</p>}
@@ -191,11 +191,11 @@ function Index() {
                 </div>
               </a>
             ) : (
-              <Link to="/catalogo" className="group relative isolate flex min-h-[220px] overflow-hidden rounded-2xl bg-[#171a1f] text-white lg:col-span-4 lg:min-h-[286px]">
+              <Link to="/catalogo" className="group relative isolate flex min-h-[260px] overflow-hidden rounded-2xl bg-[#171a1f] text-white">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,104,31,0.24),_transparent_48%),linear-gradient(125deg,#111419,#252a31)]" />
                 <div className="absolute -right-12 -top-12 size-48 rounded-full border border-white/10" />
                 <div className="absolute -right-4 -top-4 size-32 rounded-full border border-white/10" />
-                <div className="relative z-10 flex max-w-[85%] flex-col items-start justify-end p-5 sm:p-6">
+                <div className="relative z-10 flex max-w-[90%] flex-col items-start justify-end p-5 sm:p-6">
                   <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff9a69]">Vitrine MCI</span>
                   <h3 className="mt-2 text-xl font-semibold leading-tight sm:text-2xl">Sua próxima produção começa com a luz certa.</h3>
                   <p className="mt-2 text-xs leading-relaxed text-white/70">Conheça nossa seleção de iluminação profissional.</p>
