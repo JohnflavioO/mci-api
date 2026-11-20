@@ -80,6 +80,13 @@ export function AdminStorefrontNotifications() {
       await qc.invalidateQueries({ queryKey: ["admin-storefront-notification-settings"] });
     }
   };
+  const updatePolicy = async (patch: Record<string, number | boolean>) => {
+    const { data: auth } = await getSupabase().auth.getUser();
+    const { error } = await getSupabase().from("storefront_notification_settings")
+      .update({ ...patch, updated_by: auth.user?.id ?? null, updated_at: new Date().toISOString() }).eq("id", true);
+    if (error) toast.error(error.message);
+    else { toast.success("Política atualizada."); await qc.invalidateQueries({ queryKey: ["admin-storefront-notification-settings"] }); }
+  };
   const rows = notifications.data ?? [];
   const metrics = useMemo(() => ({
     active: rows.filter(row => row.is_active && (!row.starts_at || new Date(row.starts_at) <= new Date()) && (!row.ends_at || new Date(row.ends_at) >= new Date())).length,
