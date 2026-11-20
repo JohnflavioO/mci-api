@@ -166,6 +166,29 @@ export function AdminStorefrontNotifications() {
       <p className="mt-3 text-xs text-muted-foreground">{settings.isError ? "Não foi possível carregar a configuração." : settings.data?.real_sales_enabled ? "Ativa: só aparecem compras com pagamento confirmado." : "Desativada por padrão. Ative quando quiser exibir compras confirmadas."}</p>
     </section>
 
+    <section className="rounded-xl border bg-card p-5 space-y-4">
+      <div><h3 className="font-semibold">Política de frequência</h3><p className="mt-1 text-sm text-muted-foreground">Limites centralizados aplicados a todos os popups comerciais da loja. Horários no fuso de Fortaleza.</p></div>
+      {settings.isError ? <p className="text-sm text-destructive">Não foi possível carregar as regras de frequência.</p> : settings.isPending ? <p className="text-sm text-muted-foreground">Carregando política…</p> : settings.data && <>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {([
+            ["Limite diário", "promotional_daily_limit", 0, 10],
+            ["Limite em 7 dias", "promotional_weekly_limit", 0, 21],
+            ["Intervalo mínimo (horas)", "promotional_min_interval_hours", 1, 168],
+            ["Repetir campanha após (dias)", "campaign_repeat_days", 1, 90],
+            ["Pausa por falta de interação (dias)", "inactivity_pause_days", 1, 30],
+            ["Modo baixa frequência após (dias)", "low_engagement_days", 1, 90],
+            ["Limite semanal em baixa frequência", "low_frequency_weekly_limit", 0, 7],
+            ["Início dos envios (hora)", "allowed_start_hour", 0, 23],
+            ["Fim dos envios (hora)", "allowed_end_hour", 1, 24],
+          ] as const).map(([label,key,min,max]) => <label key={key} className="text-sm font-medium">{label}<input type="number" min={min} max={max} className={field} value={settings.data![key]} onChange={e => { const value=Number(e.target.value); if(Number.isInteger(value)&&value>=min&&value<=max) void updatePolicy({[key]:value}); }}/></label>)}
+        </div>
+        <div className="flex flex-wrap gap-5 text-sm">
+          {([["Campanhas comerciais","commercial_enabled"],["Conteúdo e remarketing","content_enabled"],["Transacionais","transactional_enabled"]] as const).map(([label,key]) => <label key={key} className="inline-flex items-center gap-2"><input type="checkbox" checked={Boolean(settings.data![key])} onChange={e=>void updatePolicy({[key]:e.target.checked})}/>{label}</label>)}
+        </div>
+      </>}
+      <p className="text-xs text-muted-foreground">Padrão: 1 por dia, 3 em 7 dias, intervalo de 24 horas, 10h–19h e repetição da mesma campanha bloqueada por 7 dias.</p>
+    </section>
+
     {formOpen && <form onSubmit={save} className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">{editingId ? "Editar notificação" : "Cadastrar notificação"}</h3><p className="text-xs text-muted-foreground">A notificação será exibida no canto inferior esquerdo da loja.</p></div><button type="button" onClick={reset} className="rounded-md p-2 hover:bg-secondary" aria-label="Fechar"><X className="size-4"/></button></div>
       <div className="grid gap-4 md:grid-cols-2">
