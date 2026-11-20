@@ -14,7 +14,7 @@ import { catalogService } from "@/services";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { catalogSource } from "@/lib/api";
 import { formatPrice, slugifyProductName } from "@/services/catalog";
-import { calculateVolumeDiscount, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { calculateVolumeDiscount, getVolumeDiscountRule, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 
 export const Route = createFileRoute("/produto/$slug")({
   head: () => ({
@@ -177,8 +177,10 @@ function ProductPage() {
       volumeOptions.push({ key: rule.id, rule, quantity: rule.min_quantity, min_quantity: rule.min_quantity, max_quantity: rule.max_quantity, discount_type: rule.discount_type, discount_value: Number(rule.discount_value), badge_label: rule.badge_label, display_note: rule.display_note, is_featured: rule.is_featured, perUnit: false });
     }
   }
+  const activeVolumeRule = isApprovedReseller ? getVolumeDiscountRule(purchaseQty, volumeRules, p?.slug) : null;
+  // Percentual progressivo é o desconto total sobre o preço final, substituindo o desconto base.
   const volumeQuote = isApprovedReseller && rp.data != null
-    ? calculateVolumeDiscount(rp.data as number, purchaseQty, volumeRules, p?.slug)
+    ? calculateVolumeDiscount(activeVolumeRule?.discount_type === "percentage" && p?.customerPrice != null ? Number(p.customerPrice) : Number(rp.data), purchaseQty, volumeRules, p?.slug)
     : null;
   const nextVolumeOption = volumeOptions.find(option => option.quantity > purchaseQty && option.rule !== null);
   const relatedQuery = useQuery({
@@ -522,7 +524,7 @@ function ProductPage() {
               <p className="truncate text-[11px] font-medium text-muted-foreground">{purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"} · total estimado</p>
               <p className="truncate text-lg font-extrabold leading-tight">
                 {isApprovedReseller && rp.data != null
-                  ? formatPrice(volumeQuote?.totalAfterDiscount ?? Number(rp.data) * purchaseQty, p.currency)
+                  ? formatPrice(volumeQuote?.rule ? volumeQuote.totalAfterDiscount : Number(rp.data) * purchaseQty, p.currency)
                   : p.customerPrice != null ? formatPrice(Number(p.customerPrice) * purchaseQty, p.currency) : "Preço sob consulta"}
               </p>
             </div>
