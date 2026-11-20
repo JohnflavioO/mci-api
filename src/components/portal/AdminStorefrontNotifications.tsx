@@ -148,8 +148,8 @@ export function AdminStorefrontNotifications() {
 
   return <div className="mx-auto max-w-6xl space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4">
-      <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-600">Marketing comercial</p><h2 className="mt-1 text-2xl font-bold">Notificações da loja</h2><p className="mt-2 max-w-3xl text-sm text-muted-foreground">Gerencie avisos flutuantes de promoções, produtos e prova social. As compras reais são consultadas automaticamente a partir dos pedidos pagos, sem expor o nome do comprador.</p></div>
-      <button onClick={() => { reset(); setFormOpen(true); }} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"><Plus className="size-4"/> Nova notificação</button>
+      <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-600">Marketing comercial</p><h2 className="mt-1 text-2xl font-bold">Notificações da loja</h2><p className="mt-2 max-w-3xl text-sm text-muted-foreground">Crie avisos e ofertas para os clientes. A frequência e os limites são controlados automaticamente pela loja.</p></div>
+      <button onClick={() => { reset(); setFormOpen(true); }} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"><Plus className="size-4"/> Nova campanha</button>
     </header>
 
     <div className="grid gap-3 sm:grid-cols-3">
@@ -166,8 +166,10 @@ export function AdminStorefrontNotifications() {
       <p className="mt-3 text-xs text-muted-foreground">{settings.isError ? "Não foi possível carregar a configuração." : settings.data?.real_sales_enabled ? "Ativa: só aparecem compras com pagamento confirmado." : "Desativada por padrão. Ative quando quiser exibir compras confirmadas."}</p>
     </section>
 
-    <section className="rounded-xl border bg-card p-5 space-y-4">
-      <div><h3 className="font-semibold">Política de frequência</h3><p className="mt-1 text-sm text-muted-foreground">Limites centralizados aplicados a todos os popups comerciais da loja. Horários no fuso de Fortaleza.</p></div>
+    <details className="rounded-xl border bg-card p-5">
+      <summary className="cursor-pointer select-none font-semibold">Configurações avançadas de notificações <span className="ml-2 text-xs font-normal text-muted-foreground">Somente administradores</span></summary>
+      <section className="mt-4 space-y-4">
+      <div><h3 className="font-semibold">Proteção contra excesso de notificações</h3><p className="mt-1 text-sm text-muted-foreground">Limites centralizados aplicados a todos os popups comerciais da loja. Horários no fuso de Fortaleza.</p></div>
       {settings.isError ? <p className="text-sm text-destructive">Não foi possível carregar as regras de frequência.</p> : settings.isPending ? <p className="text-sm text-muted-foreground">Carregando política…</p> : settings.data && <>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {([
@@ -187,25 +189,32 @@ export function AdminStorefrontNotifications() {
         </div>
       </>}
       <p className="text-xs text-muted-foreground">Padrão: 1 por dia, 3 em 7 dias, intervalo de 24 horas, 10h–19h e repetição da mesma campanha bloqueada por 7 dias.</p>
-    </section>
+      </section>
+    </details>
 
     {formOpen && <form onSubmit={save} className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">{editingId ? "Editar notificação" : "Cadastrar notificação"}</h3><p className="text-xs text-muted-foreground">A notificação será exibida no canto inferior esquerdo da loja.</p></div><button type="button" onClick={reset} className="rounded-md p-2 hover:bg-secondary" aria-label="Fechar"><X className="size-4"/></button></div>
+      <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">{editingId ? "Editar notificação" : "Cadastrar notificação"}</h3><p className="text-xs text-muted-foreground">Preencha o essencial. As opções extras ficam em configurações avançadas.</p></div><button type="button" onClick={reset} className="rounded-md p-2 hover:bg-secondary" aria-label="Fechar"><X className="size-4"/></button></div>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="text-sm font-medium">Tipo<select className={field} value={form.kind} onChange={e => setForm({ ...form, kind: e.target.value as Kind })}><option value="promotion">Promoção</option><option value="announcement">Aviso comercial</option><option value="product">Produto em destaque</option><option value="demo_purchase">Compra demonstrativa (identificada)</option></select></label>
         <label className="text-sm font-medium">Público<select className={field} value={form.audience} onChange={e => setForm({ ...form, audience: e.target.value as Audience })}><option value="all">Todos os visitantes</option><option value="visitors">Somente visitantes não logados</option><option value="customers">Clientes logados</option><option value="resellers">Revendedores</option></select></label>
-        <label className="text-sm font-medium md:col-span-2">Título<input className={field} maxLength={100} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ex.: Oferta especial MCI"/></label>
-        <label className="text-sm font-medium md:col-span-2">Mensagem<textarea className={field} rows={2} maxLength={240} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Texto curto que aparecerá para o visitante."/></label>
+        <label className="text-sm font-medium md:col-span-2">Título da campanha<input className={field} maxLength={100} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ex.: Oferta especial MCI"/></label>
+        <label className="text-sm font-medium md:col-span-2">Mensagem para o cliente<textarea className={field} rows={2} maxLength={240} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Texto curto que aparecerá para o visitante."/></label>
         {form.kind === "demo_purchase" && <p className="md:col-span-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">Mensagens demonstrativas precisam deixar claro que são exemplos ilustrativos. Não as apresente como vendas reais.</p>}
-        <label className="text-sm font-medium">Produto relacionado (opcional)<select className={field} value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })}><option value="">Nenhum produto</option>{(products.data ?? []).map(product => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
-        <label className="text-sm font-medium">Nome do produto (se não estiver no catálogo)<input className={field} value={form.product_name} onChange={e => setForm({ ...form, product_name: e.target.value })} placeholder="Nome para exibição"/></label>
+        <label className="text-sm font-medium">Produto (opcional)<select className={field value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })}><option value="">Nenhum produto</option>{(products.data ?? []).map(product => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+        <label className="text-sm font-medium">Nome do produto (opcional)<input className={field value={form.product_name} onChange={e => setForm({ ...form, product_name: e.target.value })} placeholder="Nome para exibição"/></label>
+        <details className="md:col-span-2 rounded-lg border p-3">
+          <summary className="cursor-pointer text-sm font-medium">Configurações avançadas <span className="text-xs text-muted-foreground">(imagem, link, agendamento e exibição)</span></summary>
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
         <label className="text-sm font-medium">URL da imagem (HTTPS)<input className={field} value={form.image_url} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="https://..."/></label>
         <label className="text-sm font-medium">Texto do link<input className={field} maxLength={40} value={form.cta_label} onChange={e => setForm({ ...form, cta_label: e.target.value })} placeholder="Ver produto"/></label>
-        <label className="text-sm font-medium md:col-span-2">Link de destino<input className={field} value={form.cta_url} onChange={e => setForm({ ...form, cta_url: e.target.value })} placeholder="/produto/nome-do-produto ou https://..."/></label>
+        <label className="text-sm font-medium ">Link de destino<input className={field} value={form.cta_url} onChange={e => setForm({ ...form, cta_url: e.target.value })} placeholder="/produto/nome-do-produto ou https://..."/></label>
         <label className="text-sm font-medium">Intervalo entre notificações<select className={field} value={form.interval_seconds} onChange={e => setForm({ ...form, interval_seconds: e.target.value })}><option value="15">15 segundos</option><option value="30">30 segundos</option><option value="45">45 segundos</option><option value="60">60 segundos</option><option value="90">90 segundos</option><option value="120">120 segundos</option><option value="180">180 segundos</option></select></label>
         <label className="text-sm font-medium">Ordem de exibição<input type="number" className={field} value={form.sort_order} onChange={e => setForm({ ...form, sort_order: e.target.value })}/></label>
         <label className="text-sm font-medium">Início (opcional)<input type="datetime-local" className={field} value={form.starts_at} onChange={e => setForm({ ...form, starts_at: e.target.value })}/></label>
         <label className="text-sm font-medium">Encerramento (opcional)<input type="datetime-local" className={field} value={form.ends_at} onChange={e => setForm({ ...form, ends_at: e.target.value })}/></label>
+
+          </div>
+        </details>
       </div>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })}/> Publicar quando salvar (respeitando o agendamento)</label>
       <div className="flex flex-wrap gap-2"><button disabled={saving} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">{saving ? <LoaderCircle className="size-4 animate-spin"/> : <Save className="size-4"/>}{editingId ? "Salvar alterações" : "Cadastrar notificação"}</button><button type="button" onClick={reset} className="h-10 rounded-lg border px-4 text-sm">Cancelar</button></div>
