@@ -3,7 +3,7 @@ import { catalogSource } from "@/lib/api";
 import type { CartItem } from "@/lib/cart";
 import { getSupabase } from "@/lib/supabase";
 import { catalogService } from "@/services";
-import { calculateVolumeDiscount, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { calculateVolumeDiscount, getVolumeDiscountRule, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 
 type VolumeQuote = ReturnType<typeof calculateVolumeDiscount>;
 
@@ -78,7 +78,15 @@ export function useCartPricing(items: CartItem[]) {
       const product = reseller.products.find(product => matches(product, item));
       if (!product || product.resellerPrice == null) return null;
       const rules = reseller.rules.filter(rule => (rule.product_ids ?? []).includes(product.slug));
-      const quote = calculateVolumeDiscount(product.resellerPrice, item.qty, rules, product.slug);
+      const activeRule = getVolumeDiscountRule(item.qty, rules, product.slug);
+      const quoteBase = activeRule?.discount_type === "percentage" && product.customerPrice != null
+        ? Number(product.customerPrice)
+        : Number(product.resellerPrice);
+      const quote = calculateVolumeDiscount(quoteBase, item.qty, rules, product.slug);
+      if (!quote.rule) {
+        const lineTotal = Math.round(Number(product.resellerPrice) * item.qty * 100) / 100;
+        return { kind: "reseller", currency: product.currency, unitPrice: Number(product.resellerPrice), lineTotal, quote: null };
+      }
       return { kind: "reseller", currency: product.currency, unitPrice: quote.discountedUnitPrice, lineTotal: quote.totalAfterDiscount, quote };
     }
     if (!roleKnown || resellerQuery.isError) return null;
