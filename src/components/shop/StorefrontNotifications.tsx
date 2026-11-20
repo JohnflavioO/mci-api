@@ -162,6 +162,7 @@ export function StorefrontNotifications() {
           evaluated.push(item.id);
           break; // one authorized campaign at a time, so the feed cannot consume the daily cap.
         }
+        if (!error && data?.allowed === false) evaluated.push(item.id);
       }
       if (!cancelled) {
         setApprovedIds(approved);
