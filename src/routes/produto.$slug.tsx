@@ -448,19 +448,23 @@ function ProductPage() {
                       );
                     })}
                   </div>
-                  {volumeQuote && volumeQuote.rule && (
+                  {isApprovedReseller && rp.data != null && purchaseQty > 1 && volumeQuote && (
                     <div className="mt-4 rounded-2xl bg-[#f4f3f0] p-4 sm:p-4">
                       <div className="mb-3 flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Sua economia</span>
-                        <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#27734b]">Desconto aplicado</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Resumo da quantidade</span>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#27734b]">{volumeQuote.totalDiscount > 0 ? "Desconto aplicado" : "Preço de revenda"}</span>
                       </div>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm text-muted-foreground">Preço por unidade</span>
                         <strong className="text-base font-extrabold text-foreground">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
                       </div>
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/10 pt-3">
-                        <span className="text-sm text-muted-foreground">Economia total ({purchaseQty} {purchaseQty === 1 ? "unidade" : "unidades"})</span>
-                        <strong className="text-lg font-extrabold text-[#27734b]">{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
+                        <span className="text-sm font-semibold text-foreground">Total de {purchaseQty} unidades</span>
+                        <strong className="text-lg font-extrabold text-foreground">{formatPrice(volumeQuote.totalAfterDiscount, p.currency)}</strong>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">Economia total</span>
+                        <strong className="text-base font-extrabold text-[#27734b]">{formatPrice(volumeQuote.totalDiscount, p.currency)}</strong>
                       </div>
                     </div>
                   )}
