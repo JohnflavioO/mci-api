@@ -161,19 +161,19 @@ function Index() {
             <Link to="/catalogo" className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-[#ff681f] hover:text-[#e95b19]">Explorar catálogo <ArrowRight className="size-4" /></Link>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_0.9fr]">
-            <Link to="/catalogo" search={{ categoria: "Iluminação" }} className="group relative isolate min-h-[420px] overflow-hidden rounded-[28px] border border-[#eadfce] bg-[#fff8ed] text-[#171a1f] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[470px]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_50%,rgba(255,173,91,0.24),transparent_42%),linear-gradient(120deg,#fff8ed,#fff2df)]" />
+            <Link to="/catalogo" search={{ categoria: "Iluminação" }} className="group relative isolate min-h-[420px] overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] text-[#171a1f] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[470px]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_50%,rgba(203,213,225,0.32),transparent_42%),linear-gradient(120deg,#f8fafc,#f1f5f9)]" />
               <div className="absolute inset-y-0 right-0 flex w-[58%] items-center justify-center p-5 sm:p-8">
                 {products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "iluminação")?.images?.[0] ? <img src={products.find((p) => p.category.trim().toLocaleLowerCase("pt-BR") === "iluminação")?.images?.[0]} alt="" loading="lazy" className="size-full object-contain mix-blend-multiply drop-shadow-[0_16px_22px_rgba(45,35,20,0.12)] transition-transform duration-500 group-hover:scale-105" /> : <div className="flex size-full items-center justify-center text-[#171a1f]/35"><Package className="size-20" strokeWidth={1} /></div>}
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-[#fff8ed] via-[#fff8ed]/75 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/85 to-transparent" />
               <div className="relative z-10 flex h-full min-h-[420px] max-w-[58%] flex-col justify-between p-7 sm:min-h-[470px] sm:p-10">
-                <div><span className="inline-flex rounded-full border border-[#d8cbb9] bg-white/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#d65b1a]">Categoria em destaque</span>
+                <div><span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#d65b1a]">Categoria em destaque</span>
                   <h3 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">Iluminação</h3>
                   <p className="mt-3 max-w-sm text-sm leading-6 text-slate-600">Domine a luz. Encontre painéis, LEDs e soluções para transformar cada cena.</p></div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold text-orange-300">Ver equipamentos <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#e95b19]">Ver equipamentos <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
               </div>
-              <span className="absolute bottom-6 right-6 rounded-full border border-white/15 bg-white/50 px-3 py-1.5 text-xs text-slate-600">01 / Iluminação</span>
+              <span className="absolute bottom-6 right-6 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-xs text-slate-600">01 / Iluminação</span>
             </Link>
             <div className="grid grid-rows-[1fr_1fr] gap-4">
               <Link to="/catalogo" search={{ categoria: "Acessórios" }} className="group relative isolate flex min-h-[220px] overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[230px]">
