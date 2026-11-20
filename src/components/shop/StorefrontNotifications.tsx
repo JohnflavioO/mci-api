@@ -17,6 +17,20 @@ type FeedItem = {
   interval_seconds: number; demo: boolean;
 };
 
+const VISITOR_KEY_STORAGE = "mci-storefront-notification-visitor-v1";
+function getVisitorKey() {
+  try {
+    const existing = window.localStorage.getItem(VISITOR_KEY_STORAGE);
+    if (existing && existing.length >= 16) return existing;
+    const created = typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(VISITOR_KEY_STORAGE, created);
+    return created;
+  } catch {
+    return null;
+  }
+}
 function getSessionFlag(key: string) {
   try { return window.sessionStorage.getItem(key) === "1"; } catch { return false; }
 }
@@ -30,6 +44,13 @@ export function StorefrontNotifications() {
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [audience, setAudience] = useState<"visitors" | "customers" | "resellers">("visitors");
   const [audienceReady, setAudienceReady] = useState(false);
+  const [visitorKey, setVisitorKey] = useState<string | null>(null);
+  const [approvedIds, setApprovedIds] = useState<string[]>([]);
+  const [approvalReady, setApprovalReady] = useState(false);
+  const [evaluatedCampaignIds, setEvaluatedCampaignIds] = useState<string[]>([]);
+  const [campaignDismissedIds, setCampaignDismissedIds] = useState<string[]>([]);
+
+  useEffect(() => { setVisitorKey(getVisitorKey()); }, []);
 
   const sessionQuery = useQuery({
     queryKey: ["storefront-notification-audience"],
@@ -108,38 +129,82 @@ export function StorefrontNotifications() {
     return [...sales, ...campaigns];
   }, [campaignsQuery.data, salesQuery.data, audience]);
 
-  const visibleFeed = useMemo(() => feed.filter(item => !dismissed.includes(item.id) && !getSessionFlag(`mci-notification-clicked-${item.id}`)), [feed, dismissed]);
+  const visibleFeed = useMemo(() => feed.filter(item =>
+    !dismissed.includes(item.id) &&
+    !campaignDismissedIds.includes(item.id) &&
+    !getSessionFlag(`mci-notification-clicked-${item.id}`) &&
+    (item.source === "sale" || approvedIds.includes(item.id))
+  ), [feed, dismissed, approvedIds, campaignDismissedIds]);
   const current = visibleFeed.length ? visibleFeed[index % visibleFeed.length] : null;
+
+  // Approve only one item at a time through the database policy function. This is the authoritative
+  // frequency gate, shared across browser sessions for the same anonymous visitor.
+  useEffect(() => {
+    let cancelled = false;
+    setApprovedIds([]);
+    setEvaluatedCampaignIds([]);
+    setApprovalReady(false);
+    const campaigns = feed.filter(item => item.source === "campaign");
+    if (!visitorKey || campaigns.length === 0) {
+      setApprovalReady(true);
+      return;
+    }
+    void (async () => {
+      const approved: string[] = [];
+      const evaluated: string[] = [];
+      for (const item of campaigns) {
+        if (cancelled) return;
+        const { data, error } = await getSupabase().rpc("evaluate_storefront_notification", {
+          p_visitor_key: visitorKey,
+          p_notification_id: item.id,
+          p_event_type: "impression",
+        });
+        if (!error && data?.allowed === true) {
+          approved.push(item.id);
+          evaluated.push(item.id);
+          break; // one authorized campaign at a time, so the feed cannot consume the daily cap.
+        }
+        if (!error && data?.allowed === false) evaluated.push(item.id);
+      }
+      if (!cancelled) {
+        setApprovedIds(approved);
+        setEvaluatedCampaignIds(evaluated);
+        setApprovalReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [visitorKey, campaignsQuery.data, audience]);
 
   useEffect(() => {
     if (!current) return;
     const impressionKey = `mci-notification-impression-${current.id}`;
-    if (!getSessionFlag(impressionKey)) {
-      setSessionFlag(impressionKey);
-      if (current.source === "campaign") {
-        void getSupabase().rpc("track_storefront_notification_event", { p_notification_id: current.id, p_event_type: "impression" });
-      }
-    }
+    if (!getSessionFlag(impressionKey)) setSessionFlag(impressionKey);
     const delay = Math.max(15, Math.min(180, current.interval_seconds)) * 1000;
     const timer = window.setTimeout(() => setIndex(value => (value + 1) % Math.max(1, visibleFeed.length)), delay);
     return () => window.clearTimeout(timer);
   }, [current?.id, current?.interval_seconds, visibleFeed.length]);
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/revendedor") || pathname.startsWith("/afiliado") || pathname.startsWith("/entrar") || pathname.startsWith("/cadastro") || pathname.startsWith("/checkout")) return null;
-  if (!audienceReady || !current) return null;
+  if (!audienceReady || !approvalReady || !current) return null;
 
   const Icon = current.kind === "promotion" ? Tag : current.kind === "real_purchase" || current.kind === "demo_purchase" ? ShoppingBag : current.kind === "product" ? CheckCircle2 : BellRing;
   const close = () => {
     setDismissed(previous => [...previous, current.id]);
+    if (current.source === "campaign" && visitorKey && !evaluatedCampaignIds.includes(current.id)) {
+      void getSupabase().rpc("evaluate_storefront_notification", {
+        p_visitor_key: visitorKey, p_notification_id: current.id, p_event_type: "dismiss",
+      });
+    }
+    if (current.source === "campaign") setCampaignDismissedIds(previous => [...previous, current.id]);
     setIndex(value => visibleFeed.length > 1 ? (value + 1) % (visibleFeed.length - 1) : 0);
   };
   const click = () => {
-    // A notification that opened its destination must not reappear during this browser session,
-    // including after route changes, component remounts, or returning to the product page.
     setSessionFlag(`mci-notification-clicked-${current.id}`);
     setDismissed(previous => previous.includes(current.id) ? previous : [...previous, current.id]);
-    if (current.source === "campaign") {
-      void getSupabase().rpc("track_storefront_notification_event", { p_notification_id: current.id, p_event_type: "click" });
+    if (current.source === "campaign" && visitorKey) {
+      void getSupabase().rpc("evaluate_storefront_notification", {
+        p_visitor_key: visitorKey, p_notification_id: current.id, p_event_type: "click",
+      });
     }
   };
 
