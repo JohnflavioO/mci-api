@@ -50,9 +50,16 @@ export function AdminStorefrontNotifications() {
   const settings = useQuery({
     queryKey: ["admin-storefront-notification-settings"],
     queryFn: async () => {
-      const { data, error } = await getSupabase().from("storefront_notification_settings").select("id,real_sales_enabled").eq("id", true).single();
+      const { data, error } = await getSupabase().from("storefront_notification_settings")
+        .select("id,real_sales_enabled,promotional_daily_limit,promotional_weekly_limit,promotional_min_interval_hours,allowed_start_hour,allowed_end_hour,campaign_repeat_days,inactivity_pause_days,low_engagement_days,low_frequency_weekly_limit,commercial_enabled,content_enabled,transactional_enabled")
+        .eq("id", true).single();
       if (error) throw error;
-      return data as { id: boolean; real_sales_enabled: boolean };
+      return data as {
+        id: boolean; real_sales_enabled: boolean; promotional_daily_limit: number; promotional_weekly_limit: number;
+        promotional_min_interval_hours: number; allowed_start_hour: number; allowed_end_hour: number;
+        campaign_repeat_days: number; inactivity_pause_days: number; low_engagement_days: number;
+        low_frequency_weekly_limit: number; commercial_enabled: boolean; content_enabled: boolean; transactional_enabled: boolean;
+      };
     },
   });
   const setRealSales = async (enabled: boolean) => {
@@ -63,6 +70,16 @@ export function AdminStorefrontNotifications() {
     else { toast.success(enabled ? "Prova social de compras reais ativada." : "Prova social de compras reais pausada."); await qc.invalidateQueries({ queryKey: ["admin-storefront-notification-settings"] }); await qc.invalidateQueries({ queryKey: ["storefront-notification-settings"] }); }
   };
 
+  const updatePolicy = async (patch: Record<string, number | boolean>) => {
+    const { data: auth } = await getSupabase().auth.getUser();
+    const { error } = await getSupabase().from("storefront_notification_settings")
+      .update({ ...patch, updated_by: auth.user?.id ?? null, updated_at: new Date().toISOString() }).eq("id", true);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Política de frequência atualizada.");
+      await qc.invalidateQueries({ queryKey: ["admin-storefront-notification-settings"] });
+    }
+  };
   const rows = notifications.data ?? [];
   const metrics = useMemo(() => ({
     active: rows.filter(row => row.is_active && (!row.starts_at || new Date(row.starts_at) <= new Date()) && (!row.ends_at || new Date(row.ends_at) >= new Date())).length,
@@ -150,6 +167,32 @@ export function AdminStorefrontNotifications() {
         <button type="button" disabled={settings.isPending || settings.isError} onClick={() => void setRealSales(!settings.data?.real_sales_enabled)} className={`h-10 rounded-lg px-4 text-sm font-semibold ${settings.data?.real_sales_enabled ? "bg-emerald-600 text-white" : "border bg-background"} disabled:opacity-50`}>{settings.data?.real_sales_enabled ? "Ativada" : "Desativada"}</button>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">{settings.isError ? "Não foi possível carregar a configuração." : settings.data?.real_sales_enabled ? "Ativa: só aparecem compras com pagamento confirmado." : "Desativada por padrão. Ative quando quiser exibir compras confirmadas."}</p>
+    </section>
+
+    <section className="rounded-xl border bg-card p-5 space-y-4">
+      <div><h3 className="font-semibold">Política de frequência</h3><p className="mt-1 text-sm text-muted-foreground">Limites centralizados aplicados a todos os popups comerciais da loja. Horários no fuso de Fortaleza.</p></div>
+      {settings.isError ? <p className="text-sm text-destructive">Não foi possível carregar as regras de frequência.</p> : settings.isPending ? <p className="text-sm text-muted-foreground">Carregando política…</p> : settings.data && <>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {([
+            ["Limite diário", "promotional_daily_limit", 0, 10],
+            ["Limite em 7 dias", "promotional_weekly_limit", 0, 21],
+            ["Intervalo mínimo (horas)", "promotional_min_interval_hours", 1, 168],
+            ["Repetir campanha após (dias)", "campaign_repeat_days", 1, 90],
+            ["Pausa por falta de interação (dias)", "inactivity_pause_days", 1, 30],
+            ["Modo baixa frequência após (dias)", "low_engagement_days", 1, 90],
+            ["Limite semanal em baixa frequência", "low_frequency_weekly_limit", 0, 7],
+            ["Início dos envios (hora)", "allowed_start_hour", 0, 23],
+            ["Fim dos envios (hora)", "allowed_end_hour", 1, 24],
+          ] as const).map(([label, key, min, max]) => <label key={key} className="text-sm font-medium">{label}<input type="number" min={min} max={max} className={field} value={settings.data![key]} onChange={e => {
+            const value = Number(e.target.value);
+            if (Number.isInteger(value) && value >= min && value <= max) void updatePolicy({ [key]: value });
+          }}/></label>)}
+        </div>
+        <div className="flex flex-wrap gap-5 text-sm">
+          {([["Campanhas comerciais","commercial_enabled"],["Conteúdo e remarketing","content_enabled"],["Transacionais","transactional_enabled"]] as const).map(([label,key]) => <label key={key} className="inline-flex items-center gap-2"><input type="checkbox" checked={Boolean(settings.data![key])} onChange={e => void updatePolicy({ [key]: e.target.checked })}/>{label}</label>)}
+        </div>
+      </>}
+      <p className="text-xs text-muted-foreground">Padrão: 1 por dia, 3 em 7 dias, intervalo de 24 horas, 10h–19h e repetição da mesma campanha bloqueada por 7 dias.</p>
     </section>
 
     {formOpen && <form onSubmit={save} className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
