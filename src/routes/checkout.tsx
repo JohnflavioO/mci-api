@@ -14,6 +14,7 @@ import { getSupabase } from "@/lib/supabase";
 import { useCartPricing } from "@/lib/useCartPricing";
 import { ProductImage } from "@/components/shop/ProductCard";
 import { formatPrice } from "@/services/catalog";
+import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout, type AnalyticsItem } from "@/lib/analytics";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -77,6 +78,14 @@ function Checkout() {
     onSuccess: (result) => { setShippingOptions(result.options || []); setProductsSubtotal(Number.isFinite(result.products_subtotal) ? Number(result.products_subtotal) : null); setShippingProviders(result.providers || {}); setSelectedShipping(null); },
   });
   const pricing = useCartPricing(items);
+  const analyticsItems = (): AnalyticsItem[] => items.map((item) => ({ id: item.slug, name: item.name, price: pricing.lineFor(item)?.unitPrice ?? null, quantity: item.qty }));
+  // begin_checkout uma vez por visita ao checkout, quando os preços do carrinho já estão disponíveis.
+  const [checkoutTracked, setCheckoutTracked] = useState(false);
+  useEffect(() => {
+    if (checkoutTracked || items.length === 0 || pricing.isPending) return;
+    trackBeginCheckout(analyticsItems(), pricing.currency);
+    setCheckoutTracked(true);
+  }, [checkoutTracked, items.length, pricing.isPending]); // eslint-disable-line react-hooks/exhaustive-deps
   // A cotação de frete devolve o subtotal pelo preço de cliente final; para revendedores o pedido
   // é criado com o preço de revenda, então o resumo usa a mesma estimativa exibida no carrinho.
   const summarySubtotal = productsSubtotal === null ? null : pricing.isReseller && pricing.subtotal != null ? pricing.subtotal : productsSubtotal;
@@ -106,7 +115,7 @@ function Checkout() {
       }});
       return orderService.create(items.map((i) => ({ slug: i.slug, qty: i.qty })), cleaned as typeof delivery, idempotencyKey, selectedShipping, pickup ? pickupData : null);
     },
-    onSuccess: (result) => { window.location.assign(result.checkout_url); },
+    onSuccess: (result) => { trackAddPaymentInfo(analyticsItems(), result.total, pricing.currency); window.location.assign(result.checkout_url); },
   });
   useEffect(() => {
     if (!profile.data) return;
@@ -226,7 +235,7 @@ function Checkout() {
                   const selected = selectedShipping?.quote_token === option.quote_token;
                   const isPickup = option.provider === "pickup";
                   return <label key={option.id} className={"flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors " + (selected ? "border-[#ff681f] bg-orange-50 ring-2 ring-[#ff681f]/25 shadow-sm" : "border-slate-200 bg-white hover:border-orange-300 hover:bg-orange-50/40")}>
-                    <input type="radio" name="shipping" className="size-4 accent-primary" checked={selected} onChange={() => setSelectedShipping({ provider: option.provider, service: option.service, quote_token: option.quote_token })} />
+                    <input type="radio" name="shipping" className="size-4 accent-primary" checked={selected} onChange={() => { setSelectedShipping({ provider: option.provider, service: option.service, quote_token: option.quote_token }); trackAddShippingInfo(analyticsItems(), option.provider === "pickup" ? "Retirada no local" : option.provider + " " + option.service, pricing.currency); }} />
                     <span className={"grid size-11 shrink-0 place-items-center rounded-xl " + (selected ? "bg-[#ff681f] text-white" : "bg-orange-100 text-[#e95712]")}>{isPickup ? "⌂" : "↗"}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold">{option.provider === "pickup" ? "Retirada no local" : option.service.toLowerCase().includes("package") ? "Jadlog — Entrega padrão" : option.service.toLowerCase().includes(".com") ? "Jadlog — Entrega para e-commerce" : option.service.replace(/^\./, "")}</span>
