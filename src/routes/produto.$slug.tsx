@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer,
 import { toast } from "sonner";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductComparison } from "@/components/shop/ProductComparison";
+import { PurchaseAssurances } from "@/components/shop/PurchaseAssurances";
+import { ShippingEstimate } from "@/components/shop/ShippingEstimate";
 import { availabilityLabel, priceLabel, ProductImage } from "@/components/shop/ProductCard";
 import { DemoBadge, EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
@@ -16,76 +18,147 @@ import { catalogSource } from "@/lib/api";
 import { formatPrice, slugifyProductName } from "@/services/catalog";
 import { calculateVolumeDiscount, getVolumeDiscountRule, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 
+
+const productQueryKey = (slug: string) => ["product", slug] as const;
+
+/** Resolve o produto pelo slug legível (ou UUID antigo) e completa a galeria pelo Supabase. */
+async function fetchProduct(slug: string) {
+  // URLs antigas com UUID continuam funcionando. Slugs legíveis são resolvidos pelo nome público.
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+  const listing = isUuid ? null : await catalogService.list();
+  const match = listing?.products.find((product) => slugifyProductName(product.name) === slug);
+  const current = isUuid
+    ? await catalogService.get(slug)
+    : match
+      ? await catalogService.get(match.slug)
+      : { product: null, isDemo: listing?.isDemo ?? false };
+
+  // O cadastro administrativo mantém a galeria no Supabase. Se a origem pública
+  // configurada devolver só a imagem principal, tenta recuperar a galeria completa
+  // do mesmo produto no Supabase, sem substituir preço, estoque ou outros dados públicos.
+  if (current.product && current.product.images.length <= 1) {
+    try {
+      const supabaseCatalog = createSupabaseCatalog();
+      let gallery: string[] = [];
+      // SKU é a chave de correspondência estável entre o catálogo público e o cadastro.
+      if (current.product.sku) {
+        gallery = await supabaseCatalog.getPublishedImagesBySku(current.product.sku);
+      }
+      // Compatibilidade para produtos antigos sem SKU ou com SKU diferente entre origens.
+      if (gallery.length <= current.product.images.length) {
+        const supabaseProducts = await supabaseCatalog.listPublished();
+        const normalizedSku = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("pt-BR");
+        const normalizedName = (value: string) => slugifyProductName(value);
+        const sameProduct = supabaseProducts.find((product) =>
+          (!!current.product?.sku && normalizedSku(product.sku) === normalizedSku(current.product.sku)) ||
+          normalizedName(product.name) === normalizedName(current.product?.name ?? "")
+        );
+        if (sameProduct) {
+          const directGallery = await supabaseCatalog.getProductImages(sameProduct.slug);
+          if (directGallery.length > gallery.length) gallery = directGallery;
+        }
+      }
+      if (gallery.length > current.product.images.length) {
+        return { ...current, product: { ...current.product, images: gallery } };
+      }
+      console.warn("[product-gallery] Galeria complementar não encontrada ou contém apenas uma imagem.", {
+        sku: current.product.sku,
+        productName: current.product.name,
+        publicImageCount: current.product.images.length,
+        supabaseImageCount: gallery.length,
+      });
+    } catch (error) {
+      console.error("[product-gallery] Falha ao recuperar galeria do Supabase:", error);
+    }
+  }
+  return current;
+}
+
+const SITE_NAME = "Store House";
+const plainText = (value: string | null | undefined) => (value ?? "").replace(/\s+/g, " ").trim();
+/** Corta no limite sem quebrar palavra ao meio. */
+const clip = (value: string, max: number) => {
+  if (value.length <= max) return value;
+  const cut = value.slice(0, max - 1);
+  const space = cut.lastIndexOf(" ");
+  return (space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[ ,;:.]+$/, "") + "…";
+};
+/** JSON dentro de <script> não pode conter "<" literal (evita fechar a tag com conteúdo do cadastro). */
+const safeJson = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c");
+
+type ProductMeta = {
+  name: string; description: string; image: string | null; sku: string | null; brand: string | null;
+  price: number | null; currency: string; available: boolean;
+};
+
 export const Route = createFileRoute("/produto/$slug")({
-  head: () => ({
-    meta: [
-      { title: "Produto | MCI Comercial" },
-      { name: "description", content: "Detalhes técnicos, disponibilidade e condições do produto MCI." },
-      { property: "og:title", content: "Produto | MCI Comercial" },
-      { property: "og:description", content: "Detalhes técnicos, disponibilidade e condições do produto MCI." },
-      { property: "og:type", content: "product" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
+  // Carrega no servidor para que Google e WhatsApp vejam nome, descrição e foto do produto.
+  // Falhas aqui nunca quebram a página: o componente refaz a consulta no navegador.
+  loader: async ({ params, context }): Promise<ProductMeta | null> => {
+    try {
+      const data = await context.queryClient.ensureQueryData({ queryKey: productQueryKey(params.slug), queryFn: () => fetchProduct(params.slug) });
+      const product = data.product;
+      if (!product || data.isDemo) return null;
+      return {
+        name: product.name,
+        description: clip(plainText(product.description), 160),
+        image: product.images[0] ?? null,
+        sku: product.sku,
+        brand: product.brand,
+        price: product.customerPrice,
+        currency: product.currency ?? "BRL",
+        available: canSell(product),
+      };
+    } catch {
+      return null;
+    }
+  },
+  head: ({ loaderData }) => {
+    const meta = loaderData ?? null;
+    const title = meta ? `${meta.name} | ${SITE_NAME}` : `Produto | ${SITE_NAME}`;
+    const priceText = meta?.price != null ? formatPrice(meta.price, meta.currency) : null;
+    const description = meta
+      ? clip([meta.description || `${meta.name} com envio do Brasil e nota fiscal.`, priceText ? `Por ${priceText}.` : ""].filter(Boolean).join(" "), 200)
+      : "Detalhes técnicos, disponibilidade e condições do produto.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "product" },
+        { property: "og:site_name", content: SITE_NAME },
+        ...(meta?.image ? [{ property: "og:image", content: meta.image }] : []),
+        ...(meta?.price != null ? [{ property: "product:price:amount", content: meta.price.toFixed(2) }, { property: "product:price:currency", content: meta.currency }] : []),
+        { name: "twitter:card", content: meta?.image ? "summary_large_image" : "summary" },
+      ],
+      scripts: meta ? [{
+        type: "application/ld+json",
+        children: safeJson({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: meta.name,
+          ...(meta.description ? { description: meta.description } : {}),
+          ...(meta.image ? { image: [meta.image] } : {}),
+          ...(meta.sku ? { sku: meta.sku } : {}),
+          ...(meta.brand ? { brand: { "@type": "Brand", name: meta.brand } } : {}),
+          ...(meta.price != null ? { offers: {
+            "@type": "Offer",
+            price: meta.price.toFixed(2),
+            priceCurrency: meta.currency,
+            availability: meta.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            itemCondition: "https://schema.org/NewCondition",
+          } } : {}),
+        }),
+      }] : [],
+    };
+  },
   component: ProductPage,
 });
 
 function ProductPage() {
   const { slug } = Route.useParams();
-  const q = useQuery({
-    queryKey: ["product", slug],
-    queryFn: async () => {
-      // URLs antigas com UUID continuam funcionando. Slugs legíveis são resolvidos pelo nome público.
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
-      const listing = isUuid ? null : await catalogService.list();
-      const match = listing?.products.find((product) => slugifyProductName(product.name) === slug);
-      const current = isUuid
-        ? await catalogService.get(slug)
-        : match
-          ? await catalogService.get(match.slug)
-          : { product: null, isDemo: listing?.isDemo ?? false };
-
-      // O cadastro administrativo mantém a galeria no Supabase. Se a origem pública
-      // configurada devolver só a imagem principal, tenta recuperar a galeria completa
-      // do mesmo produto no Supabase, sem substituir preço, estoque ou outros dados públicos.
-      if (current.product && current.product.images.length <= 1) {
-        try {
-          const supabaseCatalog = createSupabaseCatalog();
-          let gallery: string[] = [];
-          // SKU é a chave de correspondência estável entre o catálogo público e o cadastro.
-          if (current.product.sku) {
-            gallery = await supabaseCatalog.getPublishedImagesBySku(current.product.sku);
-          }
-          // Compatibilidade para produtos antigos sem SKU ou com SKU diferente entre origens.
-          if (gallery.length <= current.product.images.length) {
-            const supabaseProducts = await supabaseCatalog.listPublished();
-            const normalizedSku = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("pt-BR");
-            const normalizedName = (value: string) => slugifyProductName(value);
-            const sameProduct = supabaseProducts.find((product) =>
-              (!!current.product?.sku && normalizedSku(product.sku) === normalizedSku(current.product.sku)) ||
-              normalizedName(product.name) === normalizedName(current.product?.name ?? "")
-            );
-            if (sameProduct) {
-              const directGallery = await supabaseCatalog.getProductImages(sameProduct.slug);
-              if (directGallery.length > gallery.length) gallery = directGallery;
-            }
-          }
-          if (gallery.length > current.product.images.length) {
-            return { ...current, product: { ...current.product, images: gallery } };
-          }
-          console.warn("[product-gallery] Galeria complementar não encontrada ou contém apenas uma imagem.", {
-            sku: current.product.sku,
-            productName: current.product.name,
-            publicImageCount: current.product.images.length,
-            supabaseImageCount: gallery.length,
-          });
-        } catch (error) {
-          console.error("[product-gallery] Falha ao recuperar galeria do Supabase:", error);
-        }
-      }
-      return current;
-    },
-  });
+  const q = useQuery({ queryKey: productQueryKey(slug), queryFn: () => fetchProduct(slug) });
   const cart = useCart();
   const [resellerUserId, setResellerUserId] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -245,7 +318,7 @@ function ProductPage() {
   return (
     <SiteShell>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:py-12">
-        <div className="mb-6 text-sm text-muted-foreground"><Link to="/catalogo" className="transition hover:text-brand">Catálogo</Link><span className="mx-2">/</span><span className="text-foreground">Detalhes do produto</span></div>
+        <nav aria-label="Trilha" className="mb-6 flex min-w-0 flex-wrap items-center gap-x-2 text-sm text-muted-foreground"><Link to="/catalogo" className="transition hover:text-brand">Catálogo</Link>{p?.category && <><span>/</span><Link to="/catalogo" search={{ categoria: p.category }} className="transition hover:text-brand">{p.category}</Link></>}<span>/</span><span className="min-w-0 truncate text-foreground">{p?.name ?? "Detalhes do produto"}</span></nav>
         {q.isPending ? (
           <LoadingState />
         ) : q.isError ? (
@@ -391,6 +464,8 @@ function ProductPage() {
                   <Link to="/checkout">Finalizar compra<ArrowRight className="ml-1.5 size-3.5" /></Link>
                 </Button>
               </div>
+              {canSell(p) && <ShippingEstimate productId={p.slug} qty={purchaseQty} />}
+              <PurchaseAssurances />
               {isApprovedReseller && !volumeRulesQuery.isPending && volumeRules.length > 0 && (
                 <section className="mt-6 overflow-hidden rounded-[1.5rem] bg-white p-4 shadow-[0_14px_38px_-30px_rgba(15,23,42,.38)] sm:mt-7 sm:p-5" aria-label="Desconto progressivo para revendedores">
                   <div className="flex items-start gap-3 pb-4">

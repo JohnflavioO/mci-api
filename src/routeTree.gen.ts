@@ -48,6 +48,7 @@ import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 import { Route as ApiAffiliateDashboardRouteImport } from './routes/api/affiliate/dashboard'
 import { Route as ApiAffiliateLinksRouteImport } from './routes/api/affiliate/links'
 import { Route as ApiAffiliateSettingsRouteImport } from './routes/api/affiliate/settings'
+import { Route as ApiOrdersOrderIdRouteImport } from './routes/api/orders/$orderId'
 import { Route as ApiPublicInfinitepayConfirmRouteImport } from './routes/api/public/infinitepay-confirm'
 import { Route as ApiPublicInfinitepayHealthRouteImport } from './routes/api/public/infinitepay-health'
 import { Route as ApiPublicInfinitepayWebhookRouteImport } from './routes/api/public/infinitepay-webhook'
@@ -252,6 +253,11 @@ const ApiAffiliateSettingsRoute = ApiAffiliateSettingsRouteImport.update({
   path: '/api/affiliate/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOrdersOrderIdRoute = ApiOrdersOrderIdRouteImport.update({
+  id: '/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => ApiOrdersRoute,
+} as any)
 const ApiPublicInfinitepayConfirmRoute =
   ApiPublicInfinitepayConfirmRouteImport.update({
     id: '/api/public/infinitepay-confirm',
@@ -324,7 +330,7 @@ export interface FileRoutesByFullPath {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
-  '/api/orders': typeof ApiOrdersRoute
+  '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
   '/r/$slug': typeof RSlugRoute
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
+  '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
   '/api/public/infinitepay-health': typeof ApiPublicInfinitepayHealthRoute
   '/api/public/infinitepay-webhook': typeof ApiPublicInfinitepayWebhookRoute
@@ -370,7 +377,7 @@ export interface FileRoutesByTo {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
-  '/api/orders': typeof ApiOrdersRoute
+  '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
   '/r/$slug': typeof RSlugRoute
@@ -385,6 +392,7 @@ export interface FileRoutesByTo {
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
+  '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
   '/api/public/infinitepay-health': typeof ApiPublicInfinitepayHealthRoute
   '/api/public/infinitepay-webhook': typeof ApiPublicInfinitepayWebhookRoute
@@ -420,7 +428,7 @@ export interface FileRoutesById {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
-  '/api/orders': typeof ApiOrdersRoute
+  '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
   '/r/$slug': typeof RSlugRoute
@@ -435,6 +443,7 @@ export interface FileRoutesById {
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
+  '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
   '/api/public/infinitepay-health': typeof ApiPublicInfinitepayHealthRoute
   '/api/public/infinitepay-webhook': typeof ApiPublicInfinitepayWebhookRoute
@@ -486,6 +495,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
     | '/api/affiliate/settings'
+    | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
     | '/api/public/infinitepay-health'
     | '/api/public/infinitepay-webhook'
@@ -532,6 +542,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
     | '/api/affiliate/settings'
+    | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
     | '/api/public/infinitepay-health'
     | '/api/public/infinitepay-webhook'
@@ -581,6 +592,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
     | '/api/affiliate/settings'
+    | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
     | '/api/public/infinitepay-health'
     | '/api/public/infinitepay-webhook'
@@ -608,7 +620,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RevendedorRoute: typeof RevendedorRouteWithChildren
   SejaAfiliadoRoute: typeof SejaAfiliadoRoute
-  ApiOrdersRoute: typeof ApiOrdersRoute
+  ApiOrdersRoute: typeof ApiOrdersRouteWithChildren
   ApiShippingRoute: typeof ApiShippingRouteWithChildren
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   RSlugRoute: typeof RSlugRoute
@@ -901,6 +913,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAffiliateSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/orders/$orderId': {
+      id: '/api/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/api/orders/$orderId'
+      preLoaderRoute: typeof ApiOrdersOrderIdRouteImport
+      parentRoute: typeof ApiOrdersRoute
+    }
     '/api/public/infinitepay-confirm': {
       id: '/api/public/infinitepay-confirm'
       path: '/api/public/infinitepay-confirm'
@@ -1012,6 +1031,18 @@ const RevendedorRouteWithChildren = RevendedorRoute._addFileChildren(
   RevendedorRouteChildren,
 )
 
+interface ApiOrdersRouteChildren {
+  ApiOrdersOrderIdRoute: typeof ApiOrdersOrderIdRoute
+}
+
+const ApiOrdersRouteChildren: ApiOrdersRouteChildren = {
+  ApiOrdersOrderIdRoute: ApiOrdersOrderIdRoute,
+}
+
+const ApiOrdersRouteWithChildren = ApiOrdersRoute._addFileChildren(
+  ApiOrdersRouteChildren,
+)
+
 interface ApiShippingRouteChildren {
   ApiShippingMelhorEnvioCallbackRoute: typeof ApiShippingMelhorEnvioCallbackRoute
   ApiShippingMelhorEnvioConnectRoute: typeof ApiShippingMelhorEnvioConnectRoute
@@ -1045,7 +1076,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RevendedorRoute: RevendedorRouteWithChildren,
   SejaAfiliadoRoute: SejaAfiliadoRoute,
-  ApiOrdersRoute: ApiOrdersRoute,
+  ApiOrdersRoute: ApiOrdersRouteWithChildren,
   ApiShippingRoute: ApiShippingRouteWithChildren,
   ProdutoSlugRoute: ProdutoSlugRoute,
   RSlugRoute: RSlugRoute,
