@@ -28,10 +28,14 @@ export const Route = createFileRoute("/api/shipping")({
         const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
         if (!url || !publishableKey || !serviceRoleKey) return Response.json({ error: "Serviço de frete não configurado no servidor." }, { status: 503 });
         const sessionToken = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-        if (!sessionToken) return Response.json({ error: "Sessão necessária para cotar o frete." }, { status: 401 });
-        const user = createClient(url, publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
-        const { data: auth, error: authError } = await user.auth.getUser(sessionToken);
-        if (authError || !auth.user) return Response.json({ error: "Sessão inválida." }, { status: 401 });
+        // Cotar frete não exige login: o cliente vê prazo e valor já na página do produto.
+        // A cotação só calcula valores; criar o pedido continua exigindo sessão em /api/orders.
+        // Se um token for enviado, ele ainda precisa ser válido.
+        if (sessionToken) {
+          const user = createClient(url, publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
+          const { data: auth, error: authError } = await user.auth.getUser(sessionToken);
+          if (authError || !auth.user) return Response.json({ error: "Sessão inválida." }, { status: 401 });
+        }
         const body = await request.json().catch(() => null) as { cep?: unknown; items?: unknown } | null;
         const destinationCep = digits(body?.cep);
         if (destinationCep.length !== 8) return Response.json({ error: "Informe um CEP de destino válido." }, { status: 400 });
