@@ -7,6 +7,7 @@ import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductComparison } from "@/components/shop/ProductComparison";
 import { PurchaseAssurances } from "@/components/shop/PurchaseAssurances";
 import { ShippingEstimate } from "@/components/shop/ShippingEstimate";
+import { trackAddToCart, trackViewItem } from "@/lib/analytics";
 import { availabilityLabel, priceLabel, ProductImage } from "@/components/shop/ProductCard";
 import { DemoBadge, EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
 import { Button } from "@/components/ui/button";
@@ -167,6 +168,10 @@ function ProductPage() {
   const images = q.data?.product?.images?.filter(Boolean) ?? [];
   const activeImage = images[activeImageIndex] ?? images[0];
   useEffect(() => { setActiveImageIndex(0); setLightboxOpen(false); setPurchaseQty(1); }, [slug]);
+  const viewed = q.data?.product && !q.data.isDemo ? q.data.product : null;
+  useEffect(() => {
+    if (viewed) trackViewItem({ id: viewed.slug, name: viewed.name, price: viewed.customerPrice, category: viewed.category, brand: viewed.brand }, viewed.currency ?? "BRL");
+  }, [viewed?.slug]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     let active = true;
     let unsubscribe = () => {};
@@ -450,7 +455,7 @@ function ProductPage() {
                   <p id="product-quantity-help" className="mt-1 text-xs text-muted-foreground">{p.stock != null ? `Máximo: ${p.stock}` : "Estoque a confirmar"}</p>
                 </div>
                 <Button className="h-12 min-h-12 w-full min-w-0 flex-1 whitespace-normal rounded-xl px-4 text-center text-sm font-bold leading-tight shadow-sm transition-all hover:-translate-y-0.5 sm:mt-[1.625rem] bg-graphite text-graphite-foreground hover:bg-brand hover:text-brand-foreground sm:text-base" size="lg" disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)} onClick={() => {
-                  if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
+                  if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) { toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`); trackAddToCart({ id: p.slug, name: p.name, price: p.customerPrice, quantity: purchaseQty, category: p.category, brand: p.brand }, p.currency ?? "BRL"); }
                   else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
                 }}>
                   {!canSell(p) ? "Indisponível" : <><ShoppingCart className="mr-2 size-4" />Adicionar ao carrinho<ArrowRight className="ml-2 size-4" /></>}
@@ -610,7 +615,7 @@ function ProductPage() {
             <Button className="h-12 shrink-0 rounded-xl bg-graphite px-5 text-graphite-foreground hover:bg-brand hover:text-brand-foreground"
               disabled={!canSell(p) || purchaseQty < 1 || (p.stock != null && purchaseQty > p.stock)}
               onClick={() => {
-                if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`);
+                if (cart.add({ slug: p.slug, name: p.name, image: p.images[0] ?? null, maxQty: p.stock, qty: purchaseQty })) { toast.success(`${purchaseQty} ${purchaseQty === 1 ? "unidade adicionada" : "unidades adicionadas"} ao carrinho`); trackAddToCart({ id: p.slug, name: p.name, price: p.customerPrice, quantity: purchaseQty, category: p.category, brand: p.brand }, p.currency ?? "BRL"); }
                 else toast.error("A quantidade solicitada ultrapassa o estoque disponível.");
               }}>
               Adicionar ao carrinho

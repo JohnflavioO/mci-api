@@ -7,6 +7,7 @@ import { catalogSource } from "@/lib/api";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
+import { trackAddToCart } from "@/lib/analytics";
 import { canSell } from "@/lib/cart";
 import { formatPrice, slugifyProductName, type CatalogProduct } from "@/services/catalog";
 
@@ -97,7 +98,10 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
 
   const secondImage = product.images.length > 1 ? product.images[1] : undefined;
   const addToCart = () => {
-    if (cart.add({ slug: product.slug, name: product.name, image: product.images[0] ?? null, maxQty: product.stock })) toast.success("Adicionado ao carrinho");
+    if (cart.add({ slug: product.slug, name: product.name, image: product.images[0] ?? null, maxQty: product.stock })) {
+      toast.success("Adicionado ao carrinho");
+      trackAddToCart({ id: product.slug, name: product.name, price: product.customerPrice, quantity: 1, category: product.category, brand: product.brand }, product.currency ?? "BRL");
+    }
     else toast.error("Quantidade máxima em estoque já está no carrinho.");
   };
 

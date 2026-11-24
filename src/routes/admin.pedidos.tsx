@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CalendarDays, CheckCircle2, Clock3, CreditCard, Package, RefreshCw, Search, ShoppingCart, WalletCards, Trash2, Truck, UserRound, MapPin } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { isEffectiveOrder } from "@/lib/orders";
+import { PaymentRecoveryPanel } from "@/components/portal/PaymentRecoveryPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,6 +33,8 @@ type Order = {
   provider_charge_id: string | null;
   provider_checkout_url: string | null;
   payment_link_created_at: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
   created_at: string;
   updated_at: string;
   order_items: OrderItem[];
@@ -102,7 +105,7 @@ function OrdersPage() {
     queryFn: async () => {
       const { data, error } = await getSupabase()
         .from("orders")
-        .select("id,user_id,status,currency,total,provider,provider_order_id,provider_charge_id,provider_checkout_url,payment_link_created_at,created_at,updated_at,order_items(id,name_snapshot,unit_price,qty)")
+        .select("id,user_id,status,currency,total,provider,provider_order_id,provider_charge_id,provider_checkout_url,payment_link_created_at,customer_name,customer_phone,created_at,updated_at,order_items(id,name_snapshot,unit_price,qty)")
         .order("created_at", { ascending: false })
         .limit(250);
       if (error) throw error;
@@ -136,6 +139,8 @@ function OrdersPage() {
           <RefreshCw className={`mr-2 size-4 ${ordersQuery.isFetching ? "animate-spin" : ""}`} /> Atualizar
         </Button>
       </section>
+
+      {!ordersQuery.isPending && !ordersQuery.isError && <PaymentRecoveryPanel orders={orders} />}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric icon={ShoppingCart} label="Pedidos efetivos" value={ordersQuery.isPending ? "…" : String(effectiveOrders.length)} detail="Checkout iniciado ou pagamento confirmado" />
@@ -197,7 +202,7 @@ function OrdersPage() {
                 return <tr key={order.id} className="transition-colors hover:bg-muted/30">
                   <td className="px-4 py-3 font-mono text-xs">#{order.id.slice(0, 8).toUpperCase()}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{dateTime(order.created_at)}</td>
-                  <td className="px-4 py-3"><span className="font-medium">Conta {order.user_id.slice(0, 8)}</span><span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">{order.user_id}</span></td>
+                  <td className="px-4 py-3"><span className="font-medium">{order.customer_name || `Conta ${order.user_id.slice(0, 8)}`}</span><span className="mt-0.5 block text-xs text-muted-foreground">{order.customer_phone || <span className="font-mono text-[10px]">{order.user_id}</span>}</span></td>
                   <td className="px-4 py-3">{order.order_items?.reduce((sum, item) => sum + item.qty, 0) ?? 0}</td>
                   <td className="whitespace-nowrap px-4 py-3 font-semibold">{money(order.total)}</td>
                   <td className="px-4 py-3"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${meta.className}`}>{meta.label}</span></td>

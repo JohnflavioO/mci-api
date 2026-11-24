@@ -1,6 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteShell } from "@/components/shop/SiteShell";
+import { trackPurchase } from "@/lib/analytics";
+
+/** Registra a compra na medição com os valores gravados no pedido (o comprador lê o próprio pedido pelo RLS). */
+async function trackConfirmedPurchase(orderId: string) {
+  try {
+    const { getSupabase, isSupabaseConfigured } = await import("@/lib/supabase");
+    if (!isSupabaseConfigured()) return;
+    const { data } = await getSupabase().from("orders")
+      .select("id,total,currency,shipping_amount,order_items(product_id,name_snapshot,qty,unit_price)")
+      .eq("id", orderId).maybeSingle();
+    if (!data) return;
+    const items = ((data.order_items ?? []) as { product_id: string; name_snapshot: string; qty: number; unit_price: number }[])
+      .map((item) => ({ id: item.product_id, name: item.name_snapshot, price: Number(item.unit_price), quantity: item.qty }));
+    trackPurchase(data.id, items, Number(data.total), Number(data.shipping_amount ?? 0), data.currency ?? "BRL");
+  } catch { /* medição nunca interfere na confirmação do pagamento */ }
+}
 
 export const Route = createFileRoute("/pagamento-retorno")({
   head: () => ({ meta: [{ title: "Confirmação do pagamento | Store House" }] }),
@@ -23,7 +39,7 @@ function PaymentReturn() {
     }).then(async (response) => {
       const body = await response.json().catch(() => ({})) as { outcome?: string };
       if (!active) return;
-      if (response.ok && (body.outcome === "paid" || body.outcome === "already_paid")) setState("paid");
+      if (response.ok && (body.outcome === "paid" || body.outcome === "already_paid")) { setState("paid"); void trackConfirmedPurchase(orderNsu); }
       else if (response.ok && body.outcome === "refund_required") setState("attention");
       else if (response.ok) setState("pending");
       else setState("error");

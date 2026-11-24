@@ -16,6 +16,13 @@ export type CatalogSource = "oracle" | "supabase";
 export const parseCatalogSource = (v: unknown): CatalogSource => (v === "supabase" ? "supabase" : "oracle");
 export const catalogSource = (): CatalogSource => parseCatalogSource(import.meta.env["VITE_CATALOG_SOURCE"]);
 
+/** IDs públicos de medição. Vazios = medição desligada (nenhum script nem aviso de cookies). */
+const publicId = (value: unknown, pattern: RegExp) => (typeof value === "string" && pattern.test(value.trim()) ? value.trim() : null);
+export const analyticsConfig = () => ({
+  ga4MeasurementId: publicId(import.meta.env["VITE_GA4_MEASUREMENT_ID"], /^G-[A-Z0-9]{4,20}$/),
+  metaPixelId: publicId(import.meta.env["VITE_META_PIXEL_ID"], /^[0-9]{6,20}$/),
+});
+
 /**
  * Token da sessão atual, mantido só em memória.
  * O login administrativo chama setAuthToken() após o servidor emitir o token.

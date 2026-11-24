@@ -16,6 +16,7 @@ import { CartProvider } from "@/lib/cart";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StorefrontNotifications } from "@/components/shop/StorefrontNotifications";
+import { AnalyticsConsent } from "@/components/shop/AnalyticsConsent";
 
 function NotFoundComponent() {
   return (
@@ -139,6 +140,7 @@ function RootComponent() {
         {isNavigating && <OutlineLoadingIndicator />}
         <Outlet />
         <StorefrontNotifications />
+        <AnalyticsConsent />
         <Toaster />
       </CartProvider>
     </QueryClientProvider>
