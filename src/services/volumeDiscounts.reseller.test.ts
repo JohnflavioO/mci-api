@@ -34,6 +34,16 @@ describe("quoteResellerVolume (mesmo cálculo da página do produto)", () => {
     const deep = [rule({ id: "d", product_ids: ["p"], min_quantity: 2, max_quantity: null, discount_value: 0, quantity_discounts: [{ quantity: 2, discount_type: "percentage", discount_value: 30 }] })];
     expect(quoteResellerVolume(P, 2, deep)!.totalAfterDiscount).toBe(1500); // 800 + 700
   });
+  it("regra por unidade (2ª a 4ª) convive com as faixas 5–9 e 10+", () => {
+    const perUnit = rule({ id: "pu", min_quantity: 2, max_quantity: 4, discount_type: "fixed", discount_value: 80, quantity_discounts: [2, 3, 4].map((quantity) => ({ quantity, discount_type: "fixed" as const, discount_value: 80 })) });
+    const all = [perUnit, ...RULES];
+    expect(quoteResellerVolume(RAY, 1, all)!.totalAfterDiscount).toBe(3073.3);
+    expect(quoteResellerVolume(RAY, 4, all)!.totalAfterDiscount).toBe(12053.2); // 3.073,30 + 3 × 2.993,30
+    expect(quoteResellerVolume(RAY, 5, all)!.totalAfterDiscount).toBe(14945.5); // faixa 5–9 vence
+    expect(quoteResellerVolume(RAY, 10, all)!.discountedUnitPrice).toBe(2904.9); // faixa 10+
+    // Produto só com a regra por unidade: acima da 4ª, as unidades 2–4 seguem com desconto.
+    expect(quoteResellerVolume(RAY, 6, [perUnit])!.totalAfterDiscount).toBe(18199.8); // 6 × 3.073,30 − 3 × 80
+  });
   it("sem preço de revenda não cota", () => {
     expect(quoteResellerVolume({ ...RAY, resellerPrice: null }, 5, RULES)).toBeNull();
   });
