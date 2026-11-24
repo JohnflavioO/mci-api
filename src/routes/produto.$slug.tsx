@@ -17,7 +17,7 @@ import { catalogService } from "@/services";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { catalogSource } from "@/lib/api";
 import { formatPrice, slugifyProductName } from "@/services/catalog";
-import { getVolumeDiscountRule, quoteResellerVolume, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { getVolumeDiscountRule, quoteResellerVolume, volumeConditionsFor, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 
 
 const productQueryKey = (slug: string) => ["product", slug] as const;
@@ -242,25 +242,15 @@ function ProductPage() {
     },
   });
   const volumeRules = (volumeRulesQuery.data ?? []).filter(rule => (rule.product_ids ?? []).includes(p?.slug ?? "")).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.min_quantity - b.min_quantity);
-  const volumeOptions: { key: string; rule: VolumeDiscountRule | null; quantity: number; min_quantity: number; max_quantity: number | null; discount_type: "percentage" | "fixed"; discount_value: number; badge_label?: string | null; display_note?: string | null; is_featured?: boolean; perUnit: boolean }[] = [];
-  if (volumeRules.some(rule => (rule.quantity_discounts ?? []).length > 0)) {
-    volumeOptions.push({ key: "base-unit", rule: null, quantity: 1, min_quantity: 1, max_quantity: 1, discount_type: "percentage", discount_value: 0, badge_label: null, display_note: "Preço normal", is_featured: false, perUnit: true });
-  }
-  for (const rule of volumeRules) {
-    if (rule.quantity_discounts?.length) {
-      for (const tier of [...rule.quantity_discounts].sort((a, b) => a.quantity - b.quantity)) {
-        volumeOptions.push({ key: `${rule.id}-unit-${tier.quantity}`, rule, quantity: tier.quantity, min_quantity: tier.quantity, max_quantity: tier.quantity, discount_type: tier.discount_type, discount_value: Number(tier.discount_value), badge_label: tier.badge_label ?? rule.badge_label, display_note: tier.display_note ?? rule.display_note, is_featured: rule.is_featured, perUnit: true });
-      }
-    } else {
-      volumeOptions.push({ key: rule.id, rule, quantity: rule.min_quantity, min_quantity: rule.min_quantity, max_quantity: rule.max_quantity, discount_type: rule.discount_type, discount_value: Number(rule.discount_value), badge_label: rule.badge_label, display_note: rule.display_note, is_featured: rule.is_featured, perUnit: false });
-    }
-  }
   const activeVolumeRule = isApprovedReseller ? getVolumeDiscountRule(purchaseQty, volumeRules, p?.slug) : null;
   // Mesmo cálculo do catálogo, do carrinho e do pedido: % sobre o preço final, com teto no preço de revenda.
   const volumeQuote = isApprovedReseller && rp.data != null && p
     ? quoteResellerVolume({ slug: p.slug, resellerPrice: Number(rp.data), customerPrice: p.customerPrice ?? null }, purchaseQty, volumeRules)
     : null;
-  const nextVolumeOption = volumeOptions.find(option => option.quantity > purchaseQty && option.rule !== null);
+  // Condições legíveis: a regra por unidade (2ª a 4ª) vira uma condição só, ao lado das faixas 5–9 e 10+.
+  const volumeConditions = p ? volumeConditionsFor(volumeRules, p.slug, (value) => formatPrice(value, p.currency)) : [];
+  const activeCondition = volumeConditions.find((condition) => condition.ruleId === activeVolumeRule?.id) ?? null;
+  const nextCondition = volumeConditions.find((condition) => condition.from > purchaseQty && condition.ruleId !== activeCondition?.ruleId) ?? null;
   const relatedQuery = useQuery({
     queryKey: ["related-products", p?.slug, p?.category, p?.brand],
     enabled: !!p,
@@ -444,46 +434,40 @@ function ProductPage() {
                     <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-brand">Revendedor</span>
                     <span className="ml-auto text-[11px] text-muted-foreground">Toque numa faixa para aplicar</span>
                   </div>
-                  <div className="mt-2.5 grid grid-cols-[repeat(auto-fit,minmax(118px,1fr))] gap-2">
-                    {volumeOptions.map(option => {
-                      const applies = option.perUnit ? purchaseQty === option.quantity : purchaseQty >= option.min_quantity && (option.max_quantity == null || purchaseQty <= option.max_quantity);
-                      const unavailable = p.stock != null && p.stock < option.quantity;
-                      const discountLabel = !option.rule
-                        ? "Preço normal"
-                        : option.discount_type === "percentage"
-                          ? `${Number(option.discount_value)}% OFF`
-                          : `${formatPrice(Number(option.discount_value), p.currency)} OFF`;
-                      const quantityLabel = option.perUnit
-                        ? option.quantity === 1 ? "1 unidade" : `${option.quantity} unidades`
-                        : option.max_quantity == null ? `${option.min_quantity}+ unidades` : option.min_quantity === option.max_quantity ? `${option.min_quantity} unidade(s)` : `${option.min_quantity}–${option.max_quantity} unidades`;
+                  <div className="mt-2.5 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2">
+                    {volumeConditions.map((condition) => {
+                      const applies = condition.ruleId === activeCondition?.ruleId;
+                      const unavailable = p.stock != null && p.stock < condition.from;
                       return (
                         <button
-                          key={option.key}
+                          key={condition.key}
                           type="button"
                           disabled={unavailable}
-                          onClick={() => setPurchaseQty(option.quantity)}
+                          onClick={() => setPurchaseQty(condition.from)}
                           aria-pressed={applies}
-                          title={option.display_note ?? undefined}
-                          className={`flex min-h-[58px] w-full flex-col justify-center rounded-xl px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 ${applies
+                          className={`flex min-h-[64px] w-full flex-col justify-center rounded-xl px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 ${applies
                             ? "border-2 border-[#171717] bg-[#f7f7f5] shadow-[0_5px_18px_-14px_rgba(0,0,0,.5)]"
                             : "border border-transparent bg-[#f5f5f4] hover:bg-[#eeedeb]" }`}
                         >
                           <span className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold text-muted-foreground">{quantityLabel}</span>
+                            <span className="text-xs font-semibold text-muted-foreground">{condition.title}</span>
                             {applies && <CheckCircle2 className="size-3.5 shrink-0 text-[#171717]" strokeWidth={2.6} />}
                           </span>
-                          <span className={`mt-0.5 text-sm font-extrabold leading-5 sm:text-base ${option.rule ? "text-foreground" : "text-muted-foreground"}`}>{discountLabel}</span>
+                          <span className="mt-0.5 text-sm font-extrabold leading-5 text-foreground sm:text-[15px]">{condition.value}</span>
+                          {condition.detail && <span className="mt-0.5 text-[10px] leading-4 text-muted-foreground">{condition.detail}</span>}
                           {unavailable && <span className="text-[10px] font-medium text-muted-foreground">Estoque insuficiente</span>}
                         </button>
                       );
                     })}
                   </div>
-                  {nextVolumeOption && purchaseQty < nextVolumeOption.quantity && (
-                    <p className="mt-2 flex items-center gap-1.5 px-0.5 text-[11px] leading-4 text-muted-foreground">
-                      <BadgePercent className="size-3.5 shrink-0 text-brand" />
-                      Faltam {nextVolumeOption.quantity - purchaseQty} {nextVolumeOption.quantity - purchaseQty === 1 ? "unidade" : "unidades"} para liberar a próxima condição.
-                    </p>
-                  )}
+                  <p className="mt-2 flex items-center gap-1.5 px-0.5 text-[11px] leading-4 text-muted-foreground">
+                    <BadgePercent className="size-3.5 shrink-0 text-brand" />
+                    {activeCondition
+                      ? <span><strong className="text-foreground">Aplicado: {activeCondition.title}</strong> · {activeCondition.value}{nextCondition ? ` · com ${nextCondition.from - purchaseQty} ${nextCondition.from - purchaseQty === 1 ? "unidade a mais" : "unidades a mais"} vale ${nextCondition.title} (${nextCondition.value})` : ""}</span>
+                      : nextCondition
+                        ? <span>{nextCondition.from - purchaseQty === 1 ? "Falta 1 unidade" : `Faltam ${nextCondition.from - purchaseQty} unidades`} para {nextCondition.title}: {nextCondition.value}.</span>
+                        : <span>Nesta quantidade vale o preço de revenda.</span>}
+                  </p>
                 </section>
               )}
               {p.customerPrice == null && <p className="text-sm text-muted-foreground">O preço para seu perfil será informado pela plataforma após login.</p>}
@@ -521,22 +505,41 @@ function ProductPage() {
               </div>
               {isApprovedReseller && volumeRules.length > 0 && rp.data != null && purchaseQty > 1 && volumeQuote && (
                 <div className="mt-3 rounded-2xl bg-[#f4f3f0] p-3.5">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Resumo da quantidade</span>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#27734b]">{volumeQuote.totalDiscount > 0 ? "Desconto aplicado" : "Preço de revenda"}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Preço por unidade</span>
-                    <strong className="text-base font-extrabold text-foreground">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/10 pt-3">
-                    <span className="text-sm font-semibold text-foreground">Total de {purchaseQty} unidades</span>
-                    <strong className="text-lg font-extrabold text-foreground">{formatPrice(volumeQuote.totalAfterDiscount, p.currency)}</strong>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Economia total</span>
-                    <strong className="text-base font-extrabold text-[#27734b]">{formatPrice(activeVolumeRule ? volumeQuote.totalDiscount : Math.max(0, Number(p.customerPrice ?? rp.data) * purchaseQty - Number(rp.data) * purchaseQty), p.currency)}</strong>
-                  </div>
+                  {(() => {
+                    const plainTotal = Number(rp.data) * purchaseQty;
+                    const progressive = Math.max(0, Math.round((plainTotal - volumeQuote.totalAfterDiscount) * 100) / 100);
+                    const customerTotal = p.customerPrice != null ? Number(p.customerPrice) * purchaseQty : null;
+                    const savings = customerTotal != null ? Math.max(0, Math.round((customerTotal - volumeQuote.totalAfterDiscount) * 100) / 100) : progressive;
+                    return <>
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Resumo da quantidade</span>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${activeCondition && progressive > 0 ? "bg-[#27734b] text-white" : "bg-white text-muted-foreground"}`}>{activeCondition && progressive > 0 ? `Desconto ${activeCondition.title}` : "Preço de revenda"}</span>
+                      </div>
+                      {activeCondition && progressive > 0 && (
+                        <p className="mb-3 rounded-lg bg-white px-3 py-2 text-xs leading-5 text-foreground">
+                          <strong>{activeCondition.value}</strong>{activeCondition.detail ? ` · ${activeCondition.detail}` : ""}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">Preço médio por unidade</span>
+                        <strong className="text-base font-extrabold text-foreground">{formatPrice(volumeQuote.discountedUnitPrice, p.currency)}</strong>
+                      </div>
+                      {progressive > 0 && (
+                        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-sm text-muted-foreground">Desconto progressivo</span>
+                          <strong className="text-sm font-bold text-[#27734b]">−{formatPrice(progressive, p.currency)}</strong>
+                        </div>
+                      )}
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/10 pt-3">
+                        <span className="text-sm font-semibold text-foreground">Total de {purchaseQty} unidades</span>
+                        <strong className="text-lg font-extrabold text-foreground">{formatPrice(volumeQuote.totalAfterDiscount, p.currency)}</strong>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">{customerTotal != null ? "Economia sobre o preço de cliente final" : "Economia total"}</span>
+                        <strong className="text-base font-extrabold text-[#27734b]">{formatPrice(savings, p.currency)}</strong>
+                      </div>
+                    </>;
+                  })()}
                 </div>
               )}
               {canSell(p) && <ShippingEstimate productId={p.slug} qty={purchaseQty} />}

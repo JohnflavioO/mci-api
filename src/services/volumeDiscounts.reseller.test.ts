@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { quoteResellerVolume, volumeTiersFor, type VolumeDiscountRule } from "./volumeDiscounts";
+import { quoteResellerVolume, volumeConditionsFor, volumeTiersFor, type VolumeDiscountRule } from "./volumeDiscounts";
 
 const RAY = { slug: "ray-360c", resellerPrice: 3073.3, customerPrice: 4210 };
 const rule = (over: Partial<VolumeDiscountRule>): VolumeDiscountRule => ({
@@ -46,6 +46,27 @@ describe("quoteResellerVolume (mesmo cálculo da página do produto)", () => {
   });
   it("sem preço de revenda não cota", () => {
     expect(quoteResellerVolume({ ...RAY, resellerPrice: null }, 5, RULES)).toBeNull();
+  });
+});
+
+describe("volumeConditionsFor (indicativo na página do produto e no catálogo)", () => {
+  const money = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
+  it("regra por unidade 2ª–4ª vira uma condição só, antes das faixas", () => {
+    const perUnit = rule({ id: "pu", min_quantity: 2, max_quantity: 4, discount_type: "fixed", discount_value: 80, quantity_discounts: [4, 2, 3].map((quantity) => ({ quantity, discount_type: "fixed" as const, discount_value: 80 })) });
+    const c = volumeConditionsFor([...RULES, perUnit], RAY.slug, money);
+    expect(c.map((x) => [x.title, x.value])).toEqual([
+      ["2 a 4 unidades", "−R$ 80,00 por unidade"],
+      ["5–9 unidades", "29% OFF"],
+      ["10+ unidades", "31% OFF"],
+    ]);
+    expect(c[0]!.detail).toBe("Na 2ª, 3ª e 4ª unidade");
+    expect(c[0]!.from).toBe(2);
+  });
+  it("valores diferentes por unidade aparecem detalhados", () => {
+    const mixed = rule({ id: "mx", quantity_discounts: [{ quantity: 2, discount_type: "fixed", discount_value: 50 }, { quantity: 3, discount_type: "percentage", discount_value: 10 }] });
+    const [c] = volumeConditionsFor([mixed], RAY.slug, money);
+    expect(c!.value).toBe("Desconto por unidade");
+    expect(c!.detail).toBe("2ª: −R$ 50,00 · 3ª: 10%");
   });
 });
 

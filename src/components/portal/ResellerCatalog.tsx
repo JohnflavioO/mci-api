@@ -7,7 +7,7 @@ import { ProductImage } from "@/components/shop/ProductCard";
 import { ErrorState, LoadingState } from "@/components/shop/states";
 import { formatPrice } from "@/services/catalog";
 import { createSupabaseCatalog, type SupabaseCatalogProduct } from "@/services/supabaseCatalog";
-import { quoteResellerVolume, volumeTiersFor, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { getVolumeDiscountRule, quoteResellerVolume, volumeConditionsFor, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 import { canSell, useCart } from "@/lib/cart";
 import { ResellerVolumeDiscountPanel, useResellerVolumeRules } from "@/components/portal/ResellerVolumeDiscountPanel";
 
@@ -25,7 +25,9 @@ function ResellerProductCard({ product, rules }: { product: SupabaseCatalogProdu
   const margin = product.resellerPrice != null && product.customerPrice != null && product.customerPrice > product.resellerPrice
     ? { value: product.customerPrice - product.resellerPrice, pct: Math.round(((product.customerPrice - product.resellerPrice) / product.customerPrice) * 100) }
     : null;
-  const tiers = volumeTiersFor(rules, product.slug).filter((t) => !t.perUnit).slice(0, 3);
+  // Inclui a regra por unidade (ex.: "2 a 4 unidades") como uma condição, junto das faixas.
+  const conditions = volumeConditionsFor(rules, product.slug, (value) => formatPrice(value, product.currency)).slice(0, 3);
+  const activeRuleId = getVolumeDiscountRule(qty, rules, product.slug)?.id ?? null;
   const quote = qty > 1 ? quoteResellerVolume(product, qty, rules) : null;
   const stock = stockLabel(product.stock);
   const maxQty = product.stock ?? 1;
@@ -54,15 +56,12 @@ function ResellerProductCard({ product, rules }: { product: SupabaseCatalogProdu
         {margin && <p className="mt-2 inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">Margem de {formatPrice(margin.value, product.currency)} por unidade ({margin.pct}%)</p>}
       </div>
 
-      {tiers.length > 0 && <div className="mt-3">
+      {conditions.length > 0 && <div className="mt-3">
         <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"><BadgePercent className="size-3.5 text-brand" />Desconto por quantidade</p>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {tiers.map((t) => {
-            const unit = quoteResellerVolume(product, t.quantity, rules)?.discountedUnitPrice;
-            return <button key={t.key} type="button" disabled={!sellable || (product.stock != null && product.stock < t.quantity)} onClick={() => setQty(t.quantity)} title={unit != null ? `${formatPrice(unit, product.currency)} por unidade a partir de ${t.quantity}` : undefined} className={`rounded-md border px-2 py-1 text-xs transition disabled:opacity-40 ${qty >= t.quantity && (t.maxQuantity == null || qty <= t.maxQuantity) ? "border-foreground bg-foreground text-background" : "hover:border-foreground/40"}`}>
-              <span className="font-semibold">{t.label}</span> · {t.discountType === "percentage" ? `${t.discountValue}% OFF` : `−${formatPrice(t.discountValue, product.currency)}`}
-            </button>;
-          })}
+          {conditions.map((c) => <button key={c.key} type="button" disabled={!sellable || (product.stock != null && product.stock < c.from)} onClick={() => setQty(c.from)} title={c.detail ?? undefined} className={`rounded-md border px-2 py-1 text-left text-xs transition disabled:opacity-40 ${c.ruleId === activeRuleId ? "border-foreground bg-foreground text-background" : "hover:border-foreground/40"}`}>
+            <span className="font-semibold">{c.title}</span> · {c.value}
+          </button>)}
         </div>
       </div>}
 
