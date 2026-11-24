@@ -1,4 +1,5 @@
-// Confere que create_order cobra o mesmo que o site mostra (quoteResellerVolume) para o desconto progressivo.
+// Confere que create_order cobra o mesmo que o site mostra (quoteResellerVolume) para o desconto progressivo,
+// incluindo o teto no preço de revenda (20261125120000).
 // Postgres em memória (PGlite); não toca em banco real.
 // Como rodar (de uma pasta temporária, para não adicionar dependência ao projeto):
 //   mkdir pgtest && cd pgtest && npm init -y && npm i @electric-sql/pglite@0.2.17
@@ -22,15 +23,23 @@ await db.exec(`
     updated_at timestamptz, unique (user_id, idempotency_key));
   create table public.order_items (order_id uuid, product_id uuid, name_snapshot text, unit_price numeric(12,2), qty int, line_total numeric(12,2));
 `);
-await db.exec(readFileSync(`${MIG}/20261125090000_volume_discount_on_customer_price.sql`, "utf8"));
+for (const m of ["20261125090000_volume_discount_on_customer_price.sql", "20261125120000_volume_discount_reseller_ceiling.sql"]) {
+  await db.exec(readFileSync(`${MIG}/${m}`, "utf8"));
+}
 
 const RES = "11111111-1111-4111-8111-111111111111", CLI = "22222222-2222-4222-8222-222222222222";
 const RAY = "33333333-3333-4333-8333-333333333333", FIX = "44444444-4444-4444-8444-444444444444", UNIT = "55555555-5555-4555-8555-555555555555";
+const LOW = "66666666-6666-4666-8666-666666666666", DEEP = "77777777-7777-4777-8777-777777777777";
 await db.exec(`
   insert into public.user_roles values ('${RES}', 'revendedor');
-  insert into public.products values ('${RAY}','Ray 360c','published',100), ('${FIX}','Fixo','published',100), ('${UNIT}','Por unidade','published',100);
-  insert into public.product_prices values ('${RAY}',4210), ('${FIX}',1000), ('${UNIT}',1000);
-  insert into public.product_reseller_prices values ('${RAY}',3073.30), ('${FIX}',800), ('${UNIT}',800);
+  insert into public.products values ('${RAY}','Ray 360c','published',100), ('${FIX}','Fixo','published',100), ('${UNIT}','Por unidade','published',100),
+    ('${LOW}','Ray 660c','published',100), ('${DEEP}','Por unidade 30','published',100);
+  insert into public.product_prices values ('${RAY}',4210), ('${FIX}',1000), ('${UNIT}',1000), ('${LOW}',4999), ('${DEEP}',1000);
+  insert into public.product_reseller_prices values ('${RAY}',3073.30), ('${FIX}',800), ('${UNIT}',800), ('${LOW}',3999.20), ('${DEEP}',800);
+  insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value) values
+    (array['${LOW}'],5,null,'percentage',15);
+  insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value,quantity_discounts) values
+    (array['${DEEP}'],2,null,'percentage',0,'[{"quantity":2,"discount_type":"percentage","discount_value":30}]');
   insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value) values
     (array['${RAY}'],5,9,'percentage',29), (array['${RAY}'],10,null,'percentage',31), (array['${FIX}'],3,null,'fixed',50);
   insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value,quantity_discounts) values
@@ -54,5 +63,8 @@ r = await line(RES, RAY, 10);      assert.equal(r.unit, 2904.90); assert.equal(r
 assert.equal(r.saved, Number((3073.30 * 10 - 29049).toFixed(2))); console.log("ok economia registrada contra o preço de revenda");
 r = await line(CLI, RAY, 5);       assert.equal(r.line, 21050.00); console.log("ok cliente comum paga preço de cliente final");
 r = await line(RES, FIX, 3);       assert.equal(r.line, 2250.00); console.log("ok faixa em valor fixo continua sobre o preço de revenda (800 − 50)");
-r = await line(RES, UNIT, 2);      assert.equal(r.line, 1900.00); console.log("ok por unidade em %: base cliente final, 2ª un. com 10% (1000 + 900)");
+r = await line(RES, UNIT, 2);      assert.equal(r.line, 1600.00); console.log("ok por unidade: nenhuma unidade acima da revenda (800 + 800)");
+r = await line(RES, DEEP, 2);      assert.equal(r.line, 1500.00); console.log("ok por unidade: 2ª un. com 30% sobre o final (800 + 700)");
+r = await line(RES, LOW, 5);       assert.equal(r.unit, 3999.20); assert.equal(r.line, 19996.00); console.log("ok faixa de 15% abaixo da revenda (20%) não encarece: teto 3.999,20");
+r = await line(RES, LOW, 2);       assert.equal(r.line, 7998.40); console.log("ok abaixo da faixa segue o preço de revenda");
 console.log("TODOS OS TESTES PASSARAM");
