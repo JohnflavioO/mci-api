@@ -71,6 +71,8 @@ export function getVolumeDiscountRule(
  * Cotação do revendedor igual à da página do produto e do carrinho (useCartPricing):
  * regra em percentual incide sobre o preço de cliente final e substitui o desconto base de revenda;
  * regra em valor fixo incide sobre o preço de revenda.
+ * Teto: com faixa, nenhuma unidade sai mais cara que o preço de revenda do produto
+ * (uma faixa abaixo do desconto de revenda não pode encarecer a compra maior).
  */
 export function quoteResellerVolume(
   product: { slug: string; resellerPrice: number | null; customerPrice: number | null },
@@ -82,7 +84,7 @@ export function quoteResellerVolume(
   const base = rule?.discount_type === "percentage" && product.customerPrice != null
     ? Number(product.customerPrice)
     : Number(product.resellerPrice);
-  return calculateVolumeDiscount(base, quantity, rules, product.slug);
+  return calculateVolumeDiscount(base, quantity, rules, product.slug, Number(product.resellerPrice));
 }
 
 export type VolumeTier = { key: string; quantity: number; maxQuantity: number | null; perUnit: boolean; discountType: "percentage" | "fixed"; discountValue: number; label: string };
@@ -111,6 +113,8 @@ export function calculateVolumeDiscount(
   quantity: number,
   rules: VolumeDiscountRule[],
   productId?: string,
+  /** Preço máximo por unidade quando há faixa ativa (preço de revenda). Omitido = sem teto. */
+  ceilingUnitPrice?: number,
 ): VolumeDiscountQuote {
   const safePrice = Number.isFinite(unitPrice) ? Math.max(0, unitPrice) : 0;
   const safeQuantity = Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
@@ -140,6 +144,22 @@ export function calculateVolumeDiscount(
       discountValue: Number(rule.discount_value),
       unitDiscount,
     });
+  }
+
+  // Teto por unidade: a faixa nunca deixa uma unidade mais cara que o preço de revenda.
+  const cap = rule && ceilingUnitPrice != null && Number.isFinite(ceilingUnitPrice) && ceilingUnitPrice < safePrice
+    ? Math.max(0, ceilingUnitPrice)
+    : null;
+  if (cap != null) {
+    if (unitTiers.length > 0) {
+      const discountAt = new Map(appliedTiers.map((tier) => [tier.quantity, tier.unitDiscount]));
+      for (let position = 1; position <= safeQuantity; position += 1) {
+        totalDiscount += Math.max(0, safePrice - (discountAt.get(position) ?? 0) - cap);
+      }
+    } else {
+      const unitDiscount = appliedTiers[0]?.unitDiscount ?? 0;
+      totalDiscount += Math.max(0, safePrice - unitDiscount - cap) * safeQuantity;
+    }
   }
 
   totalDiscount = Math.round(totalDiscount * 100) / 100;

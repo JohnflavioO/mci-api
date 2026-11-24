@@ -3,9 +3,9 @@ import { catalogSource } from "@/lib/api";
 import type { CartItem } from "@/lib/cart";
 import { getSupabase } from "@/lib/supabase";
 import { catalogService } from "@/services";
-import { calculateVolumeDiscount, getVolumeDiscountRule, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { quoteResellerVolume, type VolumeDiscountQuote, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 
-type VolumeQuote = ReturnType<typeof calculateVolumeDiscount>;
+type VolumeQuote = VolumeDiscountQuote;
 
 export type CartLinePricing = {
   kind: "reseller" | "customer";
@@ -78,12 +78,9 @@ export function useCartPricing(items: CartItem[]) {
       const product = reseller.products.find(product => matches(product, item));
       if (!product || product.resellerPrice == null) return null;
       const rules = reseller.rules.filter(rule => (rule.product_ids ?? []).includes(product.slug));
-      const activeRule = getVolumeDiscountRule(item.qty, rules, product.slug);
-      const quoteBase = activeRule?.discount_type === "percentage" && product.customerPrice != null
-        ? Number(product.customerPrice)
-        : Number(product.resellerPrice);
-      const quote = calculateVolumeDiscount(quoteBase, item.qty, rules, product.slug);
-      if (!quote.rule) {
+      // Mesmo cálculo do catálogo, da página do produto e do pedido (create_order).
+      const quote = quoteResellerVolume({ slug: product.slug, resellerPrice: Number(product.resellerPrice), customerPrice: product.customerPrice ?? null }, item.qty, rules);
+      if (!quote?.rule) {
         const lineTotal = Math.round(Number(product.resellerPrice) * item.qty * 100) / 100;
         return { kind: "reseller", currency: product.currency, unitPrice: Number(product.resellerPrice), lineTotal, quote: null };
       }

@@ -17,7 +17,7 @@ import { catalogService } from "@/services";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
 import { catalogSource } from "@/lib/api";
 import { formatPrice, slugifyProductName } from "@/services/catalog";
-import { calculateVolumeDiscount, getVolumeDiscountRule, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { getVolumeDiscountRule, quoteResellerVolume, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 
 
 const productQueryKey = (slug: string) => ["product", slug] as const;
@@ -256,9 +256,9 @@ function ProductPage() {
     }
   }
   const activeVolumeRule = isApprovedReseller ? getVolumeDiscountRule(purchaseQty, volumeRules, p?.slug) : null;
-  // Percentual progressivo é o desconto total sobre o preço final, substituindo o desconto base.
-  const volumeQuote = isApprovedReseller && rp.data != null
-    ? calculateVolumeDiscount(activeVolumeRule?.discount_type === "percentage" && p?.customerPrice != null ? Number(p.customerPrice) : Number(rp.data), purchaseQty, volumeRules, p?.slug)
+  // Mesmo cálculo do catálogo, do carrinho e do pedido: % sobre o preço final, com teto no preço de revenda.
+  const volumeQuote = isApprovedReseller && rp.data != null && p
+    ? quoteResellerVolume({ slug: p.slug, resellerPrice: Number(rp.data), customerPrice: p.customerPrice ?? null }, purchaseQty, volumeRules)
     : null;
   const nextVolumeOption = volumeOptions.find(option => option.quantity > purchaseQty && option.rule !== null);
   const relatedQuery = useQuery({
