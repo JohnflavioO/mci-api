@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { parseAffiliatePatch } from "@/lib/affiliateAdmin";
 
 function config() {
   return { url: process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"] ?? "", publishableKey: process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ?? "", serviceRoleKey: process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "" };
@@ -9,11 +10,12 @@ async function authorize(request: Request) {
   const c = config();
   if (!c.url || !c.publishableKey || !c.serviceRoleKey) return { response: Response.json({ error: "Servidor Supabase não configurado." }, { status: 503 }) } as const;
   if (!token) return { response: Response.json({ error: "Autenticação necessária." }, { status: 401 }) } as const;
-  const user = createClient(c.url, c.publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  // O token do usuário precisa ir junto: has_role() usa auth.uid() e, sem ele, sempre responde false.
+  const user = createClient(c.url, c.publishableKey, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
   const { data, error } = await user.auth.getUser(token);
   if (error || !data.user) return { response: Response.json({ error: "Sessão inválida." }, { status: 401 }) } as const;
-  const { data: isAdmin } = await user.rpc("has_role", { _role: "admin" });
-  if (isAdmin !== true) return { response: Response.json({ error: "Acesso restrito ao administrador." }, { status: 403 }) } as const;
+  const { data: isAdmin, error: roleError } = await user.rpc("has_role", { _role: "admin" });
+  if (roleError || isAdmin !== true) return { response: Response.json({ error: "Acesso restrito ao administrador." }, { status: 403 }) } as const;
   return { actorId: data.user.id, admin: createClient(c.url, c.serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } }) } as const;
 }
 export const Route = createFileRoute("/api/admin/affiliates")({
@@ -22,7 +24,7 @@ export const Route = createFileRoute("/api/admin/affiliates")({
       const auth = await authorize(request);
       if ("response" in auth) return auth.response;
       const since = new Date(Date.now() - 30 * 86400000).toISOString();
-      const [settings, profiles, links, clicks, orders, commissions, ledger, redemptions] = await Promise.all([
+      const [settings, profiles, links, clicks, orders, commissions, ledger, redemptions, products] = await Promise.all([
         auth.admin.from("affiliate_settings").select("*").eq("id", true).single(),
         auth.admin.from("affiliate_profiles").select("user_id,referral_code,commission_rate,commission_override_pct,status,created_at").order("created_at", { ascending: false }).limit(500),
         auth.admin.from("affiliate_links").select("id,affiliate_id,slug,is_active"),
@@ -31,8 +33,9 @@ export const Route = createFileRoute("/api/admin/affiliates")({
         auth.admin.from("affiliate_commissions").select("id,affiliate_user_id,status,commission_amount").limit(5000),
         auth.admin.from("affiliate_points_ledger").select("affiliate_user_id,points_type,points_delta").limit(5000),
         auth.admin.from("affiliate_reward_redemptions").select("id,status,points_cost").limit(1000),
+        auth.admin.from("products").select("id,name,sku,status,affiliate_pct").order("name", { ascending: true }).limit(1000),
       ]);
-      const failed = [settings,profiles,links,clicks,orders,commissions,ledger,redemptions].find((x) => x.error);
+      const failed = [settings,profiles,links,clicks,orders,commissions,ledger,redemptions,products].find((x) => x.error);
       if (failed?.error) return Response.json({ error: "Não foi possível consultar os dados do programa de afiliados." }, { status: 503 });
       const linkOwner = new Map((links.data ?? []).map((x) => [x.id, x.affiliate_id]));
       const clickCounts = new Map<string, number>(), salesCounts = new Map<string, number>(), pending = new Map<string, number>();
@@ -55,6 +58,7 @@ export const Route = createFileRoute("/api/admin/affiliates")({
           pendingCommission: pending.get(p.user_id) ?? 0,
           points: balances.get(p.user_id) ?? { performance: 0, reward: 0 },
         })),
+        products: products.data ?? [],
         metrics: {
           affiliates: profiles.data?.length ?? 0, clicks: clickTotal,
           commissions: commissions.data?.length ?? 0,
@@ -64,22 +68,36 @@ export const Route = createFileRoute("/api/admin/affiliates")({
         },
       });
     },
-    PUT: async ({ request }) => {
+    // Regras gerais do programa são salvas em /api/affiliate/settings (com validação completa).
+    // Aqui ficam só as alterações por afiliado e por produto.
+    PATCH: async ({ request }) => {
       const auth = await authorize(request);
       if ("response" in auth) return auth.response;
-      const body = await request.json().catch(() => null) as Record<string, unknown> | null;
-      if (!body) return Response.json({ error: "Dados inválidos." }, { status: 400 });
-      const { data: old } = await auth.admin.from("affiliate_settings").select("*").eq("id", true).single();
-      if (!old) return Response.json({ error: "Configurações não encontradas." }, { status: 503 });
-      const allowed = ["enabled","default_commission_pct","attribution_window_days","min_withdrawal","grace_days","block_self_referral","stack_with_coupon","stack_with_volume_discount","stack_with_reseller","stacked_commission_pct","performance_points_per_real","reward_points_per_real","reward_points_enabled"];
-      const values: Record<string, unknown> = { updated_by: auth.actorId, updated_at: new Date().toISOString() };
-      for (const key of allowed) if (key in body) values[key] = body[key];
-      const { data, error } = await auth.admin.from("affiliate_settings").update(values).eq("id", true).select("*").single();
-      if (error) return Response.json({ error: "Não foi possível salvar as regras." }, { status: 503 });
-      const logs = allowed.filter((key) => key in values && JSON.stringify((old as Record<string,unknown>)[key]) !== JSON.stringify((data as Record<string,unknown>)[key]))
-        .map((key) => ({ field:key, old_value:(old as Record<string,unknown>)[key] ?? null, new_value:(data as Record<string,unknown>)[key] ?? null, admin_id:auth.actorId }));
-      if (logs.length) await auth.admin.from("affiliate_settings_log").insert(logs);
-      return Response.json({ success: true, settings: data });
+      const parsed = parseAffiliatePatch(await request.json().catch(() => null));
+      if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+      const { patch } = parsed;
+
+      const target = patch.kind === "affiliate"
+        ? { table: "affiliate_profiles", key: "user_id", id: patch.userId, select: "user_id,status,commission_override_pct" }
+        : { table: "products", key: "id", id: patch.productId, select: "id,affiliate_pct" };
+      const before = await auth.admin.from(target.table).select(target.select).eq(target.key, target.id).maybeSingle();
+      if (before.error) return Response.json({ error: "Não foi possível carregar o registro atual." }, { status: 503 });
+      if (!before.data) return Response.json({ error: patch.kind === "affiliate" ? "Afiliado não encontrado." : "Produto não encontrado." }, { status: 404 });
+
+      const values: Record<string, unknown> = { ...patch.values };
+      if (patch.kind === "affiliate") values["updated_at"] = new Date().toISOString();
+      const after = await auth.admin.from(target.table).update(values).eq(target.key, target.id).select(target.select).single();
+      if (after.error) return Response.json({ error: "Não foi possível salvar a alteração." }, { status: 503 });
+
+      const old = before.data as unknown as Record<string, unknown>, now = after.data as unknown as Record<string, unknown>;
+      const logs = Object.keys(patch.values)
+        .filter((field) => JSON.stringify(old[field] ?? null) !== JSON.stringify(now[field] ?? null))
+        .map((field) => ({ field: `${patch.kind}:${target.id}:${field}`, old_value: old[field] ?? null, new_value: now[field] ?? null, admin_id: auth.actorId }));
+      if (logs.length) {
+        const { error: logError } = await auth.admin.from("affiliate_settings_log").insert(logs);
+        if (logError) return Response.json({ error: "A alteração foi salva, mas a auditoria falhou. Avise o suporte." }, { status: 500 });
+      }
+      return Response.json({ success: true, [patch.kind]: after.data });
     },
   }},
 });

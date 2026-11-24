@@ -19,8 +19,12 @@ type ProgramSettings = AffiliateSettings;
 type ProgramData = {
   metrics: { affiliates: number; clicks: number; commissions: number; pendingCommissions: number; commissionTotal: number; redemptions: number };
   affiliates: Array<{ user_id: string; referral_code: string; slug: string | null; commission_rate: number; commission_override_pct: number | null; status: string; clicks30d: number; sales30d: number; pendingCommission: number; points: { performance: number; reward: number } }>;
+  products: Array<{ id: string; name: string; sku: string | null; status: string; affiliate_pct: number | null }>;
 };
-type Tab = "overview" | "settings" | "points" | "commissions";
+type Tab = "overview" | "settings" | "products" | "points" | "commissions";
+type AffiliatePatchBody =
+  | { kind: "affiliate"; user_id: string; status?: "active" | "suspended"; commission_override_pct?: number | string | null }
+  | { kind: "product"; product_id: string; affiliate_pct: number | string | null };
 const dateLabel = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
@@ -41,6 +45,27 @@ async function loadProgram(): Promise<ProgramData> {
 }
 async function saveProgram(settings: ProgramSettings) {
   await saveAffiliateSettings(settings);
+}
+async function patchProgram(body: AffiliatePatchBody) {
+  const token = await adminToken();
+  const response = await fetch("/api/admin/affiliates", { method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const result = await response.json().catch(() => ({})) as { error?: string };
+  if (!response.ok) throw new Error(result.error || "Não foi possível salvar a alteração.");
+}
+
+/** Campo de % com botão Salvar; vazio volta ao padrão. */
+function PctEditor({ value, placeholder, disabled, onSave }: { value: number | null; placeholder: string; disabled?: boolean; onSave: (value: string) => void }) {
+  const initial = value == null ? "" : String(value);
+  const [draft, setDraft] = useState(initial);
+  useEffect(() => setDraft(initial), [initial]);
+  const changed = draft.trim() !== initial;
+  return <div className="flex items-center gap-1.5">
+    <div className="relative">
+      <input value={draft} onChange={(event) => setDraft(event.target.value)} inputMode="decimal" placeholder={placeholder} aria-label="Comissão em %" disabled={disabled} className="h-9 w-24 rounded-md border bg-background pl-2.5 pr-6 text-sm tabular-nums" />
+      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+    </div>
+    {changed && <button type="button" disabled={disabled} onClick={() => onSave(draft.trim())} className="h-9 rounded-md bg-[#171a1f] px-3 text-xs font-semibold text-white disabled:opacity-50">Salvar</button>}
+  </div>;
 }
 
 export function AdminAffiliatesSection() {
@@ -77,6 +102,20 @@ export function AdminAffiliatesSection() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+  const patchMutation = useMutation({
+    mutationFn: patchProgram,
+    onSuccess: async (_data, body) => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "affiliates", "program"] });
+      toast.success(body.kind === "product" ? "Comissão do produto salva." : "status" in body && body.status ? (body.status === "suspended" ? "Afiliado suspenso." : "Afiliado reativado.") : "Comissão do afiliado salva.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const [productSearch, setProductSearch] = useState("");
+  const defaultPct = Number(affiliateSettingsQuery.data?.default_commission_pct ?? 0);
+  const products = useMemo(() => {
+    const term = productSearch.trim().toLocaleLowerCase("pt-BR");
+    return (program?.products ?? []).filter((item) => !term || item.name.toLocaleLowerCase("pt-BR").includes(term) || (item.sku ?? "").toLocaleLowerCase("pt-BR").includes(term));
+  }, [program?.products, productSearch]);
   const affiliates = usersQuery.data ?? [];
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
@@ -90,6 +129,7 @@ export function AdminAffiliatesSection() {
   const tabs: Array<{ id: Tab; label: string; icon: typeof Users }> = [
     { id: "overview", label: "Visão geral", icon: Users },
     { id: "settings", label: "Configurações", icon: Settings2 },
+    { id: "products", label: "Comissão por produto", icon: BadgePercent },
     { id: "points", label: "Pontos e recompensas", icon: Trophy },
     { id: "commissions", label: "Comissões", icon: Wallet },
   ];
@@ -106,6 +146,8 @@ export function AdminAffiliatesSection() {
       {tabs.map(({id,label,icon:Icon}) => <button key={id} type="button" onClick={() => setTab(id)} className={`inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors ${tab === id ? "bg-[#171a1f] text-white" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon className="size-4" />{label}</button>)}
     </nav>
 
+    {programQuery.isError && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">Os indicadores do programa não carregaram: {programQuery.error.message} Cliques, vendas e comissões abaixo podem aparecer zerados.</div>}
+
     {tab === "overview" && <>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         {[
@@ -120,7 +162,7 @@ export function AdminAffiliatesSection() {
       <section className="overflow-hidden rounded-xl border bg-card">
         <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-semibold">Afiliados cadastrados</h3><p className="mt-1 text-sm text-muted-foreground">Contas identificadas pelo perfil de afiliado no sistema.</p></div><button type="button" onClick={() => { void usersQuery.refetch(); void programQuery.refetch(); }} disabled={usersQuery.isFetching || programQuery.isFetching} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"><RefreshCw className={`size-4 ${usersQuery.isFetching || programQuery.isFetching ? "animate-spin" : ""}`} /> Atualizar</button></div>
         <div className="border-b p-5"><label className="relative block max-w-lg"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome ou e-mail…" className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring" /></label></div>
-        {usersQuery.isError ? <div className="p-6 text-sm text-destructive">{usersQuery.error.message}</div> : filtered.length ? <div className="overflow-x-auto"><table className="w-full min-w-[1040px] text-left text-sm"><thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-5 py-3 font-medium">Afiliado</th><th className="px-5 py-3 font-medium">Código / slug</th><th className="px-5 py-3 font-medium">Situação</th><th className="px-5 py-3 font-medium">Cliques (30d)</th><th className="px-5 py-3 font-medium">Vendas (30d)</th><th className="px-5 py-3 font-medium">Comissão pendente</th><th className="px-5 py-3 font-medium">Cadastro</th></tr></thead><tbody className="divide-y">{filtered.map((item) => {const stat = program?.affiliates.find((x) => x.user_id === item.id); const blockedNow = !!item.bannedUntil && new Date(item.bannedUntil).getTime() > Date.now(); const unconfirmedNow = !item.emailConfirmedAt; const status = blockedNow ? "Bloqueado" : unconfirmedNow ? "Pendente" : stat?.status === "suspended" ? "Suspenso" : "Ativo"; return <tr key={item.id} className="hover:bg-secondary/30"><td className="px-5 py-4"><p className="font-medium">{item.fullName || "Nome não informado"}</p><p className="text-xs text-muted-foreground">{item.email}</p></td><td className="px-5 py-4 font-mono text-xs">{stat?.slug || stat?.referral_code || "—"}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status === "Ativo" ? "bg-emerald-50 text-emerald-700" : status === "Pendente" ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-700"}`}>{status}</span></td><td className="px-5 py-4 tabular-nums">{stat?.clicks30d ?? 0}</td><td className="px-5 py-4 tabular-nums">{stat?.sales30d ?? 0}</td><td className="px-5 py-4 tabular-nums">{money(stat?.pendingCommission ?? 0)}</td><td className="px-5 py-4 text-muted-foreground">{dateLabel(item.createdAt)}</td></tr>})}</tbody></table></div> : <div className="p-10 text-center"><UserRoundX className="mx-auto size-8 text-muted-foreground/60" /><h3 className="mt-3 font-semibold">{affiliates.length ? "Nenhum resultado encontrado" : "Ainda não há afiliados cadastrados"}</h3><p className="mt-1 text-sm text-muted-foreground">{affiliates.length ? "Tente outro nome ou e-mail." : "Quando uma pessoa concluir o cadastro como afiliado, ela aparecerá nesta lista."}</p></div>}
+        {usersQuery.isError ? <div className="p-6 text-sm text-destructive">{usersQuery.error.message}</div> : filtered.length ? <div className="overflow-x-auto"><table className="w-full min-w-[1320px] text-left text-sm"><thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-5 py-3 font-medium">Afiliado</th><th className="px-5 py-3 font-medium">Código / slug</th><th className="px-5 py-3 font-medium">Situação</th><th className="px-5 py-3 font-medium">Cliques (30d)</th><th className="px-5 py-3 font-medium">Vendas (30d)</th><th className="px-5 py-3 font-medium">Comissão pendente</th><th className="px-5 py-3 font-medium">Comissão própria</th><th className="px-5 py-3 font-medium">Cadastro</th><th className="px-5 py-3 text-right font-medium">Ações</th></tr></thead><tbody className="divide-y">{filtered.map((item) => {const stat = program?.affiliates.find((x) => x.user_id === item.id); const blockedNow = !!item.bannedUntil && new Date(item.bannedUntil).getTime() > Date.now(); const unconfirmedNow = !item.emailConfirmedAt; const status = blockedNow ? "Bloqueado" : unconfirmedNow ? "Pendente" : stat?.status === "suspended" ? "Suspenso" : "Ativo"; return <tr key={item.id} className="hover:bg-secondary/30"><td className="px-5 py-4"><p className="font-medium">{item.fullName || "Nome não informado"}</p><p className="text-xs text-muted-foreground">{item.email}</p></td><td className="px-5 py-4 font-mono text-xs">{stat?.slug || stat?.referral_code || "—"}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status === "Ativo" ? "bg-emerald-50 text-emerald-700" : status === "Pendente" ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-700"}`}>{status}</span></td><td className="px-5 py-4 tabular-nums">{stat?.clicks30d ?? 0}</td><td className="px-5 py-4 tabular-nums">{stat?.sales30d ?? 0}</td><td className="px-5 py-4 tabular-nums">{money(stat?.pendingCommission ?? 0)}</td><td className="px-5 py-4">{stat ? <PctEditor value={stat.commission_override_pct} placeholder={`${defaultPct.toLocaleString("pt-BR")} padrão`} disabled={patchMutation.isPending} onSave={(value) => patchMutation.mutate({ kind: "affiliate", user_id: item.id, commission_override_pct: value === "" ? null : value })} /> : <span className="text-xs text-muted-foreground">—</span>}</td><td className="px-5 py-4 text-muted-foreground">{dateLabel(item.createdAt)}</td><td className="px-5 py-4 text-right">{stat ? <button type="button" disabled={patchMutation.isPending} onClick={() => { const suspend = stat.status !== "suspended"; if (!suspend || window.confirm(`Suspender ${item.fullName || item.email}? Os links param de gerar novas comissões até a reativação. O histórico é preservado.`)) patchMutation.mutate({ kind: "affiliate", user_id: item.id, status: suspend ? "suspended" : "active" }); }} className={`inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium disabled:opacity-50 ${stat.status === "suspended" ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" : "border-rose-200 text-rose-700 hover:bg-rose-50"}`}>{stat.status === "suspended" ? "Reativar" : "Suspender"}</button> : <span className="text-xs text-muted-foreground">Sem perfil</span>}</td></tr>})}</tbody></table></div> : <div className="p-10 text-center"><UserRoundX className="mx-auto size-8 text-muted-foreground/60" /><h3 className="mt-3 font-semibold">{affiliates.length ? "Nenhum resultado encontrado" : "Ainda não há afiliados cadastrados"}</h3><p className="mt-1 text-sm text-muted-foreground">{affiliates.length ? "Tente outro nome ou e-mail." : "Quando uma pessoa concluir o cadastro como afiliado, ela aparecerá nesta lista."}</p></div>}
       </section>
     </>}
 
@@ -140,6 +182,12 @@ export function AdminAffiliatesSection() {
         <label className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm"><span>Permitir comissão para revendedor</span><input type="checkbox" checked={settings.stack_with_reseller} onChange={(e) => setSettings((s) => s ? {...s,stack_with_reseller:e.target.checked} : s)} className="size-4 accent-orange-600" /></label>
       </div>}
       <div className="flex flex-wrap justify-end gap-2 border-t p-5"><button type="button" onClick={() => {if(affiliateSettingsQuery.data) setSettings({...affiliateSettingsQuery.data});}} disabled={!affiliateSettingsQuery.data} className="h-10 rounded-md border px-4 text-sm font-medium">Descartar</button><button type="button" onClick={() => {if(settings) saveMutation.mutate(settings);}} disabled={!settings || saveMutation.isPending || affiliateSettingsQuery.isError} className="h-10 rounded-md bg-[#171a1f] px-4 text-sm font-semibold text-white disabled:opacity-50">{saveMutation.isPending ? "Salvando…" : "Salvar configurações"}</button></div>
+    </section>}
+
+    {tab === "products" && <section className="overflow-hidden rounded-xl border bg-card">
+      <div className="border-b p-5"><h3 className="font-semibold">Comissão por produto</h3><p className="mt-1 text-sm text-muted-foreground">Deixe em branco para usar a comissão padrão do programa ({defaultPct.toLocaleString("pt-BR")}%). A comissão própria de um afiliado, definida na Visão geral, tem prioridade sobre estes valores. Em pedidos com vários produtos, vale a média ponderada pelo valor de cada item.</p></div>
+      <div className="border-b p-5"><label className="relative block max-w-lg"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="Buscar por nome ou SKU…" className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring" /></label></div>
+      {programQuery.isPending ? <div className="p-6 text-sm text-muted-foreground">Carregando produtos…</div> : products.length ? <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm"><thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-5 py-3 font-medium">Produto</th><th className="px-5 py-3 font-medium">Situação</th><th className="px-5 py-3 font-medium">Comissão</th></tr></thead><tbody className="divide-y">{products.map((product) => <tr key={product.id} className="hover:bg-secondary/30"><td className="px-5 py-3"><p className="font-medium">{product.name}</p>{product.sku && <p className="text-xs text-muted-foreground">SKU {product.sku}</p>}</td><td className="px-5 py-3 text-muted-foreground">{product.status === "published" ? "Publicado" : "Rascunho"}</td><td className="px-5 py-3"><PctEditor value={product.affiliate_pct} placeholder={`${defaultPct.toLocaleString("pt-BR")} padrão`} disabled={patchMutation.isPending} onSave={(value) => patchMutation.mutate({ kind: "product", product_id: product.id, affiliate_pct: value === "" ? null : value })} /></td></tr>)}</tbody></table></div> : <div className="p-8 text-center text-sm text-muted-foreground">{program?.products.length ? "Nenhum produto encontrado." : "Nenhum produto cadastrado."}</div>}
     </section>}
 
     {tab === "points" && <div className="space-y-4">
