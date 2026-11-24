@@ -148,6 +148,8 @@ export const orderService = {
     idempotencyKey: string,
     shipping: { provider: string; service: string; quote_token: string },
     pickupAuthorization: { name: string; cpf: string; plate: string } | null,
+    /** Store House Pontos a usar como desconto (o servidor valida saldo e limite). */
+    loyaltyPoints = 0,
   ): Promise<{ order_id: string; checkout_url: string; total: number }> => {
     const sb = getSupabase();
     const { data, error } = await sb.auth.getSession();
@@ -162,6 +164,7 @@ export const orderService = {
         address: { cep: delivery.cep, street: delivery.street, number: delivery.number, complement: delivery.complement, district: delivery.district, city: delivery.city, state: delivery.state },
         shipping,
         pickup_authorization: pickupAuthorization,
+        loyalty_points: loyaltyPoints > 0 ? Math.floor(loyaltyPoints) : 0,
       }),
     });
     const body = await response.json().catch(() => ({})) as { order_id?: string; checkout_url?: string; total?: number; error?: string };

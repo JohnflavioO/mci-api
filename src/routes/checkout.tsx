@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, LockKeyhole, UserRound } from "lucide-react";
+import { ArrowRight, CheckCircle2, Coins, LockKeyhole, UserRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { EmptyState, ErrorState } from "@/components/shop/states";
@@ -12,6 +12,8 @@ import { useCart } from "@/lib/cart";
 import { orderService } from "@/services";
 import { getSupabase } from "@/lib/supabase";
 import { useCartPricing } from "@/lib/useCartPricing";
+import { useLoyalty } from "@/hooks/useLoyalty";
+import { LOYALTY_NAME, pointsForAmount } from "@/lib/loyalty";
 import { ProductImage } from "@/components/shop/ProductCard";
 import { formatPrice } from "@/services/catalog";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout, type AnalyticsItem } from "@/lib/analytics";
@@ -90,6 +92,13 @@ function Checkout() {
   // é criado com o preço de revenda, então o resumo usa a mesma estimativa exibida no carrinho.
   const summarySubtotal = productsSubtotal === null ? null : pricing.isReseller && pricing.subtotal != null ? pricing.subtotal : productsSubtotal;
   const [idempotencyKey] = useState(() => crypto.randomUUID());
+  // Store House Pontos (só cliente final): o servidor recalcula e aplica; aqui é a prévia do desconto.
+  const [usePoints, setUsePoints] = useState(false);
+  const loyalty = useLoyalty(pricing.isReseller ? null : (summarySubtotal ?? pricing.subtotal));
+  const loyaltyQuote = !pricing.isReseller && loyalty.data?.eligible && (loyalty.data.redeem?.maxPoints ?? 0) > 0 ? loyalty.data.redeem! : null;
+  const loyaltyPoints = usePoints && loyaltyQuote ? loyaltyQuote.maxPoints : 0;
+  const loyaltyDiscount = usePoints && loyaltyQuote ? loyaltyQuote.maxDiscount : 0;
+  const loyaltyRate = loyalty.data?.settings?.points_per_real ?? 0;
   const m = useMutation({
     mutationFn: async () => {
       const supabase = getSupabase();
@@ -113,7 +122,7 @@ function Checkout() {
         shipping_complement: cleaned.complement, shipping_district: cleaned.district,
         shipping_city: cleaned.city, shipping_state: cleaned.state,
       }});
-      return orderService.create(items.map((i) => ({ slug: i.slug, qty: i.qty })), cleaned as typeof delivery, idempotencyKey, selectedShipping, pickup ? pickupData : null);
+      return orderService.create(items.map((i) => ({ slug: i.slug, qty: i.qty })), cleaned as typeof delivery, idempotencyKey, selectedShipping, pickup ? pickupData : null, loyaltyPoints);
     },
     onSuccess: (result) => { trackAddPaymentInfo(analyticsItems(), result.total, pricing.currency); window.location.assign(result.checkout_url); },
   });
@@ -248,7 +257,7 @@ function Checkout() {
               </div>
               {summarySubtotal !== null && (() => {
                 const chosen = selectedShipping ? shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token) : null;
-                const total = chosen ? Number((summarySubtotal + chosen.price).toFixed(2)) : null;
+                const total = chosen ? Number((summarySubtotal - loyaltyDiscount + chosen.price).toFixed(2)) : null;
                 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
                 return <div aria-live="polite" className="mt-5 overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-md">
                   <div className="border-b border-orange-100 bg-gradient-to-r from-orange-50 to-white px-5 py-4 sm:px-6">
@@ -257,9 +266,10 @@ function Checkout() {
                   </div>
                   <div className="space-y-3 px-4 py-4 sm:px-5">
                     <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Produtos ({items.reduce((n, i) => n + i.qty, 0)} item(ns))</span><span className="font-medium tabular-nums">{money(summarySubtotal)}</span></div>
+                    {loyaltyDiscount > 0 && <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">{LOYALTY_NAME} ({loyaltyPoints.toLocaleString("pt-BR")} pts)</span><span className="font-medium tabular-nums text-emerald-700">−{money(loyaltyDiscount)}</span></div>}
                     <div className="flex items-center justify-between gap-4 text-sm"><span className="text-muted-foreground">Entrega{chosen ? " · " + (chosen.provider === "pickup" ? "Retirada no local" : chosen.service) : ""}</span><span className="font-medium tabular-nums">{chosen ? (chosen.price === 0 ? "Grátis" : money(chosen.price)) : "Selecione uma modalidade"}</span></div>
                     <div className="border-t border-border pt-3">
-                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">{chosen ? "Total estimado" : "Total parcial"}</span><span className="text-2xl font-extrabold tabular-nums text-[#e95712]">{total === null ? money(summarySubtotal) : money(total)}</span></div>
+                      <div className="flex items-center justify-between gap-4"><span className="font-semibold">{chosen ? "Total estimado" : "Total parcial"}</span><span className="text-2xl font-extrabold tabular-nums text-[#e95712]">{total === null ? money(summarySubtotal - loyaltyDiscount) : money(total)}</span></div>
                       <p className="mt-1 text-xs text-muted-foreground">{chosen ? "Frete incluído no total estimado. O valor será confirmado ao criar o pedido." : "O valor da entrega será somado assim que você selecionar uma modalidade."}</p>
                     </div>
                   </div>
@@ -278,6 +288,20 @@ function Checkout() {
               {shippingMutation.isSuccess && <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm"><p className="font-medium">Disponibilidade dos transportadores</p><p className="mt-1 text-muted-foreground">Melhor Envio: {shippingProviders.melhor_envio === "ready" ? "consultado" : "não conectado"} · Retirada: {shippingProviders.pickup === "ready" ? "disponível" : "indisponível"}</p>{shippingOptions.every((option) => option.provider === "pickup") && <p className="mt-2 text-destructive">Nenhuma transportadora retornou cotação. A retirada está disponível, mas o envio para endereço ainda não pode ser selecionado.</p>}</div>}
               {!shippingOptions.length && !shippingMutation.isPending && <p className="mt-3 text-sm text-muted-foreground">Informe o CEP e consulte as opções de entrega disponíveis.</p>}
             </section>
+            {!pricing.isReseller && loyalty.data?.signedIn && loyalty.data.eligible && <section className="rounded-2xl border border-orange-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-start gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-brand"><Coins className="size-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-display font-semibold">{LOYALTY_NAME}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Você tem <strong className="text-foreground">{(loyalty.data.balance?.available ?? 0).toLocaleString("pt-BR")} pts</strong> disponíveis{(loyalty.data.balance?.pending ?? 0) > 0 ? ` e ${(loyalty.data.balance?.pending ?? 0).toLocaleString("pt-BR")} pts em liberação` : ""}.</p>
+                  {loyaltyQuote ? <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm hover:bg-secondary/40">
+                    <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="size-4 accent-orange-600" />
+                    <span>Usar <strong>{loyaltyQuote.maxPoints.toLocaleString("pt-BR")} pts</strong> e pagar <strong className="text-emerald-700">{loyaltyQuote.maxDiscount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} a menos</strong> neste pedido</span>
+                  </label> : <p className="mt-2 text-xs text-muted-foreground">A partir de {(loyalty.data.settings?.min_redeem_points ?? 100).toLocaleString("pt-BR")} pts disponíveis você pode usar como desconto, até {loyalty.data.settings?.max_redeem_pct ?? 20}% do valor dos produtos.</p>}
+                  {(summarySubtotal ?? pricing.subtotal) != null && loyaltyRate > 0 && <p className="mt-2 text-xs text-muted-foreground">Esta compra rende cerca de <strong className="text-foreground">{pointsForAmount(Number(summarySubtotal ?? pricing.subtotal) - loyaltyDiscount, loyaltyRate).toLocaleString("pt-BR")} pts</strong>, liberados {loyalty.data.settings?.grace_days} dias após a confirmação do pagamento.</p>}
+                </div>
+              </div>
+            </section>}
             <section className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-5 shadow-sm sm:p-6">
               <h2 className="font-display font-semibold">Pagamento protegido pela InfinitePay</h2>
               <p className="mt-1 text-sm text-muted-foreground">Você concluirá o pagamento no ambiente oficial da InfinitePay, com Pix ou cartão. Os dados do pedido ficam registrados no Store House.</p>
@@ -287,7 +311,7 @@ function Checkout() {
                 <p className="text-muted-foreground">{items.reduce((n, i) => n + i.qty, 0)} item(ns){!selectedShipping && pricing.subtotal != null ? " · " + formatPrice(pricing.subtotal, pricing.currency) + " + frete" : ""}</p>
                 {selectedShipping && summarySubtotal !== null && (() => {
                   const chosen = shippingOptions.find((option) => option.quote_token === selectedShipping.quote_token);
-                  return chosen ? <p className="mt-1 font-semibold">Total com entrega: {(summarySubtotal + chosen.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p> : null;
+                  return chosen ? <p className="mt-1 font-semibold">Total com entrega: {(summarySubtotal - loyaltyDiscount + chosen.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p> : null;
                 })()}
               </div>
               <Button type="submit" size="lg" disabled={!profile.data?.authenticated || m.isPending || !selectedShipping} className="min-h-12 min-w-64 bg-[#ff681f] text-white shadow-lg shadow-orange-200 hover:bg-[#e95712]">{m.isPending ? "Preparando seu pagamento…" : "Continuar para pagamento"}</Button>
