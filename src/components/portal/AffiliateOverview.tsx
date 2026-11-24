@@ -153,7 +153,7 @@ export function AffiliateSectionView({ section }: { section: "link" | "vendas" |
   if (dashboard.isError) return <div className="rounded-xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-950"><p className="font-semibold">Não foi possível carregar esta seção.</p><p className="mt-2">{dashboard.error.message}</p><button type="button" onClick={() => void dashboard.refetch()} className="mt-4 rounded-md border border-amber-400 px-3 py-2 font-medium">Tentar novamente</button></div>;
   const data = dashboard.data;
   const fmt = (value: number) => money(Number(value ?? 0));
-  const statusLabel = (status: string) => ({ pending: "Pendente", approved: "Aprovada", paid: "Paga", cancelled: "Cancelada", reversed: "Estornada" }[status] ?? status);
+  const statusLabel = (status: string) => ({ pending: "Em liberação", approved: "Aprovada", available: "Disponível", paid: "Paga", cancelled: "Cancelada", reversed: "Estornada" }[status] ?? status);
   const tableClass = "w-full min-w-[680px] text-left text-sm";
   return <section className="rounded-xl border bg-card">
     <div className="border-b p-5"><h2 className="font-semibold">{title}</h2><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>

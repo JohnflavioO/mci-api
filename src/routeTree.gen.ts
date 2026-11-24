@@ -42,11 +42,13 @@ import { Route as RSlugRouteImport } from './routes/r.$slug'
 import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
 import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
 import { Route as ApiAdminAdministratorsRouteImport } from './routes/api/admin/administrators'
+import { Route as ApiAdminAffiliatePayoutsRouteImport } from './routes/api/admin/affiliate-payouts'
 import { Route as ApiAdminAffiliatesRouteImport } from './routes/api/admin/affiliates'
 import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
 import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 import { Route as ApiAffiliateDashboardRouteImport } from './routes/api/affiliate/dashboard'
 import { Route as ApiAffiliateLinksRouteImport } from './routes/api/affiliate/links'
+import { Route as ApiAffiliatePayoutsRouteImport } from './routes/api/affiliate/payouts'
 import { Route as ApiAffiliateSettingsRouteImport } from './routes/api/affiliate/settings'
 import { Route as ApiOrdersOrderIdRouteImport } from './routes/api/orders/$orderId'
 import { Route as ApiPublicInfinitepayConfirmRouteImport } from './routes/api/public/infinitepay-confirm'
@@ -223,6 +225,12 @@ const ApiAdminAdministratorsRoute = ApiAdminAdministratorsRouteImport.update({
   path: '/api/admin/administrators',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminAffiliatePayoutsRoute =
+  ApiAdminAffiliatePayoutsRouteImport.update({
+    id: '/api/admin/affiliate-payouts',
+    path: '/api/admin/affiliate-payouts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAdminAffiliatesRoute = ApiAdminAffiliatesRouteImport.update({
   id: '/api/admin/affiliates',
   path: '/api/admin/affiliates',
@@ -246,6 +254,11 @@ const ApiAffiliateDashboardRoute = ApiAffiliateDashboardRouteImport.update({
 const ApiAffiliateLinksRoute = ApiAffiliateLinksRouteImport.update({
   id: '/api/affiliate/links',
   path: '/api/affiliate/links',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAffiliatePayoutsRoute = ApiAffiliatePayoutsRouteImport.update({
+  id: '/api/affiliate/payouts',
+  path: '/api/affiliate/payouts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAffiliateSettingsRoute = ApiAffiliateSettingsRouteImport.update({
@@ -339,11 +352,13 @@ export interface FileRoutesByFullPath {
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
+  '/api/affiliate/payouts': typeof ApiAffiliatePayoutsRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
   '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
@@ -386,11 +401,13 @@ export interface FileRoutesByTo {
   '/afiliado': typeof AfiliadoIndexRoute
   '/revendedor': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
+  '/api/affiliate/payouts': typeof ApiAffiliatePayoutsRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
   '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
@@ -437,11 +454,13 @@ export interface FileRoutesById {
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
+  '/api/affiliate/payouts': typeof ApiAffiliatePayoutsRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
   '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
@@ -489,11 +508,13 @@ export interface FileRouteTypes {
     | '/afiliado/'
     | '/revendedor/'
     | '/api/admin/administrators'
+    | '/api/admin/affiliate-payouts'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/users'
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
+    | '/api/affiliate/payouts'
     | '/api/affiliate/settings'
     | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
@@ -536,11 +557,13 @@ export interface FileRouteTypes {
     | '/afiliado'
     | '/revendedor'
     | '/api/admin/administrators'
+    | '/api/admin/affiliate-payouts'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/users'
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
+    | '/api/affiliate/payouts'
     | '/api/affiliate/settings'
     | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
@@ -586,11 +609,13 @@ export interface FileRouteTypes {
     | '/afiliado/'
     | '/revendedor/'
     | '/api/admin/administrators'
+    | '/api/admin/affiliate-payouts'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/users'
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
+    | '/api/affiliate/payouts'
     | '/api/affiliate/settings'
     | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
@@ -625,11 +650,13 @@ export interface RootRouteChildren {
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   RSlugRoute: typeof RSlugRoute
   ApiAdminAdministratorsRoute: typeof ApiAdminAdministratorsRoute
+  ApiAdminAffiliatePayoutsRoute: typeof ApiAdminAffiliatePayoutsRoute
   ApiAdminAffiliatesRoute: typeof ApiAdminAffiliatesRoute
   ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
   ApiAdminUsersRoute: typeof ApiAdminUsersRoute
   ApiAffiliateDashboardRoute: typeof ApiAffiliateDashboardRoute
   ApiAffiliateLinksRoute: typeof ApiAffiliateLinksRoute
+  ApiAffiliatePayoutsRoute: typeof ApiAffiliatePayoutsRoute
   ApiAffiliateSettingsRoute: typeof ApiAffiliateSettingsRoute
   ApiPublicInfinitepayConfirmRoute: typeof ApiPublicInfinitepayConfirmRoute
   ApiPublicInfinitepayHealthRoute: typeof ApiPublicInfinitepayHealthRoute
@@ -871,6 +898,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminAdministratorsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/affiliate-payouts': {
+      id: '/api/admin/affiliate-payouts'
+      path: '/api/admin/affiliate-payouts'
+      fullPath: '/api/admin/affiliate-payouts'
+      preLoaderRoute: typeof ApiAdminAffiliatePayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/affiliates': {
       id: '/api/admin/affiliates'
       path: '/api/admin/affiliates'
@@ -904,6 +938,13 @@ declare module '@tanstack/react-router' {
       path: '/api/affiliate/links'
       fullPath: '/api/affiliate/links'
       preLoaderRoute: typeof ApiAffiliateLinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/affiliate/payouts': {
+      id: '/api/affiliate/payouts'
+      path: '/api/affiliate/payouts'
+      fullPath: '/api/affiliate/payouts'
+      preLoaderRoute: typeof ApiAffiliatePayoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/affiliate/settings': {
@@ -1081,11 +1122,13 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutoSlugRoute: ProdutoSlugRoute,
   RSlugRoute: RSlugRoute,
   ApiAdminAdministratorsRoute: ApiAdminAdministratorsRoute,
+  ApiAdminAffiliatePayoutsRoute: ApiAdminAffiliatePayoutsRoute,
   ApiAdminAffiliatesRoute: ApiAdminAffiliatesRoute,
   ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
   ApiAdminUsersRoute: ApiAdminUsersRoute,
   ApiAffiliateDashboardRoute: ApiAffiliateDashboardRoute,
   ApiAffiliateLinksRoute: ApiAffiliateLinksRoute,
+  ApiAffiliatePayoutsRoute: ApiAffiliatePayoutsRoute,
   ApiAffiliateSettingsRoute: ApiAffiliateSettingsRoute,
   ApiPublicInfinitepayConfirmRoute: ApiPublicInfinitepayConfirmRoute,
   ApiPublicInfinitepayHealthRoute: ApiPublicInfinitepayHealthRoute,
