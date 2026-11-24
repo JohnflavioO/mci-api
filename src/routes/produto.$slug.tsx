@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb, TrendingUp, BadgePercent, CheckCircle2, ShoppingCart, ArrowRight, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb, TrendingUp, BadgePercent, CheckCircle2, ShoppingCart, ArrowRight, ShoppingBag, Coins } from "lucide-react";
+import { useLoyalty } from "@/hooks/useLoyalty";
+import { LOYALTY_NAME, pointsForAmount } from "@/lib/loyalty";
 import { toast } from "sonner";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ProductComparison } from "@/components/shop/ProductComparison";
@@ -215,6 +217,11 @@ function ProductPage() {
     },
   });
   const isApprovedReseller = rp.data != null;
+  // Store House Pontos: selo "Ganhe X pontos" para cliente final (revendedor não participa).
+  const loyaltySettings = useLoyalty().data?.settings;
+  const loyaltyEarn = !isApprovedReseller && rp.fetchStatus !== "fetching" && loyaltySettings?.enabled && q.data?.product?.customerPrice != null
+    ? pointsForAmount(Number(q.data?.product?.customerPrice) * purchaseQty, loyaltySettings.points_per_real)
+    : 0;
   const p = q.data?.product;
   const volumeRulesQuery = useQuery({
     queryKey: ["product-reseller-volume-discounts", resellerUserId, p?.slug],
@@ -423,6 +430,9 @@ function ProductPage() {
                   <>
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço para cliente final</p>
                     <p className="mt-1 font-display text-4xl font-bold text-foreground">{priceLabel(p)}</p>
+                    {loyaltyEarn > 0 && <Link to="/meus-pontos" className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-brand hover:bg-orange-100">
+                      <Coins className="size-4" />Ganhe {loyaltyEarn.toLocaleString("pt-BR")} pontos no {LOYALTY_NAME}
+                    </Link>}
                   </>
                 )}
               </div>

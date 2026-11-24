@@ -4,6 +4,7 @@ import { AdminAffiliatesSection } from "@/components/portal/AdminAffiliatesSecti
 import { AffiliatePayoutsPanel } from "@/components/portal/AffiliatePayoutsPanel";
 import { AffiliateRewardsPanel } from "@/components/portal/AffiliateRewardsPanel";
 import { AccountSettings } from "@/components/portal/AccountSettings";
+import { AdminLoyaltySection } from "@/components/portal/AdminLoyaltySection";
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { AdminStorefrontNotifications } from "@/components/portal/AdminStorefrontNotifications";
@@ -15,7 +16,7 @@ import {
   Clock, FileEdit, Link2, Package, Plus, Receipt, Settings, ShieldCheck, ShoppingCart,
   Store, Tags, Upload, Users, Wallet, UserRoundCog, TrendingUp, Megaphone, type LucideIcon,
 } from "lucide-react";
-import { Gift } from "lucide-react";
+import { Coins, Gift } from "lucide-react";
 import { portalService } from "@/services";
 import { resellerService, statusLabel } from "@/services/resellers";
 import { createSupabaseCatalog } from "@/services/supabaseCatalog";
@@ -54,6 +55,7 @@ export const portals = {
       { slug: "promocoes", label: "Promoções", icon: BadgePercent, group: "Marketing", description: "Cadastre e gerencie campanhas promocionais." },
       { slug: "cupons", label: "Cupons de desconto", icon: Tags, group: "Marketing", description: "Crie códigos de desconto, validade e limites de uso." },
       { slug: "notificacoes", label: "Notificações da loja", icon: Megaphone, group: "Marketing", description: "Configure prova social, promoções e avisos flutuantes na loja." },
+      { slug: "pontos-clientes", label: "Store House Pontos", icon: Coins, group: "Marketing", description: "Programa de pontos do cliente final: regras e saldo dos clientes." },
       { slug: "pedidos", label: "Pedidos", icon: ShoppingCart, group: "Operação comercial", description: "Pedidos de clientes e revendedores." },
       { slug: "precos", label: "Preços", icon: Tags, group: "Operação comercial", description: "Tabelas de preço para clientes e revendedores." },
       { slug: "desconto-progressivo", label: "Desconto por volume", icon: TrendingUp, group: "Operação comercial", description: "Configure descontos por quantidade de luminárias no pedido." },
@@ -274,6 +276,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   if (portal === "admin" && slug === "permissoes") return <AdminPermissionsSection />;
   if (portal === "admin" && (slug === "promocoes" || slug === "cupons")) return <AdminMarketingSection kind={slug} />;
   if (portal === "admin" && slug === "notificacoes") return <AdminStorefrontNotifications />;
+  if (portal === "admin" && slug === "pontos-clientes") return <AdminLoyaltySection />;
   if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
 
   if (portal === "afiliado" && slug === "pagamentos") return <AffiliatePayoutsPanel />;

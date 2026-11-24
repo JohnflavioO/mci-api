@@ -20,6 +20,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
+import { Route as MeusPontosRouteImport } from './routes/meus-pontos'
 import { Route as PagamentoRetornoRouteImport } from './routes/pagamento-retorno'
 import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
@@ -35,6 +36,7 @@ import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
 import { Route as AdminRevendedoresRouteImport } from './routes/admin.revendedores'
 import { Route as AfiliadoIndexRouteImport } from './routes/afiliado.index'
 import { Route as AfiliadoSecaoRouteImport } from './routes/afiliado.$secao'
+import { Route as ApiLoyaltyRouteImport } from './routes/api/loyalty'
 import { Route as ApiOrdersRouteImport } from './routes/api/orders'
 import { Route as ApiShippingRouteImport } from './routes/api/shipping'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
@@ -46,6 +48,7 @@ import { Route as ApiAdminAffiliatePayoutsRouteImport } from './routes/api/admin
 import { Route as ApiAdminAffiliateRewardsRouteImport } from './routes/api/admin/affiliate-rewards'
 import { Route as ApiAdminAffiliatesRouteImport } from './routes/api/admin/affiliates'
 import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
+import { Route as ApiAdminLoyaltyRouteImport } from './routes/api/admin/loyalty'
 import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 import { Route as ApiAffiliateAccountRouteImport } from './routes/api/affiliate/account'
 import { Route as ApiAffiliateDashboardRouteImport } from './routes/api/affiliate/dashboard'
@@ -116,6 +119,11 @@ const FavoritosRoute = FavoritosRouteImport.update({
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
   id: '/meus-pedidos',
   path: '/meus-pedidos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeusPontosRoute = MeusPontosRouteImport.update({
+  id: '/meus-pontos',
+  path: '/meus-pontos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PagamentoRetornoRoute = PagamentoRetornoRouteImport.update({
@@ -193,6 +201,11 @@ const AfiliadoSecaoRoute = AfiliadoSecaoRouteImport.update({
   path: '/$secao',
   getParentRoute: () => AfiliadoRoute,
 } as any)
+const ApiLoyaltyRoute = ApiLoyaltyRouteImport.update({
+  id: '/api/loyalty',
+  path: '/api/loyalty',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOrdersRoute = ApiOrdersRouteImport.update({
   id: '/api/orders',
   path: '/api/orders',
@@ -248,6 +261,11 @@ const ApiAdminAffiliatesRoute = ApiAdminAffiliatesRouteImport.update({
 const ApiAdminImportPreviewRoute = ApiAdminImportPreviewRouteImport.update({
   id: '/api/admin/import-preview',
   path: '/api/admin/import-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminLoyaltyRoute = ApiAdminLoyaltyRouteImport.update({
+  id: '/api/admin/loyalty',
+  path: '/api/admin/loyalty',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
@@ -349,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/meus-pontos': typeof MeusPontosRoute
   '/pagamento-retorno': typeof PagamentoRetornoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -362,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/api/loyalty': typeof ApiLoyaltyRoute
   '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -375,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
+  '/api/admin/loyalty': typeof ApiAdminLoyaltyRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/account': typeof ApiAffiliateAccountRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
@@ -402,6 +423,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/meus-pontos': typeof MeusPontosRoute
   '/pagamento-retorno': typeof PagamentoRetornoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -414,6 +436,7 @@ export interface FileRoutesByTo {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/api/loyalty': typeof ApiLoyaltyRoute
   '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -427,6 +450,7 @@ export interface FileRoutesByTo {
   '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
+  '/api/admin/loyalty': typeof ApiAdminLoyaltyRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/account': typeof ApiAffiliateAccountRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
@@ -457,6 +481,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/meus-pontos': typeof MeusPontosRoute
   '/pagamento-retorno': typeof PagamentoRetornoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -470,6 +495,7 @@ export interface FileRoutesById {
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/revendedores': typeof AdminRevendedoresRoute
   '/afiliado/$secao': typeof AfiliadoSecaoRoute
+  '/api/loyalty': typeof ApiLoyaltyRoute
   '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/shipping': typeof ApiShippingRouteWithChildren
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -483,6 +509,7 @@ export interface FileRoutesById {
   '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
+  '/api/admin/loyalty': typeof ApiAdminLoyaltyRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/account': typeof ApiAffiliateAccountRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
@@ -514,6 +541,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/meus-pontos'
     | '/pagamento-retorno'
     | '/recuperar-senha'
     | '/redefinir-senha'
@@ -527,6 +555,7 @@ export interface FileRouteTypes {
     | '/admin/produtos'
     | '/admin/revendedores'
     | '/afiliado/$secao'
+    | '/api/loyalty'
     | '/api/orders'
     | '/api/shipping'
     | '/produto/$slug'
@@ -540,6 +569,7 @@ export interface FileRouteTypes {
     | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
+    | '/api/admin/loyalty'
     | '/api/admin/users'
     | '/api/affiliate/account'
     | '/api/affiliate/dashboard'
@@ -567,6 +597,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/meus-pontos'
     | '/pagamento-retorno'
     | '/recuperar-senha'
     | '/redefinir-senha'
@@ -579,6 +610,7 @@ export interface FileRouteTypes {
     | '/admin/produtos'
     | '/admin/revendedores'
     | '/afiliado/$secao'
+    | '/api/loyalty'
     | '/api/orders'
     | '/api/shipping'
     | '/produto/$slug'
@@ -592,6 +624,7 @@ export interface FileRouteTypes {
     | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
+    | '/api/admin/loyalty'
     | '/api/admin/users'
     | '/api/affiliate/account'
     | '/api/affiliate/dashboard'
@@ -621,6 +654,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/meus-pontos'
     | '/pagamento-retorno'
     | '/recuperar-senha'
     | '/redefinir-senha'
@@ -634,6 +668,7 @@ export interface FileRouteTypes {
     | '/admin/produtos'
     | '/admin/revendedores'
     | '/afiliado/$secao'
+    | '/api/loyalty'
     | '/api/orders'
     | '/api/shipping'
     | '/produto/$slug'
@@ -647,6 +682,7 @@ export interface FileRouteTypes {
     | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
+    | '/api/admin/loyalty'
     | '/api/admin/users'
     | '/api/affiliate/account'
     | '/api/affiliate/dashboard'
@@ -677,11 +713,13 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   FavoritosRoute: typeof FavoritosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
+  MeusPontosRoute: typeof MeusPontosRoute
   PagamentoRetornoRoute: typeof PagamentoRetornoRoute
   RecuperarSenhaRoute: typeof RecuperarSenhaRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RevendedorRoute: typeof RevendedorRouteWithChildren
   SejaAfiliadoRoute: typeof SejaAfiliadoRoute
+  ApiLoyaltyRoute: typeof ApiLoyaltyRoute
   ApiOrdersRoute: typeof ApiOrdersRouteWithChildren
   ApiShippingRoute: typeof ApiShippingRouteWithChildren
   ProdutoSlugRoute: typeof ProdutoSlugRoute
@@ -691,6 +729,7 @@ export interface RootRouteChildren {
   ApiAdminAffiliateRewardsRoute: typeof ApiAdminAffiliateRewardsRoute
   ApiAdminAffiliatesRoute: typeof ApiAdminAffiliatesRoute
   ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
+  ApiAdminLoyaltyRoute: typeof ApiAdminLoyaltyRoute
   ApiAdminUsersRoute: typeof ApiAdminUsersRoute
   ApiAffiliateAccountRoute: typeof ApiAffiliateAccountRoute
   ApiAffiliateDashboardRoute: typeof ApiAffiliateDashboardRoute
@@ -782,6 +821,13 @@ declare module '@tanstack/react-router' {
       path: '/meus-pedidos'
       fullPath: '/meus-pedidos'
       preLoaderRoute: typeof MeusPedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meus-pontos': {
+      id: '/meus-pontos'
+      path: '/meus-pontos'
+      fullPath: '/meus-pontos'
+      preLoaderRoute: typeof MeusPontosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pagamento-retorno': {
@@ -889,6 +935,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AfiliadoSecaoRouteImport
       parentRoute: typeof AfiliadoRoute
     }
+    '/api/loyalty': {
+      id: '/api/loyalty'
+      path: '/api/loyalty'
+      fullPath: '/api/loyalty'
+      preLoaderRoute: typeof ApiLoyaltyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/orders': {
       id: '/api/orders'
       path: '/api/orders'
@@ -964,6 +1017,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin/import-preview'
       fullPath: '/api/admin/import-preview'
       preLoaderRoute: typeof ApiAdminImportPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/loyalty': {
+      id: '/api/admin/loyalty'
+      path: '/api/admin/loyalty'
+      fullPath: '/api/admin/loyalty'
+      preLoaderRoute: typeof ApiAdminLoyaltyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/users': {
@@ -1173,11 +1233,13 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   FavoritosRoute: FavoritosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
+  MeusPontosRoute: MeusPontosRoute,
   PagamentoRetornoRoute: PagamentoRetornoRoute,
   RecuperarSenhaRoute: RecuperarSenhaRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RevendedorRoute: RevendedorRouteWithChildren,
   SejaAfiliadoRoute: SejaAfiliadoRoute,
+  ApiLoyaltyRoute: ApiLoyaltyRoute,
   ApiOrdersRoute: ApiOrdersRouteWithChildren,
   ApiShippingRoute: ApiShippingRouteWithChildren,
   ProdutoSlugRoute: ProdutoSlugRoute,
@@ -1187,6 +1249,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminAffiliateRewardsRoute: ApiAdminAffiliateRewardsRoute,
   ApiAdminAffiliatesRoute: ApiAdminAffiliatesRoute,
   ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
+  ApiAdminLoyaltyRoute: ApiAdminLoyaltyRoute,
   ApiAdminUsersRoute: ApiAdminUsersRoute,
   ApiAffiliateAccountRoute: ApiAffiliateAccountRoute,
   ApiAffiliateDashboardRoute: ApiAffiliateDashboardRoute,

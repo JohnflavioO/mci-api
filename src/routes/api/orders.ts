@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createInfinitePayCheckout } from "@/server/payments/infinitepay";
 import { infinitePayConfig } from "@/server/payments/infinitepay-config";
+import { loyaltyError } from "@/lib/loyalty";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/api/orders")({
         address?: { cep?: unknown; street?: unknown; number?: unknown; complement?: unknown; district?: unknown; city?: unknown; state?: unknown };
         shipping?: { provider?: unknown; service?: unknown; quote_token?: unknown };
         pickup_authorization?: { name?: unknown; cpf?: unknown; plate?: unknown } | null;
+        loyalty_points?: unknown;
       } | null;
       if (!Array.isArray(body?.items) || body.items.length < 1 || body.items.length > 50) return Response.json({ error: "Itens do pedido inválidos." }, { status: 400 });
       const items = body.items.map((item) => {
@@ -83,8 +85,18 @@ export const Route = createFileRoute("/api/orders")({
       if (createError || typeof orderId !== "string") {
         return Response.json({ error: createError?.code === "23514" ? "Um produto está indisponível, sem estoque ou teve seu preço alterado. Revise o carrinho." : "Não foi possível criar o pedido. Confira os produtos, preços e estoque." }, { status: 400 });
       }
+      // Store House Pontos: o banco valida saldo, limite e elegibilidade e distribui o desconto nos itens.
+      // Idempotente: numa nova tentativa com a mesma chave, devolve o que já foi aplicado.
+      const loyaltyPoints = Number.isInteger(body?.loyalty_points) && Number(body?.loyalty_points) > 0 && Number(body?.loyalty_points) <= 10_000_000 ? Number(body?.loyalty_points) : 0;
+      if (loyaltyPoints > 0) {
+        const { error: loyaltyErr } = await db.rpc("apply_loyalty_redemption", { p_order_id: orderId, p_user_id: auth.user.id, p_points: loyaltyPoints });
+        if (loyaltyErr) {
+          const known = loyaltyError(loyaltyErr.message);
+          return Response.json({ error: known?.message ?? "Não foi possível usar seus pontos. Tente de novo ou finalize sem pontos." }, { status: known?.status ?? 503 });
+        }
+      }
       const { data: order, error: orderError } = await db.from("orders")
-        .select("id,total,status,provider,provider_checkout_url,shipping_amount")
+        .select("id,total,status,provider,provider_checkout_url,shipping_amount,loyalty_points_used,loyalty_discount_amount")
         .eq("id", orderId).eq("user_id", auth.user.id).single();
       if (orderError || !order) return Response.json({ error: "Pedido criado, mas não foi possível carregar seus dados para pagamento." }, { status: 503 });
       if (order.status !== "pending_payment") return Response.json({ error: "Este pedido não está mais aguardando pagamento." }, { status: 409 });
@@ -99,7 +111,7 @@ export const Route = createFileRoute("/api/orders")({
       order.total = updatedTotal;
       order.provider_checkout_url = null;
       if (order.provider && order.provider !== "infinitepay") return Response.json({ error: "Este pedido já está vinculado a outro meio de pagamento." }, { status: 409 });
-      if (order.provider_checkout_url) return Response.json({ order_id: order.id, checkout_url: order.provider_checkout_url, total: Number(order.total) }, { status: 200 });
+      if (order.provider_checkout_url) return Response.json({ order_id: order.id, checkout_url: order.provider_checkout_url, total: Number(order.total), loyalty_discount: Number(order.loyalty_discount_amount ?? 0) }, { status: 200 });
       if (!order.provider) {
         const { error: providerError } = await db.from("orders").update({ provider: "infinitepay", provider_order_id: order.id })
           .eq("id", order.id).eq("status", "pending_payment").is("provider", null);
@@ -164,7 +176,7 @@ export const Route = createFileRoute("/api/orders")({
         payment_link_created_at: new Date().toISOString(),
       }).eq("id", order.id).eq("status", "pending_payment");
       if (saveError) return Response.json({ error: "O link foi criado, mas não foi possível registrar o pagamento. Tente novamente; o mesmo pedido será reutilizado." }, { status: 503 });
-      return Response.json({ order_id: order.id, checkout_url: checkoutUrl, total: Number(order.total) }, { status: 201 });
+      return Response.json({ order_id: order.id, checkout_url: checkoutUrl, total: Number(order.total), loyalty_discount: Number(order.loyalty_discount_amount ?? 0) }, { status: 201 });
     },
   }},
 });

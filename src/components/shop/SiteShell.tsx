@@ -227,6 +227,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <Link to="/catalogo" className="mt-4 block text-graphite-muted transition hover:text-brand">Catálogo de produtos</Link>
             <Link to="/carrinho" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Meu carrinho</Link>
             <Link to="/meus-pedidos" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Meus pedidos</Link>
+            <Link to="/meus-pontos" className="mt-2.5 block text-graphite-muted transition hover:text-brand">Store House Pontos</Link>
           </div>
           <div className="text-sm">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-graphite-foreground">Seja parceiro</p>
