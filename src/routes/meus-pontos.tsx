@@ -56,9 +56,14 @@ function MyPoints() {
             </article>
           </section>
 
-          <section className="mt-6 flex flex-col gap-3 rounded-xl border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3"><Gift className="mt-0.5 size-5 text-brand" /><div><p className="font-semibold">Como usar</p><p className="mt-1 text-sm text-muted-foreground">No checkout, marque “Usar meus pontos”. O desconto entra no total antes do pagamento. A partir de {pts(s?.min_redeem_points ?? 100)}.</p></div></div>
-            <Link to="/" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-brand-foreground"><ShoppingBag className="size-4" />Ir às compras</Link>
+          <section className="mt-6 rounded-xl border bg-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 font-semibold"><Gift className="size-5 text-brand" />Como funciona</h2><Link to="/" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-brand-foreground"><ShoppingBag className="size-4" />Ir às compras</Link></div>
+            <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+              <li className="rounded-lg bg-secondary/50 p-4 text-sm"><p className="font-semibold">1. Compre</p><p className="mt-1 text-muted-foreground">Cada R$ 1,00 em produtos vira {s?.points_per_real.toLocaleString("pt-BR")} ponto(s). Ex.: compra de R$ 1.000 = {pts(1000 * (s?.points_per_real ?? 1))}.</p></li>
+              <li className="rounded-lg bg-secondary/50 p-4 text-sm"><p className="font-semibold">2. Aguarde {s?.grace_days} dias</p><p className="mt-1 text-muted-foreground">Depois da confirmação do pagamento, os pontos ficam disponíveis e valem por {s?.expiry_months} meses.</p></li>
+              <li className="rounded-lg bg-secondary/50 p-4 text-sm"><p className="font-semibold">3. Use como desconto</p><p className="mt-1 text-muted-foreground">No checkout, marque "Usar meus pontos": 100 pts = {money(rate)}. A partir de {pts(s?.min_redeem_points ?? 100)}, até {s?.max_redeem_pct}% dos produtos por pedido.</p></li>
+            </ol>
+            <p className="mt-3 text-xs text-muted-foreground">Se o pedido em que você usou pontos for cancelado, eles voltam para o seu saldo. Frete não conta para acumular.</p>
           </section>
 
           <section className="mt-6 rounded-xl border bg-card">
