@@ -107,6 +107,61 @@ export function volumeTiersFor(rules: VolumeDiscountRule[], productSlug: string)
   return tiers.sort((a, b) => a.quantity - b.quantity);
 }
 
+export type VolumeCondition = {
+  key: string;
+  ruleId: string;
+  kind: "per_unit" | "range";
+  /** Primeira quantidade em que a condição vale (para "faltam X unidades" e para o clique). */
+  from: number;
+  to: number | null;
+  /** Ex.: "2 a 4 unidades", "5–9 unidades", "10+ unidades". */
+  title: string;
+  /** Ex.: "−R$ 80,00 por unidade", "29% OFF". */
+  value: string;
+  /** Ex.: "Na 2ª, 3ª e 4ª unidade" ou "2ª: −R$ 80,00 · 3ª: 10%". */
+  detail: string | null;
+};
+
+const ordinalList = (positions: number[]) => {
+  const items = positions.map((n) => `${n}ª`);
+  return items.length > 1 ? `${items.slice(0, -1).join(", ")} e ${items[items.length - 1]}` : items[0] ?? "";
+};
+
+/**
+ * Condições do desconto progressivo de um produto, prontas para exibir ao revendedor.
+ * A regra por unidade (2ª, 3ª, 4ª...) vira UMA condição "2 a 4 unidades", em vez de uma opção por unidade.
+ */
+export function volumeConditionsFor(rules: VolumeDiscountRule[], productSlug: string, money: (value: number) => string): VolumeCondition[] {
+  const amount = (type: "percentage" | "fixed", value: number) => (type === "percentage" ? `${value}%` : `−${money(value)}`);
+  const conditions: VolumeCondition[] = [];
+  for (const rule of rules) {
+    if (!rule.is_active || !(rule.product_ids ?? []).includes(productSlug)) continue;
+    const tiers = (rule.quantity_discounts ?? []).slice().sort((a, b) => a.quantity - b.quantity);
+    if (tiers.length) {
+      const from = tiers[0]!.quantity, to = tiers[tiers.length - 1]!.quantity;
+      const same = tiers.every((t) => t.discount_type === tiers[0]!.discount_type && Number(t.discount_value) === Number(tiers[0]!.discount_value));
+      conditions.push({
+        key: rule.id, ruleId: rule.id, kind: "per_unit", from, to,
+        title: from === to ? `${from}ª unidade` : `${from} a ${to} unidades`,
+        value: same
+          ? tiers[0]!.discount_type === "percentage" ? `${Number(tiers[0]!.discount_value)}% OFF por unidade` : `−${money(Number(tiers[0]!.discount_value))} por unidade`
+          : "Desconto por unidade",
+        detail: same
+          ? `Na ${ordinalList(tiers.map((t) => t.quantity))} unidade`
+          : tiers.map((t) => `${t.quantity}ª: ${amount(t.discount_type, Number(t.discount_value))}`).join(" · "),
+      });
+    } else {
+      conditions.push({
+        key: rule.id, ruleId: rule.id, kind: "range", from: rule.min_quantity, to: rule.max_quantity,
+        title: rule.max_quantity == null ? `${rule.min_quantity}+ unidades` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} unidades` : `${rule.min_quantity}–${rule.max_quantity} unidades`,
+        value: rule.discount_type === "percentage" ? `${Number(rule.discount_value)}% OFF` : `−${money(Number(rule.discount_value))} por unidade`,
+        detail: rule.display_note ?? null,
+      });
+    }
+  }
+  return conditions.sort((a, b) => a.from - b.from);
+}
+
 /** Legacy range rules discount every unit equally. Per-position rules discount only the specified unit number. */
 export function calculateVolumeDiscount(
   unitPrice: number,
