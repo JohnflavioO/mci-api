@@ -23,13 +23,16 @@ await db.exec(`
     updated_at timestamptz, unique (user_id, idempotency_key));
   create table public.order_items (order_id uuid, product_id uuid, name_snapshot text, unit_price numeric(12,2), qty int, line_total numeric(12,2));
 `);
-for (const m of ["20261125090000_volume_discount_on_customer_price.sql", "20261125120000_volume_discount_reseller_ceiling.sql"]) {
+// Gatilho real que impede faixas sobrepostas no mesmo produto (a regra por unidade 2–4 precisa caber com 5–9 e 10+).
+await db.exec(readFileSync(`${MIG}/20261103130000_reseller_volume_discount_product_conflict_guard.sql`, "utf8"));
+for (const m of ["20261125090000_volume_discount_on_customer_price.sql", "20261125120000_volume_discount_reseller_ceiling.sql", "20261125150000_volume_discount_per_unit_with_ranges.sql"]) {
   await db.exec(readFileSync(`${MIG}/${m}`, "utf8"));
 }
 
 const RES = "11111111-1111-4111-8111-111111111111", CLI = "22222222-2222-4222-8222-222222222222";
 const RAY = "33333333-3333-4333-8333-333333333333", FIX = "44444444-4444-4444-8444-444444444444", UNIT = "55555555-5555-4555-8555-555555555555";
 const LOW = "66666666-6666-4666-8666-666666666666", DEEP = "77777777-7777-4777-8777-777777777777";
+const ONLY = "88888888-8888-4888-8888-888888888888";
 await db.exec(`
   insert into public.user_roles values ('${RES}', 'revendedor');
   insert into public.products values ('${RAY}','Ray 360c','published',100), ('${FIX}','Fixo','published',100), ('${UNIT}','Por unidade','published',100),
@@ -44,7 +47,21 @@ await db.exec(`
     (array['${RAY}'],5,9,'percentage',29), (array['${RAY}'],10,null,'percentage',31), (array['${FIX}'],3,null,'fixed',50);
   insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value,quantity_discounts) values
     (array['${UNIT}'],2,null,'percentage',0,'[{"quantity":2,"discount_type":"percentage","discount_value":10}]');
+  -- Ray 360c como no admin: por unidade 2ª a 4ª (R$ 80 fixo) junto das faixas 5–9 e 10+.
+  insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value,quantity_discounts) values
+    (array['${RAY}'],2,4,'fixed',80,'[{"quantity":2,"discount_type":"fixed","discount_value":80},{"quantity":3,"discount_type":"fixed","discount_value":80},{"quantity":4,"discount_type":"fixed","discount_value":80}]');
+  -- Produto só com regra por unidade 2ª a 4ª, para conferir que ela segue valendo acima da 4ª.
+  insert into public.products values ('${ONLY}','Só por unidade','published',100);
+  insert into public.product_prices values ('${ONLY}',4210);
+  insert into public.product_reseller_prices values ('${ONLY}',3073.30);
+  insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value,quantity_discounts) values
+    (array['${ONLY}'],2,4,'fixed',80,'[{"quantity":2,"discount_type":"fixed","discount_value":80},{"quantity":3,"discount_type":"fixed","discount_value":80},{"quantity":4,"discount_type":"fixed","discount_value":80}]');
 `);
+
+// Uma regra "2 ou mais, sem limite" (como era salva antes) continua bloqueada pelo gatilho.
+await assert.rejects(db.exec(`insert into public.reseller_volume_discount_rules (product_ids,min_quantity,max_quantity,discount_type,discount_value,quantity_discounts)
+  values (array['${RAY}'],2,null,'fixed',80,'[{"quantity":2,"discount_type":"fixed","discount_value":80}]')`), /sobreposto/);
+console.log("ok gatilho aceita 2–4 junto de 5–9 e 10+, e bloqueia '2 ou mais sem limite'");
 
 let n = 0;
 async function line(user, product, qty) {
@@ -57,7 +74,10 @@ async function line(user, product, qty) {
 }
 
 // Mesmos números de src/services/volumeDiscounts.reseller.test.ts
-let r = await line(RES, RAY, 2);   assert.equal(r.line, 6146.60); console.log("ok 2 un. sem faixa = preço de revenda 6.146,60");
+let r = await line(RES, RAY, 1);   assert.equal(r.line, 3073.30); console.log("ok 1 un. = preço de revenda 3.073,30");
+r = await line(RES, RAY, 2);       assert.equal(r.line, 6066.60); console.log("ok 2 un.: 2ª com R$ 80 de desconto = 6.066,60");
+r = await line(RES, RAY, 4);       assert.equal(r.line, 12053.20); console.log("ok 4 un.: 2ª a 4ª com R$ 80 = 12.053,20");
+r = await line(RES, ONLY, 6);      assert.equal(r.line, 18199.80); console.log("ok só regra por unidade: acima da 4ª segue valendo (6 × 3.073,30 − 240)");
 r = await line(RES, RAY, 5);       assert.equal(r.unit, 2989.10); assert.equal(r.line, 14945.50); console.log("ok 5 un. 29% sobre cliente final = 14.945,50 (2.989,10/un.)");
 r = await line(RES, RAY, 10);      assert.equal(r.unit, 2904.90); assert.equal(r.line, 29049.00); console.log("ok 10 un. 31% = 29.049,00 (2.904,90/un.)");
 assert.equal(r.saved, Number((3073.30 * 10 - 29049).toFixed(2))); console.log("ok economia registrada contra o preço de revenda");

@@ -60,8 +60,13 @@ export function AdminProgressiveDiscounts() {
         discount_value: Number(tier.discount_value.replace(",", ".")),
         badge_label: tier.badge_label.trim() || null,
       })).sort((a, b) => a.quantity - b.quantity);
-      const min = draft.discount_mode === "per_unit" ? 2 : Number(draft.min_quantity);
-      const max = draft.discount_mode === "per_unit" ? null : (draft.max_quantity.trim() ? Number(draft.max_quantity) : null);
+      // Regra por unidade ocupa da primeira à última unidade configurada (ex.: 2ª a 4ª), para poder
+      // conviver com faixas por quantidade a partir da unidade seguinte (ex.: 5–9 e 10+).
+      // Acima da última unidade ela continua valendo se nenhuma faixa cobrir a quantidade (ver create_order).
+      const min = draft.discount_mode === "per_unit" ? Math.max(2, unitTiers[0]?.quantity ?? 2) : Number(draft.min_quantity);
+      const max = draft.discount_mode === "per_unit"
+        ? (unitTiers.length ? unitTiers[unitTiers.length - 1]!.quantity : null)
+        : (draft.max_quantity.trim() ? Number(draft.max_quantity) : null);
       const value = draft.discount_mode === "per_unit"
         ? Number(unitTiers[0]?.discount_value)
         : Number(draft.discount_value.replace(",", "."));
