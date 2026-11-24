@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
 import { AdminAffiliatesSection } from "@/components/portal/AdminAffiliatesSection";
 import { AffiliatePayoutsPanel } from "@/components/portal/AffiliatePayoutsPanel";
+import { AccountSettings } from "@/components/portal/AccountSettings";
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { AdminStorefrontNotifications } from "@/components/portal/AdminStorefrontNotifications";
@@ -38,6 +39,7 @@ export const portals = {
       { slug: "vendas", label: "Vendas atribuídas", icon: Receipt, description: "Vendas realizadas pelo seu link." },
       { slug: "comissoes", label: "Comissões", icon: BadgePercent, description: "Comissões geradas pelas vendas." },
       { slug: "pagamentos", label: "Pagamentos", icon: Wallet, description: "Saldo, chave Pix e pedidos de saque." },
+      { slug: "conta", label: "Minha conta", icon: UserRoundCog, group: "Conta", description: "Seus dados pessoais, e-mail de acesso e senha." },
     ],
   },
   admin: {
@@ -58,6 +60,7 @@ export const portals = {
       { slug: "usuarios", label: "Usuários", icon: Users, group: "Administração", description: "Contas com acesso à plataforma." },
       { slug: "permissoes", label: "Permissões", icon: ShieldCheck, group: "Administração", description: "Perfis e níveis de acesso." },
       { slug: "configuracoes", label: "Configurações", icon: Settings, group: "Administração", description: "Preferências gerais da plataforma." },
+      { slug: "conta", label: "Minha conta", icon: UserRoundCog, group: "Administração", description: "Seus dados pessoais, e-mail de acesso e senha." },
     ],
   },
 } satisfies Record<string, { title: string; sections: PortalSection[] }>;
@@ -271,6 +274,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
 
   if (portal === "afiliado" && slug === "pagamentos") return <AffiliatePayoutsPanel />;
+  if ((portal === "afiliado" || portal === "admin") && slug === "conta") return <AccountSettings portal={portal} />;
   if (portal === "afiliado" && ["link", "vendas", "comissoes", "pagamentos"].includes(slug)) return <AffiliateSectionView section={slug as "link" | "vendas" | "comissoes" | "pagamentos"} />;
 
   if (portal === "revendedor" && slug === "aprovacao") {

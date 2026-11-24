@@ -9,16 +9,17 @@ export type PortalSection = { slug: string; label: string; icon: LucideIcon; gro
 export function PortalLayout({ title, base, sections }: { title: string; base: "/revendedor" | "/afiliado" | "/admin"; sections: PortalSection[] }) {
   const [collapsed, setCollapsed] = useState(false);
   const adminProfile = useQuery({
-    queryKey: ["admin", "portal-sidebar-profile"],
-    enabled: base === "/admin" && isSupabaseConfigured(),
+    // Também usado pelo portal do afiliado (nome e e-mail no rodapé da barra lateral).
+    queryKey: ["admin", "portal-sidebar-profile", base],
+    enabled: (base === "/admin" || base === "/afiliado") && isSupabaseConfigured(),
     queryFn: async () => {
       const { data, error } = await getSupabase().auth.getUser();
       if (error) throw error;
       const user = data.user;
-      if (!user) return { name: "Administrador", email: "", avatar: "" };
+      if (!user) return { name: "", email: "", avatar: "" };
       const meta = user.user_metadata ?? {};
       const email = user.email ?? "";
-      const name = String(meta.full_name || meta.name || meta.display_name || email.split("@")[0] || "Administrador");
+      const name = String(meta.full_name || meta.name || meta.display_name || email.split("@")[0] || "");
       return { name, email, avatar: String(meta.avatar_url || meta.picture || "") };
     },
     staleTime: 60_000,
@@ -101,13 +102,15 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
           ))}
         </nav>
       <div className="mt-auto border-t border-sidebar-border p-3">
-        <div className={`flex min-w-0 items-center gap-3 rounded-md ${collapsed ? "justify-center" : "px-2 py-2"}`}>
+        <Link to={`${base}/$secao`} params={{ secao: "conta" }} title="Minha conta: dados pessoais, e-mail e senha" className={`group flex min-w-0 items-center gap-3 rounded-md transition-colors hover:bg-sidebar-accent ${collapsed ? "justify-center p-1" : "px-2 py-2"}`} activeProps={{ className: "bg-sidebar-accent" }}>
           <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-sidebar-border bg-sidebar-accent text-sm font-semibold text-sidebar-foreground">
-            {adminProfile.data?.avatar
-              ? <img src={adminProfile.data.avatar} alt="" className="size-full object-cover" />
-              : adminProfile.data?.name
-                ? adminProfile.data.name.trim().slice(0, 1).toUpperCase()
-                : <UserRound className="size-4" />}
+            {(() => {
+              const avatar = base === "/revendedor" ? resellerProfile.data?.avatar : adminProfile.data?.avatar;
+              const name = base === "/revendedor" ? resellerProfile.data?.fullName : adminProfile.data?.name;
+              return avatar
+                ? <img src={avatar} alt="" className="size-full object-cover" />
+                : name ? name.trim().slice(0, 1).toUpperCase() : <UserRound className="size-4" />;
+            })()}
           </span>
           {!collapsed && (
             <span className="min-w-0 flex-1">
@@ -123,8 +126,12 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
                 </>
               ) : base === "/afiliado" ? (
                 <>
-                  <span className="mt-0.5 block truncate text-sm font-medium">Afiliado</span>
-                  <span className="block truncate text-xs text-sidebar-foreground/55">Portal do afiliado</span>
+                  <span className="mt-0.5 block truncate text-sm font-medium" title={adminProfile.data?.name || "Afiliado"}>
+                    {adminProfile.data?.name || (adminProfile.isLoading ? "Carregando conta…" : "Afiliado")}
+                  </span>
+                  <span className="block truncate text-xs text-sidebar-foreground/55" title={adminProfile.data?.email || ""}>
+                    {adminProfile.data?.email || "Portal do afiliado"}
+                  </span>
                 </>
               ) : (
                 <>
@@ -138,7 +145,8 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
               )}
             </span>
           )}
-        </div>
+          {!collapsed && <ChevronRight className="size-4 shrink-0 text-sidebar-foreground/40 transition group-hover:translate-x-0.5 group-hover:text-sidebar-foreground/70" />}
+        </Link>
       </div>
       </aside>
       <div className="min-w-0 flex-1">
