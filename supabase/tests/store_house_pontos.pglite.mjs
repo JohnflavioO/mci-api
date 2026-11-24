@@ -11,7 +11,7 @@ const db = new PGlite();
 await db.exec(`
   create role anon; create role authenticated; create role service_role;
   create schema auth;
-  create table auth.users (id uuid primary key, email text);
+  create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
   create table public.user_roles (user_id uuid, role text);
   create type public.order_status as enum ('pending_payment','paid','rejected','cancelled','refund_required','refunded');
   create table public.orders (id uuid primary key default gen_random_uuid(), user_id uuid, total numeric(12,2) not null,
@@ -21,9 +21,11 @@ await db.exec(`
 `);
 await db.exec(readFileSync(`${MIG}/20261127100000_store_house_pontos.sql`, "utf8"));
 await db.exec(readFileSync(`${MIG}/20261127100000_store_house_pontos.sql`, "utf8")); // reaplicar é seguro
+await db.exec(readFileSync(`${MIG}/20261128100000_store_house_pontos_admin.sql`, "utf8"));
 
 const CLI = "11111111-1111-4111-8111-111111111111", RES = "22222222-2222-4222-8222-222222222222";
-await db.exec(`insert into auth.users values ('${CLI}','c@x.test'), ('${RES}','r@x.test'); insert into public.user_roles values ('${RES}','revendedor');`);
+const ADM = "99999999-9999-4999-8999-999999999999";
+await db.exec(`insert into auth.users values ('${CLI}','c@x.test','{"full_name":"Cliente Teste"}'), ('${RES}','r@x.test','{}'), ('${ADM}','a@x.test','{}'); insert into public.user_roles values ('${RES}','revendedor');`);
 const q = async (sql) => (await db.query(sql)).rows;
 const one = async (sql) => (await q(sql))[0];
 const bal = async (u = CLI) => { const r = await one(`select * from public.loyalty_balance('${u}')`); return { available: r.available, pending: r.pending }; };
@@ -115,4 +117,22 @@ for (const fn of ["loyalty_balance(uuid)", "loyalty_max_redeem(uuid,numeric)", "
   }
 }
 console.log("ok números do programa e funções restritas ao service_role");
+// 10. Controle do admin: resumo por cliente e ajuste manual auditado.
+const sum = await one(`select * from public.loyalty_customers_summary() where user_id='${CLI}'`);
+assert.equal(sum.full_name, "Cliente Teste"); assert.equal(sum.email, "c@x.test");
+assert.ok(Number(sum.earned) >= 4705);
+await expectError(`select public.admin_adjust_loyalty_points('${CLI}', 500, '  ', '${ADM}')`, "LOY_REASON_REQUIRED");
+const avail0 = (await bal()).available;
+const adj = await one(`select * from public.admin_adjust_loyalty_points('${CLI}', 500, 'Cortesia: atraso na entrega', '${ADM}')`);
+assert.equal(adj.created_by, ADM); assert.equal(adj.remaining, 500);
+assert.equal((await bal()).available, avail0 + 500);
+await db.exec(`select public.admin_adjust_loyalty_points('${CLI}', -200, 'Correção de lançamento', '${ADM}')`);
+assert.equal((await bal()).available, avail0 + 300);
+await expectError(`select public.admin_adjust_loyalty_points('${CLI}', -999999, 'Teste', '${ADM}')`, "LOY_INSUFFICIENT");
+const sum2 = await one(`select * from public.loyalty_customers_summary() where user_id='${CLI}'`);
+assert.equal(Number(sum2.adjusted), 300); assert.equal(sum2.available, avail0 + 300);
+for (const fn of ["loyalty_customers_summary()", "admin_adjust_loyalty_points(uuid,integer,text,uuid)"]) {
+  for (const role of ["anon", "authenticated"]) assert.equal((await one(`select has_function_privilege('${role}', 'public.${fn}', 'execute') ok`)).ok, false);
+}
+console.log("ok resumo por cliente e ajuste manual (crédito, débito, motivo obrigatório, sem saldo negativo)");
 console.log("TODOS OS TESTES PASSARAM");

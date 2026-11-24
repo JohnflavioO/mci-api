@@ -51,6 +51,10 @@ export const LOYALTY_ERRORS: Record<string, { status: number; message: string }>
   LOY_DISABLED: { status: 409, message: "O Store House Pontos está pausado no momento." },
   LOY_ORDER_CLOSED: { status: 409, message: "Este pedido não está mais aguardando pagamento." },
   LOY_ORDER_NOT_FOUND: { status: 404, message: "Pedido não encontrado." },
+  LOY_REASON_REQUIRED: { status: 400, message: "Informe o motivo do ajuste (fica registrado no extrato do cliente)." },
+  LOY_INVALID_POINTS: { status: 400, message: "Informe uma quantidade de pontos diferente de zero." },
+  LOY_INSUFFICIENT: { status: 409, message: "O cliente não tem pontos disponíveis suficientes para esse débito." },
+  LOY_CUSTOMER_NOT_FOUND: { status: 404, message: "Cliente não encontrado." },
 };
 
 export function loyaltyError(message: string | undefined) {
