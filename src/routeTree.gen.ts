@@ -44,6 +44,7 @@ import { Route as RSlugRouteImport } from './routes/r.$slug'
 import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
 import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
 import { Route as ApiAdminAdministratorsRouteImport } from './routes/api/admin/administrators'
+import { Route as ApiAdminAffiliateCommissionsRouteImport } from './routes/api/admin/affiliate-commissions'
 import { Route as ApiAdminAffiliatePayoutsRouteImport } from './routes/api/admin/affiliate-payouts'
 import { Route as ApiAdminAffiliateRewardsRouteImport } from './routes/api/admin/affiliate-rewards'
 import { Route as ApiAdminAffiliatesRouteImport } from './routes/api/admin/affiliates'
@@ -241,6 +242,12 @@ const ApiAdminAdministratorsRoute = ApiAdminAdministratorsRouteImport.update({
   path: '/api/admin/administrators',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminAffiliateCommissionsRoute =
+  ApiAdminAffiliateCommissionsRouteImport.update({
+    id: '/api/admin/affiliate-commissions',
+    path: '/api/admin/affiliate-commissions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAdminAffiliatePayoutsRoute =
   ApiAdminAffiliatePayoutsRouteImport.update({
     id: '/api/admin/affiliate-payouts',
@@ -391,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliate-commissions': typeof ApiAdminAffiliateCommissionsRoute
   '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
   '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
@@ -446,6 +454,7 @@ export interface FileRoutesByTo {
   '/afiliado': typeof AfiliadoIndexRoute
   '/revendedor': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliate-commissions': typeof ApiAdminAffiliateCommissionsRoute
   '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
   '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
@@ -505,6 +514,7 @@ export interface FileRoutesById {
   '/afiliado/': typeof AfiliadoIndexRoute
   '/revendedor/': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
+  '/api/admin/affiliate-commissions': typeof ApiAdminAffiliateCommissionsRoute
   '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
   '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/afiliado/'
     | '/revendedor/'
     | '/api/admin/administrators'
+    | '/api/admin/affiliate-commissions'
     | '/api/admin/affiliate-payouts'
     | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
@@ -620,6 +631,7 @@ export interface FileRouteTypes {
     | '/afiliado'
     | '/revendedor'
     | '/api/admin/administrators'
+    | '/api/admin/affiliate-commissions'
     | '/api/admin/affiliate-payouts'
     | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
@@ -678,6 +690,7 @@ export interface FileRouteTypes {
     | '/afiliado/'
     | '/revendedor/'
     | '/api/admin/administrators'
+    | '/api/admin/affiliate-commissions'
     | '/api/admin/affiliate-payouts'
     | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
@@ -725,6 +738,7 @@ export interface RootRouteChildren {
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   RSlugRoute: typeof RSlugRoute
   ApiAdminAdministratorsRoute: typeof ApiAdminAdministratorsRoute
+  ApiAdminAffiliateCommissionsRoute: typeof ApiAdminAffiliateCommissionsRoute
   ApiAdminAffiliatePayoutsRoute: typeof ApiAdminAffiliatePayoutsRoute
   ApiAdminAffiliateRewardsRoute: typeof ApiAdminAffiliateRewardsRoute
   ApiAdminAffiliatesRoute: typeof ApiAdminAffiliatesRoute
@@ -991,6 +1005,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminAdministratorsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/affiliate-commissions': {
+      id: '/api/admin/affiliate-commissions'
+      path: '/api/admin/affiliate-commissions'
+      fullPath: '/api/admin/affiliate-commissions'
+      preLoaderRoute: typeof ApiAdminAffiliateCommissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/affiliate-payouts': {
       id: '/api/admin/affiliate-payouts'
       path: '/api/admin/affiliate-payouts'
@@ -1245,6 +1266,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutoSlugRoute: ProdutoSlugRoute,
   RSlugRoute: RSlugRoute,
   ApiAdminAdministratorsRoute: ApiAdminAdministratorsRoute,
+  ApiAdminAffiliateCommissionsRoute: ApiAdminAffiliateCommissionsRoute,
   ApiAdminAffiliatePayoutsRoute: ApiAdminAffiliatePayoutsRoute,
   ApiAdminAffiliateRewardsRoute: ApiAdminAffiliateRewardsRoute,
   ApiAdminAffiliatesRoute: ApiAdminAffiliatesRoute,
