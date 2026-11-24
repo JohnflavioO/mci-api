@@ -5,6 +5,7 @@ import { AffiliatePayoutsPanel } from "@/components/portal/AffiliatePayoutsPanel
 import { AffiliateRewardsPanel } from "@/components/portal/AffiliateRewardsPanel";
 import { AccountSettings } from "@/components/portal/AccountSettings";
 import { AdminLoyaltySection } from "@/components/portal/AdminLoyaltySection";
+import { AdminCommissionsReport } from "@/components/portal/AdminCommissionsReport";
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { AdminStorefrontNotifications } from "@/components/portal/AdminStorefrontNotifications";
@@ -61,7 +62,7 @@ export const portals = {
       { slug: "desconto-progressivo", label: "Desconto por volume", icon: TrendingUp, group: "Operação comercial", description: "Configure descontos por quantidade de luminárias no pedido." },
       { slug: "revendedores", label: "Revendedores", icon: Store, group: "Operação comercial", description: "Cadastro e aprovação de revendedores." },
       { slug: "afiliados", label: "Afiliados", icon: Link2, group: "Operação comercial", description: "Parceiros com link de indicação." },
-      { slug: "comissoes", label: "Comissões", icon: CircleDollarSign, group: "Operação comercial", description: "Regras e apuração de comissões." },
+      { slug: "comissoes", label: "Comissões", icon: CircleDollarSign, group: "Operação comercial", description: "Relatório das comissões de afiliados por pedido, com situação e exportação." },
       { slug: "usuarios", label: "Usuários", icon: Users, group: "Administração", description: "Contas com acesso à plataforma." },
       { slug: "permissoes", label: "Permissões", icon: ShieldCheck, group: "Administração", description: "Perfis e níveis de acesso." },
       { slug: "configuracoes", label: "Configurações", icon: Settings, group: "Administração", description: "Preferências gerais da plataforma." },
@@ -277,6 +278,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   if (portal === "admin" && (slug === "promocoes" || slug === "cupons")) return <AdminMarketingSection kind={slug} />;
   if (portal === "admin" && slug === "notificacoes") return <AdminStorefrontNotifications />;
   if (portal === "admin" && slug === "pontos-clientes") return <AdminLoyaltySection />;
+  if (portal === "admin" && slug === "comissoes") return <AdminCommissionsReport />;
   if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
 
   if (portal === "afiliado" && slug === "pagamentos") return <AffiliatePayoutsPanel />;
