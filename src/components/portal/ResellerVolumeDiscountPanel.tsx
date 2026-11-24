@@ -1,45 +1,76 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownRight, BadgePercent, Calculator, CheckCircle2, TrendingUp } from "lucide-react";
+import { ArrowDownRight, BadgePercent, Calculator, CheckCircle2, ChevronDown, TrendingUp } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
-import { calculateVolumeDiscount, getVolumeDiscountRule, type VolumeDiscountRule } from "@/services/volumeDiscounts";
+import { quoteResellerVolume, volumeTiersFor, type VolumeDiscountRule } from "@/services/volumeDiscounts";
 import { formatPrice } from "@/services/catalog";
 import type { SupabaseCatalogProduct } from "@/services/supabaseCatalog";
 
-export function ResellerVolumeDiscountPanel({ products }: { products: SupabaseCatalogProduct[] }) {
-  const [quantity, setQuantity] = useState(2);
-  const lighting = useMemo(() => products.filter(p => /ilum|luz|light|beam|painel|fresnel|spot/i.test(`${p.category ?? ""} ${p.name}`) && p.resellerPrice != null), [products]);
-  const [productId, setProductId] = useState("");
-  const query = useQuery({
+/** Regras ativas de desconto progressivo (compartilhadas entre o simulador e os cards do catálogo). */
+export function useResellerVolumeRules() {
+  return useQuery({
     queryKey: ["reseller", "volume-discounts"],
     queryFn: async () => {
-      const { data, error } = await getSupabase().from("reseller_volume_discount_rules").select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order").eq("is_active", true).order("sort_order").order("min_quantity");
+      const { data, error } = await getSupabase().from("reseller_volume_discount_rules").select("id,min_quantity,max_quantity,discount_type,discount_value,is_active,product_ids,badge_label,display_note,is_featured,sort_order,quantity_discounts").eq("is_active", true).order("sort_order").order("min_quantity");
       if (error) throw error;
       return (data ?? []) as VolumeDiscountRule[];
     },
     staleTime: 60_000,
     retry: false,
   });
-  const selected = lighting.find(p => p.slug === productId) ?? lighting[0];
-  const selectedProductId = selected?.id ?? "";
-  const applicableRules = (query.data ?? []).filter(rule => (rule.product_ids ?? []).includes(selectedProductId));
-  const quote = selected?.resellerPrice != null ? calculateVolumeDiscount(selected.resellerPrice, quantity, applicableRules, selectedProductId) : null;
-  const nextTier = applicableRules.filter(r => r.is_active && r.min_quantity > quantity).sort((a,b) => a.min_quantity-b.min_quantity)[0];
-  const money = (v: number) => formatPrice(v, selected?.currency);
-  return <section className="overflow-hidden rounded-2xl border bg-card">
-    <div className="flex flex-wrap items-start justify-between gap-4 bg-graphite p-5 text-graphite-foreground sm:p-6">
-      <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-foreground"><TrendingUp className="size-5" /></span><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand">Benefício para revendedores</p><h3 className="mt-1 text-xl font-bold">Compre mais, economize mais</h3><p className="mt-1 text-sm text-graphite-muted">Veja como a quantidade de luminárias pode melhorar seu preço.</p></div></div>
-      <span className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs text-graphite-muted"><Calculator className="size-3.5" /> Simulador de desconto</span>
-    </div>
-    {query.isError ? <div className="p-5 text-sm text-muted-foreground">As condições progressivas ainda não estão disponíveis.</div> : query.isPending ? <div className="p-5 text-sm text-muted-foreground">Carregando condições…</div> : !(applicableRules.length) ? <div className="p-5 text-sm text-muted-foreground">O gestor ainda não configurou faixas de desconto progressivo.</div> : <div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)] sm:p-6">
+}
+
+/** Simulador recolhível: escolhe um produto com faixas e mostra preço por unidade e total. */
+export function ResellerVolumeDiscountPanel({ products }: { products: SupabaseCatalogProduct[] }) {
+  const [open, setOpen] = useState(false);
+  const [quantity, setQuantity] = useState(5);
+  const [productId, setProductId] = useState("");
+  const query = useResellerVolumeRules();
+  const rules = query.data ?? [];
+  // Só produtos com preço de revenda e pelo menos uma faixa ativa entram no simulador.
+  const eligible = useMemo(() => products.filter((p) => p.resellerPrice != null && volumeTiersFor(rules, p.slug).length > 0), [products, rules]);
+  const selected = eligible.find((p) => p.slug === productId) ?? eligible[0];
+  const tiers = selected ? volumeTiersFor(rules, selected.slug) : [];
+  const quote = selected ? quoteResellerVolume(selected, quantity, rules) : null;
+  const plain = selected?.resellerPrice != null ? selected.resellerPrice * quantity : null;
+  const nextTier = tiers.find((t) => t.quantity > quantity);
+  const money = (v: number) => formatPrice(v, selected?.currency ?? null);
+  const applies = (t: (typeof tiers)[number]) => t.perUnit ? quantity >= t.quantity : quantity >= t.quantity && (t.maxQuantity == null || quantity <= t.maxQuantity);
+
+  if (query.isSuccess && eligible.length === 0) return null; // Sem faixas configuradas: não ocupa espaço no catálogo.
+
+  return <section className="overflow-hidden rounded-xl border bg-card">
+    <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-3 p-4 text-left transition hover:bg-secondary/40 sm:px-5">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand text-brand-foreground"><TrendingUp className="size-4" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">Compre mais, pague menos por unidade</span>
+        <span className="block text-xs text-muted-foreground">{query.isPending ? "Carregando condições…" : query.isError ? "As condições progressivas não carregaram agora." : `${eligible.length} ${eligible.length === 1 ? "produto tem" : "produtos têm"} desconto por quantidade. Abra para simular.`}</span>
+      </span>
+      <span className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:inline-flex"><Calculator className="size-3.5" />Simulador</span>
+      <ChevronDown className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+    </button>
+    {open && selected && <div className="grid gap-6 border-t p-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)] sm:p-6">
       <div className="space-y-4">
-        <label className="block space-y-1.5 text-sm"><span className="font-medium">Escolha uma luminária para simular</span><select value={selected?.slug ?? ""} onChange={e=>setProductId(e.target.value)} className="h-11 w-full rounded-md border bg-background px-3" disabled={!lighting.length}>{lighting.map(p=><option key={p.slug} value={p.slug}>{p.name}</option>)}</select></label>
-        <label className="block space-y-1.5 text-sm"><span className="font-medium">Quantidade no pedido</span><input type="number" min="1" max="999" step="1" value={quantity} onChange={e=>setQuantity(Math.max(1,Math.min(999,Math.floor(Number(e.target.value)||1))))} className="h-11 w-full rounded-md border bg-background px-3" /></label>
-        {!lighting.length && <p className="text-sm text-muted-foreground">Nenhuma luminária com preço de revenda foi identificada. Confira se a categoria do produto está como Iluminação.</p>}
-        {quote && <div className="rounded-xl border bg-secondary/40 p-4"><p className="text-xs text-muted-foreground">Preço de revenda de referência</p><p className="mt-1 text-lg font-semibold">{money(selected!.resellerPrice!)}</p><div className="mt-3 grid grid-cols-2 gap-3"><div><p className="text-xs text-muted-foreground">Desconto por unidade</p><p className="mt-1 font-semibold text-emerald-700">{quote.unitDiscount > 0 ? "−" + money(quote.unitDiscount) : money(0)}</p></div><div><p className="text-xs text-muted-foreground">Total estimado</p><p className="mt-1 text-lg font-bold">{money(quote.totalAfterDiscount)}</p></div></div><p className="mt-2 text-xs text-muted-foreground">Economia estimada neste exemplo: {money(quote.totalDiscount)}.</p></div>}
+        <label className="block space-y-1.5 text-sm"><span className="font-medium">Produto</span><select value={selected.slug} onChange={(e) => setProductId(e.target.value)} className="h-11 w-full rounded-md border bg-background px-3">{eligible.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}</select></label>
+        <label className="block space-y-1.5 text-sm"><span className="font-medium">Quantidade no pedido</span><input type="number" min="1" max="999" step="1" value={quantity} onChange={(e) => setQuantity(Math.max(1, Math.min(999, Math.floor(Number(e.target.value) || 1))))} className="h-11 w-full rounded-md border bg-background px-3" /></label>
+        {quote && plain != null && <div className="rounded-xl border bg-secondary/40 p-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div><p className="text-xs text-muted-foreground">Preço por unidade</p><p className="mt-1 text-lg font-semibold">{money(quote.discountedUnitPrice)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Total de {quantity} un.</p><p className="mt-1 text-lg font-bold">{money(quote.totalAfterDiscount)}</p></div>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">{quote.rule ? `Sem a faixa, ${quantity} un. no preço de revenda custariam ${money(plain)}.` : `Nesta quantidade vale o preço de revenda normal (${money(selected.resellerPrice!)} por unidade).`}</p>
+        </div>}
       </div>
-      <div className="space-y-3"><h4 className="font-semibold">Faixas de desconto</h4>{applicableRules.map(rule=><div key={rule.id} className={quantity>=rule.min_quantity&&(rule.max_quantity==null||quantity<=rule.max_quantity)?"flex items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3":rule.is_featured?"flex items-center gap-3 rounded-xl border border-brand/50 bg-brand/[0.04] p-3":"flex items-center gap-3 rounded-xl border bg-background p-3"}><span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary"><BadgePercent className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{rule.max_quantity==null?rule.min_quantity+"+ luminárias":rule.min_quantity+"–"+rule.max_quantity+" luminárias"} {rule.badge_label&&<span className="ml-1 inline-flex rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold uppercase text-brand">{rule.badge_label}</span>}</p><p className="text-xs text-muted-foreground">{rule.discount_type==="percentage"?rule.discount_value+"% de desconto":"−"+money(rule.discount_value)+" por unidade"}</p>{rule.display_note&&<p className="mt-1 text-xs text-muted-foreground">{rule.display_note}</p>}</div>{quantity>=rule.min_quantity&&(rule.max_quantity==null||quantity<=rule.max_quantity)&&<CheckCircle2 className="size-5 shrink-0 text-emerald-600" />}</div>)}{nextTier&&<p className="flex items-center gap-2 rounded-lg bg-orange-50 p-3 text-sm text-orange-900"><ArrowDownRight className="size-4 shrink-0" />Faltam {nextTier.min_quantity-quantity} unidade(s) para atingir a próxima faixa.</p>}</div>
+      <div className="space-y-3">
+        <h4 className="text-sm font-semibold">Faixas deste produto</h4>
+        {tiers.map((t) => <div key={t.key} className={`flex items-center gap-3 rounded-xl border p-3 ${applies(t) ? "border-emerald-300 bg-emerald-50" : "bg-background"}`}>
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary"><BadgePercent className="size-4" /></span>
+          <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{t.label}</p><p className="text-xs text-muted-foreground">{t.discountType === "percentage" ? `${t.discountValue}% sobre o preço de cliente final` : `−${money(t.discountValue)} por unidade`}</p></div>
+          {applies(t) && <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />}
+        </div>)}
+        {nextTier && <p className="flex items-center gap-2 rounded-lg bg-orange-50 p-3 text-sm text-orange-900"><ArrowDownRight className="size-4 shrink-0" />Faltam {nextTier.quantity - quantity} unidade(s) para a próxima faixa.</p>}
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground lg:col-span-2">O desconto da faixa é aplicado automaticamente no carrinho e no pedido, de acordo com a quantidade de cada produto.</p>
     </div>}
-    <div className="border-t bg-secondary/30 px-5 py-3 text-xs leading-5 text-muted-foreground">Simulação indicativa com base no preço unitário do produto selecionado. A aplicação no pedido depende da integração do cálculo ao serviço de pedidos.</div>
   </section>;
 }
