@@ -43,6 +43,7 @@ import { Route as RevendedorIndexRouteImport } from './routes/revendedor.index'
 import { Route as RevendedorSecaoRouteImport } from './routes/revendedor.$secao'
 import { Route as ApiAdminAdministratorsRouteImport } from './routes/api/admin/administrators'
 import { Route as ApiAdminAffiliatePayoutsRouteImport } from './routes/api/admin/affiliate-payouts'
+import { Route as ApiAdminAffiliateRewardsRouteImport } from './routes/api/admin/affiliate-rewards'
 import { Route as ApiAdminAffiliatesRouteImport } from './routes/api/admin/affiliates'
 import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
 import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
@@ -50,6 +51,7 @@ import { Route as ApiAffiliateAccountRouteImport } from './routes/api/affiliate/
 import { Route as ApiAffiliateDashboardRouteImport } from './routes/api/affiliate/dashboard'
 import { Route as ApiAffiliateLinksRouteImport } from './routes/api/affiliate/links'
 import { Route as ApiAffiliatePayoutsRouteImport } from './routes/api/affiliate/payouts'
+import { Route as ApiAffiliateRewardsRouteImport } from './routes/api/affiliate/rewards'
 import { Route as ApiAffiliateSettingsRouteImport } from './routes/api/affiliate/settings'
 import { Route as ApiOrdersOrderIdRouteImport } from './routes/api/orders/$orderId'
 import { Route as ApiPublicInfinitepayConfirmRouteImport } from './routes/api/public/infinitepay-confirm'
@@ -232,6 +234,12 @@ const ApiAdminAffiliatePayoutsRoute =
     path: '/api/admin/affiliate-payouts',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminAffiliateRewardsRoute =
+  ApiAdminAffiliateRewardsRouteImport.update({
+    id: '/api/admin/affiliate-rewards',
+    path: '/api/admin/affiliate-rewards',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAdminAffiliatesRoute = ApiAdminAffiliatesRouteImport.update({
   id: '/api/admin/affiliates',
   path: '/api/admin/affiliates',
@@ -265,6 +273,11 @@ const ApiAffiliateLinksRoute = ApiAffiliateLinksRouteImport.update({
 const ApiAffiliatePayoutsRoute = ApiAffiliatePayoutsRouteImport.update({
   id: '/api/affiliate/payouts',
   path: '/api/affiliate/payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAffiliateRewardsRoute = ApiAffiliateRewardsRouteImport.update({
+  id: '/api/affiliate/rewards',
+  path: '/api/affiliate/rewards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAffiliateSettingsRoute = ApiAffiliateSettingsRouteImport.update({
@@ -359,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/revendedor/': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
   '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
+  '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
@@ -366,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
   '/api/affiliate/payouts': typeof ApiAffiliatePayoutsRoute
+  '/api/affiliate/rewards': typeof ApiAffiliateRewardsRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
   '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
@@ -409,6 +424,7 @@ export interface FileRoutesByTo {
   '/revendedor': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
   '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
+  '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
@@ -416,6 +432,7 @@ export interface FileRoutesByTo {
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
   '/api/affiliate/payouts': typeof ApiAffiliatePayoutsRoute
+  '/api/affiliate/rewards': typeof ApiAffiliateRewardsRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
   '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
@@ -463,6 +480,7 @@ export interface FileRoutesById {
   '/revendedor/': typeof RevendedorIndexRoute
   '/api/admin/administrators': typeof ApiAdminAdministratorsRoute
   '/api/admin/affiliate-payouts': typeof ApiAdminAffiliatePayoutsRoute
+  '/api/admin/affiliate-rewards': typeof ApiAdminAffiliateRewardsRoute
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
@@ -470,6 +488,7 @@ export interface FileRoutesById {
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
   '/api/affiliate/links': typeof ApiAffiliateLinksRoute
   '/api/affiliate/payouts': typeof ApiAffiliatePayoutsRoute
+  '/api/affiliate/rewards': typeof ApiAffiliateRewardsRoute
   '/api/affiliate/settings': typeof ApiAffiliateSettingsRoute
   '/api/orders/$orderId': typeof ApiOrdersOrderIdRoute
   '/api/public/infinitepay-confirm': typeof ApiPublicInfinitepayConfirmRoute
@@ -518,6 +537,7 @@ export interface FileRouteTypes {
     | '/revendedor/'
     | '/api/admin/administrators'
     | '/api/admin/affiliate-payouts'
+    | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/users'
@@ -525,6 +545,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
     | '/api/affiliate/payouts'
+    | '/api/affiliate/rewards'
     | '/api/affiliate/settings'
     | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
@@ -568,6 +589,7 @@ export interface FileRouteTypes {
     | '/revendedor'
     | '/api/admin/administrators'
     | '/api/admin/affiliate-payouts'
+    | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/users'
@@ -575,6 +597,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
     | '/api/affiliate/payouts'
+    | '/api/affiliate/rewards'
     | '/api/affiliate/settings'
     | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
@@ -621,6 +644,7 @@ export interface FileRouteTypes {
     | '/revendedor/'
     | '/api/admin/administrators'
     | '/api/admin/affiliate-payouts'
+    | '/api/admin/affiliate-rewards'
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/users'
@@ -628,6 +652,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/dashboard'
     | '/api/affiliate/links'
     | '/api/affiliate/payouts'
+    | '/api/affiliate/rewards'
     | '/api/affiliate/settings'
     | '/api/orders/$orderId'
     | '/api/public/infinitepay-confirm'
@@ -663,6 +688,7 @@ export interface RootRouteChildren {
   RSlugRoute: typeof RSlugRoute
   ApiAdminAdministratorsRoute: typeof ApiAdminAdministratorsRoute
   ApiAdminAffiliatePayoutsRoute: typeof ApiAdminAffiliatePayoutsRoute
+  ApiAdminAffiliateRewardsRoute: typeof ApiAdminAffiliateRewardsRoute
   ApiAdminAffiliatesRoute: typeof ApiAdminAffiliatesRoute
   ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
   ApiAdminUsersRoute: typeof ApiAdminUsersRoute
@@ -670,6 +696,7 @@ export interface RootRouteChildren {
   ApiAffiliateDashboardRoute: typeof ApiAffiliateDashboardRoute
   ApiAffiliateLinksRoute: typeof ApiAffiliateLinksRoute
   ApiAffiliatePayoutsRoute: typeof ApiAffiliatePayoutsRoute
+  ApiAffiliateRewardsRoute: typeof ApiAffiliateRewardsRoute
   ApiAffiliateSettingsRoute: typeof ApiAffiliateSettingsRoute
   ApiPublicInfinitepayConfirmRoute: typeof ApiPublicInfinitepayConfirmRoute
   ApiPublicInfinitepayHealthRoute: typeof ApiPublicInfinitepayHealthRoute
@@ -918,6 +945,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminAffiliatePayoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/affiliate-rewards': {
+      id: '/api/admin/affiliate-rewards'
+      path: '/api/admin/affiliate-rewards'
+      fullPath: '/api/admin/affiliate-rewards'
+      preLoaderRoute: typeof ApiAdminAffiliateRewardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/affiliates': {
       id: '/api/admin/affiliates'
       path: '/api/admin/affiliates'
@@ -965,6 +999,13 @@ declare module '@tanstack/react-router' {
       path: '/api/affiliate/payouts'
       fullPath: '/api/affiliate/payouts'
       preLoaderRoute: typeof ApiAffiliatePayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/affiliate/rewards': {
+      id: '/api/affiliate/rewards'
+      path: '/api/affiliate/rewards'
+      fullPath: '/api/affiliate/rewards'
+      preLoaderRoute: typeof ApiAffiliateRewardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/affiliate/settings': {
@@ -1143,6 +1184,7 @@ const rootRouteChildren: RootRouteChildren = {
   RSlugRoute: RSlugRoute,
   ApiAdminAdministratorsRoute: ApiAdminAdministratorsRoute,
   ApiAdminAffiliatePayoutsRoute: ApiAdminAffiliatePayoutsRoute,
+  ApiAdminAffiliateRewardsRoute: ApiAdminAffiliateRewardsRoute,
   ApiAdminAffiliatesRoute: ApiAdminAffiliatesRoute,
   ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
   ApiAdminUsersRoute: ApiAdminUsersRoute,
@@ -1150,6 +1192,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAffiliateDashboardRoute: ApiAffiliateDashboardRoute,
   ApiAffiliateLinksRoute: ApiAffiliateLinksRoute,
   ApiAffiliatePayoutsRoute: ApiAffiliatePayoutsRoute,
+  ApiAffiliateRewardsRoute: ApiAffiliateRewardsRoute,
   ApiAffiliateSettingsRoute: ApiAffiliateSettingsRoute,
   ApiPublicInfinitepayConfirmRoute: ApiPublicInfinitepayConfirmRoute,
   ApiPublicInfinitepayHealthRoute: ApiPublicInfinitepayHealthRoute,
