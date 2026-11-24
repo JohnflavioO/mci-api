@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
 import { AdminAffiliatesSection } from "@/components/portal/AdminAffiliatesSection";
+import { AffiliatePayoutsPanel } from "@/components/portal/AffiliatePayoutsPanel";
 import { AdminPermissionsSection } from "@/components/portal/AdminPermissionsSection";
 import { AdminMarketingSection } from "@/components/portal/AdminMarketingSection";
 import { AdminStorefrontNotifications } from "@/components/portal/AdminStorefrontNotifications";
@@ -36,7 +37,7 @@ export const portals = {
       { slug: "link", label: "Link de indicação", icon: Link2, description: "Seu link exclusivo de indicação." },
       { slug: "vendas", label: "Vendas atribuídas", icon: Receipt, description: "Vendas realizadas pelo seu link." },
       { slug: "comissoes", label: "Comissões", icon: BadgePercent, description: "Comissões geradas pelas vendas." },
-      { slug: "pagamentos", label: "Pagamentos", icon: Wallet, description: "Histórico de pagamentos recebidos." },
+      { slug: "pagamentos", label: "Pagamentos", icon: Wallet, description: "Saldo, chave Pix e pedidos de saque." },
     ],
   },
   admin: {
@@ -269,6 +270,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   if (portal === "admin" && slug === "notificacoes") return <AdminStorefrontNotifications />;
   if (portal === "admin" && slug === "desconto-progressivo") return <AdminProgressiveDiscounts />;
 
+  if (portal === "afiliado" && slug === "pagamentos") return <AffiliatePayoutsPanel />;
   if (portal === "afiliado" && ["link", "vendas", "comissoes", "pagamentos"].includes(slug)) return <AffiliateSectionView section={slug as "link" | "vendas" | "comissoes" | "pagamentos"} />;
 
   if (portal === "revendedor" && slug === "aprovacao") {

@@ -17,6 +17,8 @@ export const Route = createFileRoute("/api/affiliate/dashboard")({
     if (role !== true) return Response.json({ error: "Acesso restrito a afiliados." }, { status: 403 });
     const db = createClient(c.url, c.serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
+    // Libera comissões cujo prazo já passou antes de montar o painel (não há agendador no banco).
+    await db.rpc("release_affiliate_commissions");
     const [profile, settings, links, commissions, pointsLedger] = await Promise.all([
       db.from("affiliate_profiles").select("user_id,referral_code,commission_rate,commission_override_pct,status,display_name").eq("user_id", auth.user.id).single(),
       db.from("affiliate_settings").select("*").eq("id", true).single(),

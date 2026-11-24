@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgePercent, CheckCircle2, Clock3, Coins, Gift, Link2, RefreshCw, Search, Settings2, Trophy, Users, UserRoundX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase";
+import { AdminAffiliatePayouts } from "@/components/portal/AdminAffiliatePayouts";
 import { saveAffiliateSettings, useAffiliateSettings, type AffiliateSettings } from "@/hooks/useAffiliateSettings";
 
 type AdminAffiliate = {
@@ -131,7 +132,7 @@ export function AdminAffiliatesSection() {
     { id: "settings", label: "Configurações", icon: Settings2 },
     { id: "products", label: "Comissão por produto", icon: BadgePercent },
     { id: "points", label: "Pontos e recompensas", icon: Trophy },
-    { id: "commissions", label: "Comissões", icon: Wallet },
+    { id: "commissions", label: "Comissões e saques", icon: Wallet },
   ];
 
   return <div className="space-y-6">
@@ -210,11 +211,6 @@ export function AdminAffiliatesSection() {
       <div className="flex justify-end"><button type="button" onClick={() => {if(settings) saveMutation.mutate(settings);}} disabled={!settings || saveMutation.isPending || affiliateSettingsQuery.isError} className="h-10 rounded-md bg-[#171a1f] px-4 text-sm font-semibold text-white disabled:opacity-50">{saveMutation.isPending ? "Salvando…" : "Salvar regras de pontos"}</button></div>
     </div>}
 
-    {tab === "commissions" && <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-3">
-        {[{label:"Comissões registradas",value:program?.metrics.commissions ?? "—",icon:BadgePercent},{label:"Aguardando análise",value:program?.metrics.pendingCommissions ?? "—",icon:Clock3},{label:"Total registrado",value:program ? money(program.metrics.commissionTotal) : "—",icon:Wallet}].map(({label,value,icon:Icon}) => <article key={label} className="rounded-xl border bg-card p-5"><Icon className="size-5 text-muted-foreground" /><p className="mt-3 text-sm text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></article>)}
-      </section>
-      <section className="rounded-xl border bg-card p-5"><h3 className="font-semibold">Ciclo financeiro</h3><p className="mt-2 text-sm text-muted-foreground">A comissão será criada uma única vez por pedido elegível, após confirmação do pagamento. O fluxo deverá tratar cancelamentos, chargebacks e estornos com lançamentos de reversão, mantendo o histórico original.</p><p className="mt-3 text-xs text-muted-foreground">A estrutura financeira está preparada no banco. A liquidação automática depende da conexão com o processamento de pagamentos e ainda não libera saques nem pagamentos reais.</p></section>
-    </div>}
+    {tab === "commissions" && <AdminAffiliatePayouts />}
   </div>;
 }
