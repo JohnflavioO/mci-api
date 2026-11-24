@@ -67,6 +67,44 @@ export function getVolumeDiscountRule(
     .sort((a, b) => b.min_quantity - a.min_quantity)[0] ?? null;
 }
 
+/**
+ * Cotação do revendedor igual à da página do produto e do carrinho (useCartPricing):
+ * regra em percentual incide sobre o preço de cliente final e substitui o desconto base de revenda;
+ * regra em valor fixo incide sobre o preço de revenda.
+ */
+export function quoteResellerVolume(
+  product: { slug: string; resellerPrice: number | null; customerPrice: number | null },
+  quantity: number,
+  rules: VolumeDiscountRule[],
+): VolumeDiscountQuote | null {
+  if (product.resellerPrice == null) return null;
+  const rule = getVolumeDiscountRule(quantity, rules, product.slug);
+  const base = rule?.discount_type === "percentage" && product.customerPrice != null
+    ? Number(product.customerPrice)
+    : Number(product.resellerPrice);
+  return calculateVolumeDiscount(base, quantity, rules, product.slug);
+}
+
+export type VolumeTier = { key: string; quantity: number; maxQuantity: number | null; perUnit: boolean; discountType: "percentage" | "fixed"; discountValue: number; label: string };
+
+/** Faixas ativas de um produto, em ordem de quantidade, prontas para exibir. */
+export function volumeTiersFor(rules: VolumeDiscountRule[], productSlug: string): VolumeTier[] {
+  const tiers: VolumeTier[] = [];
+  for (const rule of rules) {
+    if (!rule.is_active || !(rule.product_ids ?? []).includes(productSlug)) continue;
+    const unitTiers = rule.quantity_discounts ?? [];
+    if (unitTiers.length) {
+      for (const tier of unitTiers) {
+        tiers.push({ key: `${rule.id}-${tier.quantity}`, quantity: tier.quantity, maxQuantity: tier.quantity, perUnit: true, discountType: tier.discount_type, discountValue: Number(tier.discount_value), label: `${tier.quantity}ª unidade` });
+      }
+    } else {
+      const label = rule.max_quantity == null ? `${rule.min_quantity}+ un.` : rule.min_quantity === rule.max_quantity ? `${rule.min_quantity} un.` : `${rule.min_quantity}–${rule.max_quantity} un.`;
+      tiers.push({ key: rule.id, quantity: rule.min_quantity, maxQuantity: rule.max_quantity, perUnit: false, discountType: rule.discount_type, discountValue: Number(rule.discount_value), label });
+    }
+  }
+  return tiers.sort((a, b) => a.quantity - b.quantity);
+}
+
 /** Legacy range rules discount every unit equally. Per-position rules discount only the specified unit number. */
 export function calculateVolumeDiscount(
   unitPrice: number,

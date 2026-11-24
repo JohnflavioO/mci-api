@@ -162,17 +162,6 @@ export function PortalLayout({ title, base, sections }: { title: string; base: "
               <p className="mt-1 text-sm text-muted-foreground">{current?.description ?? "Acompanhe os principais indicadores da operação comercial."}</p>
             </div>
             <div className="flex items-center gap-3">
-              {base === "/revendedor" && (
-                <Link to="/revendedor/$secao" params={{ secao: "conta" }} className="flex min-w-0 max-w-[230px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-secondary" title="Abrir configurações da conta">
-                  <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border bg-secondary text-xs font-bold text-foreground">
-                    {resellerProfile.data?.avatar ? <img src={resellerProfile.data.avatar} alt="" className="size-full object-cover" /> : (resellerProfile.data?.fullName || resellerProfile.data?.company || "R").trim().slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className="min-w-0 text-left">
-                    <span className="block truncate text-sm font-semibold">{resellerProfile.data?.company || "Conta de revendedor"}</span>
-                    <span className="block truncate text-[11px] text-muted-foreground">{resellerProfile.data?.fullName || "Configurações da conta"}</span>
-                  </span>
-                </Link>
-              )}
               <Link to="/" className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-secondary"><Store className="size-4" /> Voltar para a loja</Link>
               <button onClick={() => void signOut()} className="inline-flex h-9 items-center gap-2 rounded-md bg-graphite px-3 text-sm font-medium text-graphite-foreground hover:bg-brand hover:text-brand-foreground"><LogOut className="size-4" /> Sair da conta</button>
             </div>
