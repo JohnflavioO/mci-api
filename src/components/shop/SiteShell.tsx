@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Heart, Menu, X, ShieldCheck, UserRound, LayoutDashboard, LogOut, Loader2, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import { ShoppingBag, Heart, Menu, Search, X, ShieldCheck, UserRound, LayoutDashboard, LogOut, Loader2, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -16,7 +16,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
     <Link
       to="/"
-      className="group inline-flex w-[190px] min-w-[190px] shrink-0 items-center justify-start rounded-md py-2 pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      className="group inline-flex w-[124px] min-w-[124px] shrink-0 items-center justify-start rounded-md py-1 pr-1 md:w-[190px] md:min-w-[190px] md:py-2 md:pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       aria-label="Store House — início"
     >
       <img
@@ -111,7 +111,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-[92px] max-w-7xl items-center gap-9 px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 md:h-[92px] md:gap-9">
           <Logo />
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-1 md:flex">
             {nav.map((n) => "search" in n ? (
@@ -124,7 +124,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <Link to="/catalogo" className="grid size-10 place-items-center rounded-md text-foreground transition hover:bg-secondary hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:hidden" aria-label="Buscar produtos" title="Buscar produtos">
+              <Search className="size-5" strokeWidth={1.8} />
+            </Link>
             <Link to="/favoritos" className="relative grid size-10 place-items-center rounded-md text-foreground transition hover:bg-secondary hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" aria-label="Meus favoritos" title="Meus favoritos">
               <Heart className="size-5" strokeWidth={1.8} />
             </Link>

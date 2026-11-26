@@ -106,14 +106,14 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   };
 
   return (
-    <article className="group relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-xl border border-border/70 bg-card p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand/40 hover:shadow-lg focus-within:border-brand/50">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card p-2 shadow-sm sm:min-h-[420px] sm:p-3 transition-all duration-300 hover:-translate-y-1 hover:border-brand/40 hover:shadow-lg focus-within:border-brand/50">
       <Link to="/produto/$slug" params={{ slug: slugifyProductName(product.name) }} className="flex flex-1 flex-col outline-none">
         <div className="relative isolate overflow-hidden rounded-lg bg-white">
-          <ProductImage src={product.images[0]} alt={product.name} className="aspect-square w-full object-contain p-3 transition-all duration-500 group-hover:scale-[1.035] group-hover:brightness-[0.96]" />
+          <ProductImage src={product.images[0]} alt={product.name} className="aspect-square w-full object-contain p-2 transition-all sm:p-3 duration-500 group-hover:scale-[1.035] group-hover:brightness-[0.96]" />
           {secondImage && (
-            <ProductImage src={secondImage} alt={product.name + " — segunda imagem"} className="pointer-events-none absolute inset-0 aspect-square w-full bg-white p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <ProductImage src={secondImage} alt={product.name + " — segunda imagem"} className="pointer-events-none absolute inset-0 aspect-square w-full bg-white p-2 opacity-0 sm:p-3 transition-opacity duration-300 group-hover:opacity-100" />
           )}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/10 to-transparent pb-3 pt-8 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden justify-center md:flex bg-gradient-to-t from-black/10 to-transparent pb-3 pt-8 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
             <span className="rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-transform duration-300 group-hover:translate-y-0 translate-y-2">
               Comprar agora
             </span>
@@ -129,30 +129,30 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           )}
           {unavailable && <span className={`absolute right-2 z-10 rounded-md bg-foreground/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-background shadow-sm ${hasResellerDiscount ? "top-11" : "top-2"}`}>Indisponível</span>}
         </div>
-        <div className="flex flex-1 flex-col px-1 pt-4">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{product.category}</p>
-          <p className="line-clamp-2 min-h-[2.75rem] font-display text-sm font-semibold leading-snug transition-colors group-hover:text-brand">{product.name}</p>
-          <div className="mt-auto flex min-h-[5.25rem] flex-col pt-3">
+        <div className="flex flex-1 flex-col px-0.5 pt-2.5 sm:px-1 sm:pt-4">
+          <p className="mb-1 truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:text-[10px]">{product.category}</p>
+          <p className="line-clamp-2 min-h-[2.5rem] font-display text-[13px] font-semibold leading-snug sm:min-h-[2.75rem] sm:text-sm transition-colors group-hover:text-brand">{product.name}</p>
+          <div className="mt-auto flex flex-col pt-2 sm:min-h-[5.25rem] sm:pt-3">
             {hasResellerPrice ? (
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-brand">Seu preço de revenda</p>
-                <p className="font-display text-xl font-bold text-foreground">{formatPrice(resellerPrice!, product.currency)}</p>
-                <p className="text-xs text-muted-foreground">Preço final: {formatPrice(product.customerPrice!, product.currency)}</p>
+                <p className="font-display text-lg font-bold text-foreground sm:text-xl">{formatPrice(resellerPrice!, product.currency)}</p>
+                <p className="truncate text-[11px] text-muted-foreground sm:text-xs">Preço final: {formatPrice(product.customerPrice!, product.currency)}</p>
                 {discountPercent != null && discountPercent > 0 && <span className="mt-1 inline-flex rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">{discountPercent}% de desconto</span>}
               </div>
             ) : (
-              <p className="font-display text-xl font-bold tracking-tight">{priceLabel(product)}</p>
+              <p className="font-display text-lg font-bold tracking-tight sm:text-xl">{priceLabel(product)}</p>
             )}
-            <p className={`mt-2 text-[11px] ${unavailable ? "text-destructive" : "text-muted-foreground"}`}>{availabilityLabel(product)}</p>
+            <p className={`mt-1 text-[11px] sm:mt-2 ${unavailable ? "text-destructive" : "text-muted-foreground"}`}>{availabilityLabel(product)}</p>
           </div>
         </div>
       </Link>
-      <button type="button" onClick={() => { if (!userId) { toast.info("Entre na sua conta para salvar seus favoritos."); window.location.assign("/entrar"); return; } favoriteMutation.mutate(); }} disabled={favoriteMutation.isPending} aria-label={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"} title={favorite ? "Remover dos favoritos" : "Salvar nos favoritos"} className="absolute left-5 top-5 z-20 grid size-9 place-items-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-sm transition hover:scale-105 hover:text-[#ff681f] disabled:opacity-50">
+      <button type="button" onClick={() => { if (!userId) { toast.info("Entre na sua conta para salvar seus favoritos."); window.location.assign("/entrar"); return; } favoriteMutation.mutate(); }} disabled={favoriteMutation.isPending} aria-label={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"} title={favorite ? "Remover dos favoritos" : "Salvar nos favoritos"} className="absolute left-3.5 top-3.5 z-20 grid size-8 place-items-center sm:left-5 sm:top-5 sm:size-9 rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-sm transition hover:scale-105 hover:text-[#ff681f] disabled:opacity-50">
         <Heart className={favorite ? "size-4 fill-[#ff681f] text-[#ff681f]" : "size-4"} />
       </button>
       <button type="button" disabled={!canSell(product)} onClick={addToCart}
-        className="mt-3 h-10 w-full shrink-0 rounded-lg bg-orange-500 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-orange-600 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100">
-        {unavailable ? "Indisponível" : "Adicionar ao carrinho"}
+        className="mt-2.5 h-9 w-full shrink-0 rounded-lg bg-orange-500 text-xs font-bold sm:mt-3 sm:h-10 sm:text-sm text-white shadow-sm transition-all duration-200 hover:bg-orange-600 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100">
+        {unavailable ? "Indisponível" : <><span className="sm:hidden">Adicionar</span><span className="hidden sm:inline">Adicionar ao carrinho</span></>}
       </button>
     </article>
   );

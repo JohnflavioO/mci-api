@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, Zap, Sun, Thermometer, Palette, Scale, Lightbulb, TrendingUp, BadgePercent, CheckCircle2, ShoppingCart, ArrowRight, ShoppingBag, Coins } from "lucide-react";
 import { useLoyalty } from "@/hooks/useLoyalty";
 import { LOYALTY_NAME, pointsForAmount } from "@/lib/loyalty";
@@ -167,6 +167,8 @@ function ProductPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [purchaseQty, setPurchaseQty] = useState(1);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  /** Posição inicial do toque, para trocar de foto deslizando o dedo. */
+  const touchX = useRef<number | null>(null);
   const images = q.data?.product?.images?.filter(Boolean) ?? [];
   const activeImage = images[activeImageIndex] ?? images[0];
   useEffect(() => { setActiveImageIndex(0); setLightboxOpen(false); setPurchaseQty(1); }, [slug]);
@@ -319,8 +321,8 @@ function ProductPage() {
 
   return (
     <SiteShell>
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:py-12">
-        <nav aria-label="Trilha" className="mb-6 flex min-w-0 flex-wrap items-center gap-x-2 text-sm text-muted-foreground"><Link to="/catalogo" className="transition hover:text-brand">Catálogo</Link>{p?.category && <><span>/</span><Link to="/catalogo" search={{ categoria: p.category }} className="transition hover:text-brand">{p.category}</Link></>}<span>/</span><span className="min-w-0 truncate text-foreground">{p?.name ?? "Detalhes do produto"}</span></nav>
+      <div className="mx-auto max-w-7xl px-4 pb-28 pt-3 sm:py-12">
+        <nav aria-label="Trilha" className="mb-3 flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-muted-foreground sm:mb-6 sm:text-sm"><Link to="/catalogo" className="transition hover:text-brand">Catálogo</Link>{p?.category && <><span>/</span><Link to="/catalogo" search={{ categoria: p.category }} className="transition hover:text-brand">{p.category}</Link></>}<span>/</span><span className="min-w-0 truncate text-foreground">{p?.name ?? "Detalhes do produto"}</span></nav>
         {q.isPending ? (
           <LoadingState />
         ) : q.isError ? (
@@ -328,12 +330,21 @@ function ProductPage() {
         ) : !p ? (
           <EmptyState title="Produto não encontrado"><Link to="/catalogo" className="underline">Voltar ao catálogo</Link></EmptyState>
         ) : (
-          <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,.92fr)] lg:gap-12">
-            <section className="min-w-0">
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,.92fr)] lg:gap-x-12 lg:gap-y-0">
+            <section className="min-w-0 lg:col-start-1 lg:row-start-1">
               <div className="group relative overflow-hidden rounded-2xl bg-white shadow-[0_12px_36px_-28px_rgba(15,23,42,.35)]">
                 <button
                   type="button"
                   onClick={() => activeImage && setLightboxOpen(true)}
+                  onTouchStart={(event) => { touchX.current = event.touches[0]?.clientX ?? null; }}
+                  onTouchEnd={(event) => {
+                    const start = touchX.current;
+                    const end = event.changedTouches[0]?.clientX;
+                    touchX.current = null;
+                    if (start == null || end == null || images.length < 2 || Math.abs(end - start) < 40) return;
+                    event.preventDefault();
+                    setActiveImageIndex((i) => (i + (end < start ? 1 : -1) + images.length) % images.length);
+                  }}
                   className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-gradient-to-br from-white via-white to-slate-50 p-5 sm:p-10"
                   aria-label="Ampliar imagem do produto"
                   disabled={!activeImage}
@@ -344,7 +355,7 @@ function ProductPage() {
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Imagem indisponível</div>
                   )}
                   <span className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition group-hover:bg-white">
-                    <ZoomIn className="h-4 w-4" /> Ampliar imagem
+                    <ZoomIn className="h-4 w-4" /> <span className="hidden sm:inline">Ampliar imagem</span>
                   </span>
                   {images.length > 1 && <span className="absolute left-4 top-4 rounded-full bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-white">{activeImageIndex + 1} / {images.length}</span>}
                 </button>
@@ -355,13 +366,13 @@ function ProductPage() {
               </div>
               {images.length > 0 && (
                 <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="mb-2 hidden items-center justify-between gap-3 sm:flex">
                     <p className="text-sm font-semibold text-foreground">Galeria do produto</p>
                     <p className="text-xs text-muted-foreground">{images.length} {images.length === 1 ? "imagem" : "imagens"}</p>
                   </div>
                   <div className="flex gap-3 overflow-x-auto pb-2">
                     {images.map((src, index) => (
-                      <button key={src + index} type="button" onClick={() => setActiveImageIndex(index)} aria-label={`Ver imagem ${index + 1}`} aria-pressed={activeImageIndex === index} className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-muted/35 p-1 transition sm:h-24 sm:w-24 ${activeImageIndex === index ? "ring-2 ring-brand ring-offset-2 ring-offset-background" : "opacity-75 hover:opacity-100"}`}>
+                      <button key={src + index} type="button" onClick={() => setActiveImageIndex(index)} aria-label={`Ver imagem ${index + 1}`} aria-pressed={activeImageIndex === index} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-24 sm:rounded-2xl bg-muted/35 p-1 transition sm:h-24 sm:w-24 ${activeImageIndex === index ? "ring-2 ring-brand ring-offset-2 ring-offset-background" : "opacity-75 hover:opacity-100"}`}>
                         <ProductImage src={src} alt={`${p.name} — imagem ${index + 1}`} className="h-full w-full rounded-lg object-contain" />
                         {activeImageIndex === index && <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-brand" />}
                       </button>
@@ -369,11 +380,13 @@ function ProductPage() {
                   </div>
                 </div>
               )}
-              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 py-2 text-xs text-muted-foreground">
+              <div className="mt-4 hidden flex-wrap items-center gap-x-5 gap-y-2 px-1 py-2 text-xs text-muted-foreground sm:flex">
                 <span className="inline-flex items-center gap-2"><Maximize2 className="h-4 w-4 text-brand" /> Imagens ampliáveis</span>
                 <span>Fotos do produto e detalhes visuais</span>
               </div>
-              <section className="mt-6 rounded-2xl bg-card/60 p-4 sm:p-6">
+            </section>
+            <section aria-label="Detalhes do produto" className="order-last min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">
+              <section className="rounded-2xl bg-card/60 p-4 sm:p-6 lg:mt-6">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><Maximize2 className="h-5 w-5" /></span>
                   <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Conheça o equipamento</p><h2 className="mt-1 text-xl font-bold">Descrição do produto</h2></div>
@@ -403,12 +416,12 @@ function ProductPage() {
                 </section>
               )}
             </section>
-            <div className="min-w-0 lg:sticky lg:top-6">
+            <div className="min-w-0 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
               <div className="rounded-2xl bg-transparent p-0 sm:p-1">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {p.category} {q.data?.isDemo && <DemoBadge />}
               </div>
-              <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{p.name}</h1>
+              <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:mt-3 sm:text-4xl">{p.name}</h1>
               {(p.brand || p.sku) && <p className="mt-1 text-sm text-muted-foreground">{[p.brand, p.sku && `SKU ${p.sku}`].filter(Boolean).join(" · ")}</p>}
               <div className="mt-5 border-b border-border/70 pb-5 pt-3">
                 {isApprovedReseller ? (
