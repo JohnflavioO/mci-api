@@ -50,6 +50,7 @@ import { Route as ApiAdminAffiliateRewardsRouteImport } from './routes/api/admin
 import { Route as ApiAdminAffiliatesRouteImport } from './routes/api/admin/affiliates'
 import { Route as ApiAdminImportPreviewRouteImport } from './routes/api/admin/import-preview'
 import { Route as ApiAdminLoyaltyRouteImport } from './routes/api/admin/loyalty'
+import { Route as ApiAdminPaymentSettingsRouteImport } from './routes/api/admin/payment-settings'
 import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 import { Route as ApiAffiliateAccountRouteImport } from './routes/api/affiliate/account'
 import { Route as ApiAffiliateDashboardRouteImport } from './routes/api/affiliate/dashboard'
@@ -275,6 +276,11 @@ const ApiAdminLoyaltyRoute = ApiAdminLoyaltyRouteImport.update({
   path: '/api/admin/loyalty',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminPaymentSettingsRoute = ApiAdminPaymentSettingsRouteImport.update({
+  id: '/api/admin/payment-settings',
+  path: '/api/admin/payment-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
   id: '/api/admin/users',
   path: '/api/admin/users',
@@ -404,6 +410,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/loyalty': typeof ApiAdminLoyaltyRoute
+  '/api/admin/payment-settings': typeof ApiAdminPaymentSettingsRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/account': typeof ApiAffiliateAccountRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
@@ -460,6 +467,7 @@ export interface FileRoutesByTo {
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/loyalty': typeof ApiAdminLoyaltyRoute
+  '/api/admin/payment-settings': typeof ApiAdminPaymentSettingsRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/account': typeof ApiAffiliateAccountRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
@@ -520,6 +528,7 @@ export interface FileRoutesById {
   '/api/admin/affiliates': typeof ApiAdminAffiliatesRoute
   '/api/admin/import-preview': typeof ApiAdminImportPreviewRoute
   '/api/admin/loyalty': typeof ApiAdminLoyaltyRoute
+  '/api/admin/payment-settings': typeof ApiAdminPaymentSettingsRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/affiliate/account': typeof ApiAffiliateAccountRoute
   '/api/affiliate/dashboard': typeof ApiAffiliateDashboardRoute
@@ -581,6 +590,7 @@ export interface FileRouteTypes {
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/loyalty'
+    | '/api/admin/payment-settings'
     | '/api/admin/users'
     | '/api/affiliate/account'
     | '/api/affiliate/dashboard'
@@ -637,6 +647,7 @@ export interface FileRouteTypes {
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/loyalty'
+    | '/api/admin/payment-settings'
     | '/api/admin/users'
     | '/api/affiliate/account'
     | '/api/affiliate/dashboard'
@@ -696,6 +707,7 @@ export interface FileRouteTypes {
     | '/api/admin/affiliates'
     | '/api/admin/import-preview'
     | '/api/admin/loyalty'
+    | '/api/admin/payment-settings'
     | '/api/admin/users'
     | '/api/affiliate/account'
     | '/api/affiliate/dashboard'
@@ -744,6 +756,7 @@ export interface RootRouteChildren {
   ApiAdminAffiliatesRoute: typeof ApiAdminAffiliatesRoute
   ApiAdminImportPreviewRoute: typeof ApiAdminImportPreviewRoute
   ApiAdminLoyaltyRoute: typeof ApiAdminLoyaltyRoute
+  ApiAdminPaymentSettingsRoute: typeof ApiAdminPaymentSettingsRoute
   ApiAdminUsersRoute: typeof ApiAdminUsersRoute
   ApiAffiliateAccountRoute: typeof ApiAffiliateAccountRoute
   ApiAffiliateDashboardRoute: typeof ApiAffiliateDashboardRoute
@@ -1047,6 +1060,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminLoyaltyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/payment-settings': {
+      id: '/api/admin/payment-settings'
+      path: '/api/admin/payment-settings'
+      fullPath: '/api/admin/payment-settings'
+      preLoaderRoute: typeof ApiAdminPaymentSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/users': {
       id: '/api/admin/users'
       path: '/api/admin/users'
@@ -1272,6 +1292,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminAffiliatesRoute: ApiAdminAffiliatesRoute,
   ApiAdminImportPreviewRoute: ApiAdminImportPreviewRoute,
   ApiAdminLoyaltyRoute: ApiAdminLoyaltyRoute,
+  ApiAdminPaymentSettingsRoute: ApiAdminPaymentSettingsRoute,
   ApiAdminUsersRoute: ApiAdminUsersRoute,
   ApiAffiliateAccountRoute: ApiAffiliateAccountRoute,
   ApiAffiliateDashboardRoute: ApiAffiliateDashboardRoute,
