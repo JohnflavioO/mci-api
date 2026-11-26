@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { createInfinitePayCheckout } from "@/server/payments/infinitepay";
-import { infinitePayConfig } from "@/server/payments/infinitepay-config";
+import { checkoutProvider } from "@/server/payments/checkout-provider";
 import { loyaltyError } from "@/lib/loyalty";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,9 +24,9 @@ export const Route = createFileRoute("/api/orders")({
       const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"] ?? "";
       const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ?? "";
       const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
-      const paymentConfig = infinitePayConfig();
+      const payment = checkoutProvider();
       if (!url || !publishableKey || !serviceRoleKey) return Response.json({ error: "Criação de pedidos não configurada no servidor." }, { status: 503 });
-      if (!paymentConfig) return Response.json({ error: "Checkout InfinitePay ainda não foi configurado no servidor." }, { status: 503 });
+      if (!payment) return Response.json({ error: "Checkout indisponível no servidor." }, { status: 503 });
       const token = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
       if (!token) return Response.json({ error: "Entre na sua conta antes de finalizar." }, { status: 401 });
       const userClient = createClient(url, publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -110,12 +109,12 @@ export const Route = createFileRoute("/api/orders")({
       if (shippingSaveError || !savedShipping) return Response.json({ error: "Não foi possível registrar o frete no pedido. Nenhum pagamento foi iniciado." }, { status: 503 });
       order.total = updatedTotal;
       order.provider_checkout_url = null;
-      if (order.provider && order.provider !== "infinitepay") return Response.json({ error: "Este pedido já está vinculado a outro meio de pagamento." }, { status: 409 });
+      if (order.provider && order.provider !== payment.name) return Response.json({ error: "Este pedido já está vinculado a outro meio de pagamento." }, { status: 409 });
       if (order.provider_checkout_url) return Response.json({ order_id: order.id, checkout_url: order.provider_checkout_url, total: Number(order.total), loyalty_discount: Number(order.loyalty_discount_amount ?? 0) }, { status: 200 });
       if (!order.provider) {
-        const { error: providerError } = await db.from("orders").update({ provider: "infinitepay", provider_order_id: order.id })
+        const { error: providerError } = await db.from("orders").update({ provider: payment.name, provider_order_id: order.id })
           .eq("id", order.id).eq("status", "pending_payment").is("provider", null);
-        if (providerError) return Response.json({ error: "Não foi possível reservar o pedido para o checkout InfinitePay." }, { status: 503 });
+        if (providerError) return Response.json({ error: "Não foi possível reservar o pedido para pagamento." }, { status: 503 });
       }
 
       const { data: orderItems, error: itemsError } = await db.from("order_items")
@@ -160,7 +159,7 @@ export const Route = createFileRoute("/api/orders")({
 
       let checkoutUrl: string;
       try {
-        checkoutUrl = await createInfinitePayCheckout(paymentConfig, {
+        checkoutUrl = await payment.createCheckout({
           orderId: order.id,
           items: orderItems.map((item) => ({ name: item.name_snapshot, qty: item.qty, unitPrice: Number(item.unit_price), lineTotal: item.line_total == null ? null : Number(item.line_total) })),
           shippingAmount: Number(order.shipping_amount ?? 0),
@@ -169,7 +168,7 @@ export const Route = createFileRoute("/api/orders")({
           address,
         });
       } catch {
-        return Response.json({ error: "Não foi possível gerar o checkout na InfinitePay. Seu pedido foi preservado; tente novamente." }, { status: 502 });
+        return Response.json({ error: "Não foi possível gerar o checkout. Seu pedido foi preservado; tente novamente." }, { status: 502 });
       }
       const { error: saveError } = await db.from("orders").update({
         provider_checkout_url: checkoutUrl,
