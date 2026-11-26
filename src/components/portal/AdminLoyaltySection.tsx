@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, BookOpen, CalendarClock, Clock3, Coins, Download, Landmark, ListChecks, Search, Settings2, ShoppingBag, ShoppingCart, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase";
-import { discountForPoints, LEDGER_LABEL, LOYALTY_NAME, pointsForAmount, type LoyaltySettings } from "@/lib/loyalty";
+import { discountForPoints, parseLoyaltySettings, LEDGER_LABEL, LOYALTY_NAME, pointsForAmount, type LoyaltySettings } from "@/lib/loyalty";
 import { toCsv } from "@/lib/commissionReport";
 
 type Stats = { customers: number; issued: number; redeemed: number; expired: number; available: number; pending: number; liability: number };
@@ -75,7 +75,8 @@ function OverviewTab({ data, onOpen }: { data: Overview; onOpen: (tab: Tab) => v
   const release = addDays(new Date(), s.grace_days);
   const expiry = addMonths(release, s.expiry_months);
   const capPoints = Math.floor(Math.floor(nextValue * s.max_redeem_pct) / s.real_per_100_points);
-  const usable = earned >= s.min_redeem_points ? Math.min(earned, capPoints) : 0;
+  const candidate = Math.min(earned, capPoints);
+  const usable = candidate >= s.min_redeem_points ? candidate : 0;
   const cashback = Math.round(s.points_per_real * s.real_per_100_points * 100) / 100;
 
   return <div className="space-y-6">
@@ -94,18 +95,18 @@ function OverviewTab({ data, onOpen }: { data: Overview; onOpen: (tab: Tab) => v
       <h3 className="font-semibold">O caminho do cliente, com as regras de hoje</h3>
       <ol className="mt-4 grid gap-3 md:grid-cols-4">
         {[
-          { icon: ShoppingCart, title: "1. Compra", text: `Ganha ${s.points_per_real.toLocaleString("pt-BR")} pt por R$ 1,00 em produtos. Frete não conta. Revendedor não participa.` },
+          { icon: ShoppingCart, title: "1. Compra", text: `Ganha ${(s.points_per_real * 100).toLocaleString("pt-BR")} pts por R$ 100,00 em produtos. Frete não conta. Revendedor não participa.` },
           { icon: Clock3, title: "2. Liberação", text: `Os pontos ficam "em liberação" por ${s.grace_days} dias (prazo de arrependimento). Se o pedido for estornado, saem.` },
           { icon: Coins, title: "3. Usa no checkout", text: `100 pts = ${money(s.real_per_100_points)}. Mínimo de ${pts(s.min_redeem_points)} e até ${s.max_redeem_pct}% do valor dos produtos por pedido.` },
           { icon: CalendarClock, title: "4. Validade", text: `Cada lote vale ${s.expiry_months} meses após liberado. Os que vencem primeiro são usados primeiro.` },
         ].map(({ icon: Icon, title, text }) => <li key={title} className="rounded-xl bg-secondary/50 p-4"><Icon className="size-5 text-brand" /><p className="mt-2 text-sm font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p></li>)}
       </ol>
-      <p className="mt-4 rounded-lg bg-orange-50 px-4 py-3 text-sm text-orange-950">Na prática, o cliente recebe <strong>{cashback.toLocaleString("pt-BR")}% de volta</strong> em desconto para a próxima compra. Se o pedido em que usou pontos for cancelado, os pontos voltam para ele.</p>
+      <p className="mt-4 rounded-lg bg-orange-50 px-4 py-3 text-sm text-orange-950">Retorno nominal: o cliente recebe <strong>{cashback.toLocaleString("pt-BR")}% de volta</strong> em desconto para a próxima compra. Se o pedido em que usou pontos for cancelado, os pontos voltam para ele.</p>
     </section>
 
     <section className="rounded-xl border bg-card p-5 sm:p-6">
       <h3 className="font-semibold">Simulador</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Veja o que um cliente ganha e quanto pode usar, com as regras atuais.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Simulação das regras salvas, supondo programa ativo, saldo liberado e nenhum outro desconto. Pontos fracionários são descartados por compra.</p>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="text-sm font-medium">Compra de hoje (R$, só produtos)<input value={purchase} onChange={(e) => setPurchase(e.target.value)} inputMode="decimal" className={field} /></label>
         <label className="text-sm font-medium">Próxima compra (R$, só produtos)<input value={next} onChange={(e) => setNext(e.target.value)} inputMode="decimal" className={field} /></label>
@@ -113,7 +114,7 @@ function OverviewTab({ data, onOpen }: { data: Overview; onOpen: (tab: Tab) => v
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Ganha</p><p className="mt-1 text-xl font-semibold">{pts(earned)}</p><p className="text-xs text-muted-foreground">= {money(discountForPoints(earned, s.real_per_100_points))} em desconto</p></div>
         <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Disponível em</p><p className="mt-1 text-xl font-semibold">{date(release.toISOString())}</p><p className="text-xs text-muted-foreground">vence em {date(expiry.toISOString())}</p></div>
-        <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Na próxima compra pode usar</p><p className="mt-1 text-xl font-semibold">{pts(usable)}</p><p className="text-xs text-muted-foreground">{usable ? `${money(discountForPoints(usable, s.real_per_100_points))} de desconto (limite de ${s.max_redeem_pct}% = ${money(nextValue * s.max_redeem_pct / 100)})` : `precisa de pelo menos ${pts(s.min_redeem_points)}`}</p></div>
+        <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Na próxima compra pode usar</p><p className="mt-1 text-xl font-semibold">{pts(usable)}</p><p className="text-xs text-muted-foreground">{usable ? `${money(discountForPoints(usable, s.real_per_100_points))} de desconto (limite de ${s.max_redeem_pct}% = ${money(nextValue * s.max_redeem_pct / 100)})` : `Saldo ou limite do pedido abaixo do mínimo de ${pts(s.min_redeem_points)}`}</p></div>
       </div>
     </section>
   </div>;
@@ -249,10 +250,15 @@ function RulesTab({ settings }: { settings: LoyaltySettings }) {
   const qc = useQueryClient();
   const [form, setForm] = useState<Record<keyof LoyaltySettings, string | boolean> | null>(null);
   useEffect(() => {
-    setForm({ enabled: settings.enabled, points_per_real: String(settings.points_per_real), real_per_100_points: String(settings.real_per_100_points), max_redeem_pct: String(settings.max_redeem_pct), min_redeem_points: String(settings.min_redeem_points), grace_days: String(settings.grace_days), expiry_months: String(settings.expiry_months) });
+    setForm({ enabled: settings.enabled, points_per_real: String(Math.round(settings.points_per_real * 100)), real_per_100_points: String(Number((settings.real_per_100_points / 100).toFixed(4))), max_redeem_pct: String(settings.max_redeem_pct), min_redeem_points: String(settings.min_redeem_points), grace_days: String(settings.grace_days), expiry_months: String(settings.expiry_months) });
   }, [settings]);
+  const payload = form ? { ...form, points_per_real: Number(String(form.points_per_real).replace(",", ".")) / 100, real_per_100_points: Number(String(form.real_per_100_points).replace(",", ".")) * 100 } : null;
   const save = useMutation({
-    mutationFn: () => api("PUT", "", form),
+    mutationFn: () => {
+      const parsed = parseLoyaltySettings(payload);
+      if (!parsed.ok) throw new Error(parsed.error);
+      return api("PUT", "", parsed.settings);
+    },
     onSuccess: async () => { await Promise.all([qc.invalidateQueries({ queryKey: ["admin", "loyalty"] }), qc.invalidateQueries({ queryKey: ["loyalty"] })]); toast.success("Regras do programa salvas."); },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -262,21 +268,23 @@ function RulesTab({ settings }: { settings: LoyaltySettings }) {
   const perReal = Number(num("points_per_real").replace(",", ".")) || 0;
   const per100 = Number(num("real_per_100_points").replace(",", ".")) || 0;
   const cashback = Math.round(perReal * per100 * 100) / 100;
+  const valid = num("points_per_real").trim() !== "" && num("real_per_100_points").trim() !== "" && Number.isInteger(perReal) && Math.abs(per100 * 10000 - Math.round(per100 * 10000)) < 1e-7 && parseLoyaltySettings(payload).ok;
   const help = "mt-1 block text-xs font-normal text-muted-foreground";
-  return <form className="rounded-xl border bg-card" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
-    <div className="border-b p-5"><h3 className="font-semibold">Regras do programa</h3><p className="mt-1 text-sm text-muted-foreground">Mudanças valem para as próximas compras e resgates. Lotes já criados mantêm a liberação e o vencimento que tinham.</p></div>
+  return <form className="rounded-xl border bg-card" onSubmit={(e) => { e.preventDefault(); if (!valid) return; if ((form.enabled && !settings.enabled || cashback > 1 || per100 !== settings.real_per_100_points / 100) && !window.confirm(`Salvar regras com retorno nominal de ${cashback}%? Confira o impacto financeiro e os saldos existentes.`)) return; save.mutate(); }}>
+    <div className="border-b p-5"><h3 className="font-semibold">Regras do programa</h3><p className="mt-1 text-sm text-muted-foreground">Mudanças valem para as próximas compras e resgates. Alterar o valor do ponto também altera o valor em reais dos saldos existentes. Lotes mantêm a liberação e o vencimento.</p></div>
     <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
       <label className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm md:col-span-2 xl:col-span-3"><span><span className="font-medium">Programa ativo</span><span className={help}>Pausado: ninguém ganha nem usa pontos, e o saldo fica guardado.</span></span><input type="checkbox" checked={form.enabled === true} onChange={(e) => set("enabled", e.target.checked)} className="size-4 accent-orange-600" /></label>
-      <label className="text-sm font-medium">Pontos por R$ 1,00 em produtos<input value={num("points_per_real")} onChange={(e) => set("points_per_real", e.target.value)} inputMode="decimal" className={field} /><span className={help}>Quanto o cliente acumula. Ex.: 1 → compra de R$ 500 rende 500 pts.</span></label>
-      <label className="text-sm font-medium">Valor de 100 pontos (R$)<input value={num("real_per_100_points")} onChange={(e) => set("real_per_100_points", e.target.value)} inputMode="decimal" className={field} /><span className={help}>Quanto o ponto vale no checkout. Ex.: 1 → 100 pts = R$ 1,00 de desconto.</span></label>
+      <label className="text-sm font-medium">Pontos ganhos a cada R$ 100,00 em produtos<input value={num("points_per_real")} onChange={(e) => set("points_per_real", e.target.value)} inputMode="decimal" className={field} /><span className={help}>Ex.: 1 → compra de R$ 500 rende 5 pontos. Somente pontos inteiros por compra.</span></label>
+      <label className="text-sm font-medium">Valor de cada ponto (R$)<input value={num("real_per_100_points")} onChange={(e) => set("real_per_100_points", e.target.value)} inputMode="decimal" className={field} /><span className={help}>Ex.: 1 → cada ponto vale R$ 1,00 de desconto.</span></label>
       <label className="text-sm font-medium">Limite de uso por pedido (% dos produtos)<input value={num("max_redeem_pct")} onChange={(e) => set("max_redeem_pct", e.target.value)} inputMode="decimal" className={field} /><span className={help}>Teto do desconto em pontos num pedido (máximo 50%). Protege a margem.</span></label>
       <label className="text-sm font-medium">Mínimo de pontos por resgate<input value={num("min_redeem_points")} onChange={(e) => set("min_redeem_points", e.target.value)} inputMode="numeric" className={field} /><span className={help}>Abaixo disso o cliente ainda não consegue usar os pontos.</span></label>
       <label className="text-sm font-medium">Prazo de liberação (dias)<input value={num("grace_days")} onChange={(e) => set("grace_days", e.target.value)} inputMode="numeric" className={field} /><span className={help}>Tempo entre o pagamento e os pontos ficarem disponíveis. 7 = prazo de arrependimento.</span></label>
       <label className="text-sm font-medium">Validade dos pontos (meses)<input value={num("expiry_months")} onChange={(e) => set("expiry_months", e.target.value)} inputMode="numeric" className={field} /><span className={help}>Contada a partir da liberação de cada lote.</span></label>
     </div>
+    <div className="mx-5 mb-5 rounded-xl border bg-secondary/40 p-5"><h4 className="font-semibold">Confira antes de salvar</h4><p className="mt-2 text-sm">A cada R$ 100 em produtos: {pts(perReal)} = {money(perReal * per100)} em desconto nominal.</p><p className="mt-1 text-sm">Exemplo: compra de R$ 4.210,00 gera {pts(pointsForAmount(4210, perReal / 100))}, equivalentes a {money(discountForPoints(pointsForAmount(4210, perReal / 100), per100 * 100))}.</p>{cashback > 1 && <p role="alert" className="mt-2 text-sm font-semibold text-amber-700">Atenção: retorno superior a 1%. Confira a margem da loja.</p>}{!valid && <p role="alert" className="mt-2 text-sm text-destructive">Confira os valores: pontos por R$ 100 devem ser inteiros e o valor do ponto pode ter até quatro casas decimais. Os demais limites continuam válidos.</p>}</div>
     <div className="flex flex-wrap items-center justify-between gap-3 border-t p-5">
       <p className="flex items-center gap-2 text-sm text-muted-foreground"><Coins className="size-4 text-brand" />Com estes valores, o cliente recebe <strong className="text-foreground">{cashback.toLocaleString("pt-BR")}% de volta</strong> em desconto <ArrowRight className="size-3.5" /> veja na aba "Como funciona".</p>
-      <button type="submit" disabled={save.isPending} className="h-10 rounded-md bg-[#171a1f] px-4 text-sm font-semibold text-white disabled:opacity-50">{save.isPending ? "Salvando…" : "Salvar regras"}</button>
+      <button type="submit" disabled={save.isPending || !valid} className="h-10 rounded-md bg-[#171a1f] px-4 text-sm font-semibold text-white disabled:opacity-50">{save.isPending ? "Salvando…" : "Salvar regras"}</button>
     </div>
   </form>;
 }
