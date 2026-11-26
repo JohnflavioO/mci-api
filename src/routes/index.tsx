@@ -67,7 +67,7 @@ function Index() {
     <SiteShell>
       <section className="bg-white">
         <div className="border-b border-slate-200 bg-[#202329] text-white">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 py-2 text-[11px] font-medium tracking-wide text-white/75 sm:justify-start">
+          <div className="mx-auto flex max-w-7xl items-center gap-x-6 overflow-x-auto whitespace-nowrap px-4 py-2 text-[11px] [scrollbar-width:none] [&>*]:shrink-0 sm:flex-wrap sm:gap-x-8 sm:gap-y-2 font-medium tracking-wide text-white/75 sm:justify-start">
             <span className="inline-flex items-center gap-2"><ShieldCheck className="size-3.5 text-[#ff681f]" /> Compra segura e atendimento especializado</span>
             <span className="hidden h-3 w-px bg-white/20 sm:block" />
             <span className="inline-flex items-center gap-2"><Truck className="size-3.5 text-[#ff681f]" /> Enviamos para todo o Brasil</span>
@@ -75,7 +75,7 @@ function Index() {
             <span>Condições especiais para revendedores aprovados</span>
           </div>
         </div>
-        <div className="mx-auto max-w-7xl px-4 pb-5 pt-5 sm:pb-7 sm:pt-6">
+        <div className="mx-auto max-w-7xl px-4 pb-4 pt-4 sm:pb-7 sm:pt-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e95b19]">Explore a Store House</p>
@@ -87,7 +87,7 @@ function Index() {
               <button type="submit" className="rounded-md bg-[#ff681f] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#e95712]">Buscar</button>
             </form>
           </div>
-          <nav aria-label="Departamentos" className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          <nav aria-label="Departamentos" className="mb-4 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
             {categories.slice(0,6).map((category) => <Link key={category} to="/catalogo" search={{categoria:category}} className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#ff681f] hover:bg-orange-50 hover:text-[#c94b12]">{category}</Link>)}
             <Link to="/revendedor" className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#ff681f] hover:bg-orange-50 hover:text-[#c94b12]">Seja revendedor</Link>
           </nav>
@@ -96,7 +96,7 @@ function Index() {
               <>
                 <picture>
                   {activeSlide.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeSlide.mobile_image_url} />}
-                  <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="aspect-[4/5] w-full object-cover sm:aspect-[16/5] sm:max-h-[430px]" />
+                  <img src={activeSlide.image_url} alt={activeSlide.title} fetchPriority="high" className="aspect-[6/5] w-full object-cover sm:aspect-[16/5] sm:max-h-[430px]" />
                 </picture>
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent sm:from-black/55 sm:via-black/10" />
                 <div className="absolute inset-x-0 bottom-0 flex max-w-[88%] flex-col justify-end p-5 sm:inset-y-0 sm:left-0 sm:right-auto sm:max-w-[48%] sm:p-10 lg:p-12">
@@ -111,10 +111,10 @@ function Index() {
                 {slides.length > 1 && <div className="absolute bottom-3 right-4 flex gap-1.5">{slides.map((slide,index)=><button key={slide.id} type="button" aria-label={`Mostrar banner ${index+1}`} onClick={()=>setSlideIndex(index)} className={`h-1.5 rounded-full transition-all ${index===slideIndex?"w-6 bg-[#ff681f]":"w-2 bg-white/70"}`}/>)}</div>}
               </>
             ) : (
-              <div className="flex min-h-[250px] flex-col justify-center bg-[linear-gradient(110deg,#202329,#353a42)] px-6 py-10 sm:min-h-[360px] sm:px-12">
+              <div className="flex min-h-[176px] flex-col justify-center bg-[linear-gradient(110deg,#202329,#353a42)] px-5 py-6 sm:min-h-[360px] sm:px-12 sm:py-10">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-300">Store House · Seleção profissional</p>
                 <h2 className="mt-3 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-4xl">Tecnologia para imagem, luz e som.</h2>
-                <p className="mt-3 max-w-lg text-sm leading-6 text-white/70">Explore nosso catálogo de equipamentos profissionais e encontre a solução para sua produção.</p>
+                <p className="mt-3 hidden max-w-lg text-sm leading-6 text-white/70 sm:block">Explore nosso catálogo de equipamentos profissionais e encontre a solução para sua produção.</p>
                 <Link to="/catalogo" className="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-[#ff681f] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#e95712]">Explorar produtos <ArrowRight className="size-4"/></Link>
               </div>
             )}
@@ -123,19 +123,19 @@ function Index() {
       </section>
 
       <section className="bg-[#f1f2f4]">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:py-10">
+          <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e95b19]">Seleção MCI</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Produtos em destaque</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Conheça os equipamentos disponíveis no catálogo.</p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:mt-2 sm:text-4xl">Produtos em destaque</h2>
+              <p className="mt-2 hidden text-sm sm:block text-muted-foreground">Conheça os equipamentos disponíveis no catálogo.</p>
             </div>
             <Link to="/catalogo" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-[#e95b19]">Explorar produtos <ArrowRight className="size-4" /></Link>
           </div>
           {catalog.isPending ? (
-            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">{[0,1,2,3].map((i) => <div key={i} className="animate-pulse rounded-2xl bg-white p-3"><div className="aspect-square rounded-xl bg-slate-200" /><div className="mt-4 h-3 w-1/3 rounded bg-slate-200" /><div className="mt-2 h-4 w-3/4 rounded bg-slate-200" /></div>)}</div>
           ) : featured.length > 0 ? (
-            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
               {featured.map((product) => <ProductCard key={product.slug} product={product} />)}
             </div>
           ) : (

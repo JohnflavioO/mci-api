@@ -40,18 +40,18 @@ function Catalog() {
 
   return (
     <SiteShell>
-      <div className="mx-auto max-w-7xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-10">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">Catálogo</h1>
+          <h1 className="text-2xl font-bold sm:text-3xl">Catálogo</h1>
           {q.data?.isDemo && <DemoBadge />}
         </div>
-        <div className="mt-8 grid gap-10 md:grid-cols-[220px_1fr]">
-          <aside className="space-y-6 text-sm">
+        <div className="mt-4 grid gap-5 sm:mt-8 md:grid-cols-[220px_1fr] md:gap-10">
+          <aside className="min-w-0 space-y-3 text-sm md:space-y-6">
             <Input placeholder="Buscar produto" defaultValue={search.q} onChange={(e) => set({ q: e.target.value || undefined })} />
-            <div>
-              <p className="mb-2 font-semibold">Categorias</p>
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:block md:px-0 md:pb-0">
+              <p className="mb-2 hidden font-semibold md:block">Categorias</p>
               {[undefined, ...categories].map((c) => (
-                <button key={c ?? "all"} onClick={() => set({ categoria: c })} className={`block py-1 ${search.categoria === c ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                <button key={c ?? "all"} onClick={() => set({ categoria: c })} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold md:block md:rounded-none md:border-0 md:bg-transparent md:px-0 md:py-1 md:text-sm ${search.categoria === c ? "border-foreground bg-foreground text-background md:text-foreground" : "border-border bg-card text-muted-foreground md:font-normal"}`}>
                   {c ?? "Todas"}
                 </button>
               ))}
@@ -69,7 +69,7 @@ function Catalog() {
             ) : list.length === 0 ? (
               <EmptyState title="Nenhum produto encontrado">Ajuste a busca ou os filtros.</EmptyState>
             ) : (
-              <div className="grid grid-cols-2 gap-6 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
                 {list.map((p) => <ProductCard key={p.slug} product={p} />)}
               </div>
             )}
