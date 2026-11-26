@@ -536,7 +536,7 @@ function ProductPage() {
                       </div>
                       {progressive > 0 && (
                         <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-sm text-muted-foreground">Desconto progressivo</span>
+                          <span className="text-sm text-muted-foreground">Desconto aplicado</span>
                           <strong className="text-sm font-bold text-[#27734b]">−{formatPrice(progressive, p.currency)}</strong>
                         </div>
                       )}
