@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, ImageOff, Images, PackagePlus, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { saveProductWithGallery } from "@/lib/productSave";
 import { createSupabaseCatalog, type SupabaseCatalogProduct } from "@/services/supabaseCatalog";
 import { categoriesOf, filterCatalog, formatPrice } from "@/services/catalog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/shop/states";
@@ -95,28 +96,11 @@ function ProductsPage() {
       if (f.status === "published" && Object.values(dimensions).some((value) => value === null)) {
         throw new Error("Para deixar o produto visível na vitrine, informe peso, altura, largura e comprimento em “Dados para transporte”. Sem eles o frete não é calculado e a compra fica bloqueada.");
       }
-      // Produtos novos com fotos locais precisam ser criados como rascunho primeiro:
-      // a galeria só pode ser gravada depois que o produto tiver um ID. Publicamos no final.
-      const publishAfterImages = f.status === "published" && f.imageFiles.length > 0;
-      const id = await catalog.saveAdmin({
+      return saveProductWithGallery(catalog, {
         ...(f.id ? { id: f.id } : {}), name: f.name, brand: f.brand, sku: f.sku, category: f.category,
-        description: f.description, status: publishAfterImages ? "draft" : f.status, customerPrice: customer,
-        resellerPrice: reseller, imageUrl: f.images[0] ?? "", ...dimensions,
+        description: f.description, status: f.status, customerPrice: customer, resellerPrice: reseller, ...dimensions,
+        images: f.images, imageFiles: f.imageFiles, stock, stockConfirmed: f.stockConfirmed,
       });
-      await catalog.setStock(id, stock, f.stockConfirmed);
-      const savedImageUrls = await catalog.saveProductImages(id, f.images, f.imageFiles);
-      const persistedImageUrls = await catalog.getProductImages(id);
-      if (persistedImageUrls.length !== savedImageUrls.length) {
-        throw new Error(`A galeria não foi salva integralmente: ${persistedImageUrls.length} de ${savedImageUrls.length} imagens confirmadas no banco. Tente salvar novamente.`);
-      }
-      if (publishAfterImages) {
-        await catalog.saveAdmin({
-          id, name: f.name, brand: f.brand, sku: f.sku, category: f.category,
-          description: f.description, status: "published", customerPrice: customer,
-          resellerPrice: reseller, imageUrl: savedImageUrls[0] ?? "", ...dimensions,
-        });
-      }
-      return id;
     },
     onSuccess: async () => {
       toast.success("Produto salvo no Supabase. Se você adicionou fotos, elas foram enviadas e a galeria foi conferida.");
