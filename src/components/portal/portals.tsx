@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { AdminPaymentSettings } from "@/components/portal/AdminPaymentSettings";
 import { AdminUsersSection } from "@/components/portal/AdminUsersSection";
 import { AdminAffiliatesSection } from "@/components/portal/AdminAffiliatesSection";
 import { AffiliatePayoutsPanel } from "@/components/portal/AffiliatePayoutsPanel";
@@ -65,6 +66,7 @@ export const portals = {
       { slug: "comissoes", label: "Comissões", icon: CircleDollarSign, group: "Operação comercial", description: "Relatório das comissões de afiliados por pedido, com situação e exportação." },
       { slug: "usuarios", label: "Usuários", icon: Users, group: "Administração", description: "Contas com acesso à plataforma." },
       { slug: "permissoes", label: "Permissões", icon: ShieldCheck, group: "Administração", description: "Perfis e níveis de acesso." },
+      { slug: "meios-de-pagamento", label: "Meios de pagamento", icon: Wallet, group: "Administração", description: "Configuração da operadora de pagamentos da loja." },
       { slug: "configuracoes", label: "Configurações", icon: Settings, group: "Administração", description: "Preferências gerais da plataforma." },
       { slug: "conta", label: "Minha conta", icon: UserRoundCog, group: "Administração", description: "Seus dados pessoais, e-mail de acesso e senha." },
     ],
@@ -272,6 +274,7 @@ export function PortalSectionView({ portal, slug }: { portal: PortalKey; slug: s
   const section = p.sections.find((s) => s.slug === slug);
   const label = section?.label ?? slug;
 
+  if (portal === "admin" && slug === "meios-de-pagamento") return <AdminPaymentSettings />;
   if (portal === "admin" && slug === "usuarios") return <AdminUsersSection />;
   if (portal === "admin" && slug === "afiliados") return <AdminAffiliatesSection />;
   if (portal === "admin" && slug === "permissoes") return <AdminPermissionsSection />;
