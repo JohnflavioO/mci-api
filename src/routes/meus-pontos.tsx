@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarClock, Clock3, Coins, Gift, ShoppingBag, ArrowRight, Sparkles, Wallet } from "lucide-react";
+import { CalendarClock, Clock3, Coins, Gift, ShoppingBag, ArrowRight, Wallet } from "lucide-react";
 import { SiteShell } from "@/components/shop/SiteShell";
 import { ErrorState } from "@/components/shop/states";
 import { useLoyalty } from "@/hooks/useLoyalty";
@@ -28,15 +28,15 @@ function MyPoints() {
   return <SiteShell>
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
       <section className="relative isolate overflow-hidden rounded-3xl bg-[#15181d] px-6 py-10 text-white sm:px-12 sm:py-16">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-orange-500/20 blur-3xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-orange-500" />
         <div className="relative grid items-center gap-8 md:grid-cols-[1.4fr_1fr]">
           <div>
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-400"><Sparkles className="size-4" /> Clube de fidelidade</p>
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-400">Clube de fidelidade</p>
             <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">Store House <span className="text-orange-400">Pontos</span></h1>
-            <p className="mt-4 max-w-xl text-base leading-7 text-white/75">Suas compras podem render novas vantagens. Acumule pontos e transforme seu saldo em descontos nas próximas compras, conforme as regras do clube.</p>
+            <p className="mt-4 max-w-xl text-base leading-7 text-white/75">Compre, acumule pontos e aproveite os benefícios do nosso programa de fidelidade. Seu saldo pode virar descontos nas próximas compras, conforme as regras do clube.</p>
             <Link to="/" className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-xl bg-orange-500 px-5 font-semibold text-black hover:bg-orange-400">Explorar produtos <ArrowRight className="size-4" /></Link>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/15 bg-[#20242a] p-6">
             <Coins className="size-10 text-orange-400" />
             <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-white/60">Benefício do clube</p>
             {s ? <><p className="mt-2 text-4xl font-bold tabular-nums">{(s.points_per_real * s.real_per_100_points).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%</p><p className="mt-2 text-sm text-white/75">Retorno nominal em descontos, quando ativo. Pontos inteiros por compra.</p></> : <p className="mt-2 text-xl font-semibold">Compras que geram vantagens</p>}
@@ -45,8 +45,8 @@ function MyPoints() {
         </div>
       </section>
       <section className="mt-8">
-        <p className="text-xs font-bold uppercase tracking-widest text-brand">Conheça seus benefícios</p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight">Mais valor em cada compra</h2>
+        <p className="text-xs font-bold uppercase tracking-widest text-brand">Benefícios do clube</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight">O que você pode fazer com seus pontos?</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           {[
             { Icon: ShoppingBag, title: "Compre e acumule", description: s ? `A cada R$ 100 em produtos, a regra prevê ${pts(s.points_per_real * 100)}. Frete não acumula pontos.` : "Compras elegíveis geram pontos conforme as regras do clube." },
